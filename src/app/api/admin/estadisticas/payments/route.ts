@@ -1,0 +1,97 @@
+import { NextResponse } from "next/server";
+import { prisma } from "../../../../../lib/prisma";
+import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { Role } from "@prisma/client";
+
+export async function GET(request: Request) {
+  try {
+    const auth = requireAuth(request, [Role.CONTABLE, Role.MASTER]);
+    const { searchParams } = new URL(request.url);
+    
+    // Filtros
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const userId = searchParams.get("userId");
+    const paymentMethod = searchParams.get("paymentMethod");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const skip = (page - 1) * limit;
+
+    // Construir filtros
+    const where: any = {
+      status: "CONFIRMED" // Solo pagos confirmados
+    };
+
+    // Filtro por fecha
+    if (startDate || endDate) {
+      where.purchasedAt = {};
+      if (startDate) {
+        where.purchasedAt.gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.purchasedAt.lte = end;
+      }
+    }
+
+    // Filtro por usuario
+    if (userId) {
+      where.userId = userId;
+    }
+
+    // Filtro por método de pago
+    if (paymentMethod) {
+      where.paymentMethod = paymentMethod;
+    }
+
+    // Obtener tickets con información del usuario
+    const [tickets, total] = await Promise.all([
+      prisma.ticket.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: {
+          purchasedAt: "desc"
+        },
+        skip,
+        take: limit
+      }),
+      prisma.ticket.count({ where })
+    ]);
+
+    // Formatear datos
+    const payments = tickets.map(ticket => ({
+      id: ticket.id,
+      fecha: ticket.purchasedAt.toISOString(),
+      nombreUsuario: ticket.user.name,
+      emailUsuario: ticket.user.email,
+      metodoPago: ticket.paymentMethod || "N/A",
+      monto: Number(ticket.totalPaid),
+      referenciaPago: ticket.paymentMobileRef || null
+    }));
+
+    return NextResponse.json({
+      payments,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    console.error("Error al obtener lista de pagos:", err);
+    return NextResponse.json({ error: "Error al obtener lista de pagos" }, { status: 500 });
+  }
+}

@@ -1,0 +1,33 @@
+import { NextResponse } from "next/server";
+import { prisma } from "../../../../../lib/prisma";
+import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { Role } from "@prisma/client";
+
+export async function GET(request: Request) {
+  try {
+    const auth = requireAuth(request, [Role.MASTER]);
+    const logs = await prisma.auditLog.findMany({
+      where: { actorRole: Role.SUPERADMIN },
+      include: {
+        actor: {
+          select: {
+            name: true,
+            email: true
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 500
+    });
+    
+    // Asegurar que siempre devolvamos un array
+    return NextResponse.json(Array.isArray(logs) ? logs : []);
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    console.error("Error al obtener logs de superadmins:", err);
+    return NextResponse.json({ error: "Error al obtener logs" }, { status: 500 });
+  }
+}
+

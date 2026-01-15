@@ -1,0 +1,58 @@
+import { NextResponse } from "next/server";
+import { prisma } from "../../../../lib/prisma";
+import bcrypt from "bcryptjs";
+
+export async function POST(request: Request) {
+  try {
+    const { token, password } = await request.json();
+
+    if (!token || !password) {
+      return NextResponse.json({ error: "Token y contraseña son requeridos" }, { status: 400 });
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres" }, { status: 400 });
+    }
+
+    // Buscar token válido
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    if (!resetToken) {
+      return NextResponse.json({ error: "Token inválido o expirado" }, { status: 400 });
+    }
+
+    if (resetToken.used) {
+      return NextResponse.json({ error: "Este token ya fue usado" }, { status: 400 });
+    }
+
+    if (new Date() > resetToken.expiresAt) {
+      return NextResponse.json({ error: "Token expirado" }, { status: 400 });
+    }
+
+    // Hash de nueva contraseña
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Actualizar contraseña y marcar token como usado
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash },
+      }),
+      prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { used: true },
+      }),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      message: "Contraseña restablecida exitosamente",
+    });
+  } catch (error) {
+    console.error("Error en reset-password:", error);
+    return NextResponse.json({ error: "Error al restablecer contraseña" }, { status: 500 });
+  }
+}
