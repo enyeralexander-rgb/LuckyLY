@@ -79,6 +79,14 @@ const nextConfig = {
   
   // Asegurar que Prisma Client se incluya correctamente en el bundle
   serverExternalPackages: ['@prisma/client'],
+  
+  // Incluir archivos de Prisma en el file tracing para Vercel
+  outputFileTracingIncludes: {
+    '/api/**': [
+      './node_modules/.prisma/client/**/*',
+      './node_modules/@prisma/client/**/*'
+    ]
+  },
 };
 
 export default nextConfig;
