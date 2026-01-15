@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin';
+
 const nextConfig = {
   // Solo usar standalone en producción explícitamente (evitar en desarrollo)
   // output: "standalone" puede causar problemas de resolución de módulos en desarrollo
@@ -8,6 +10,10 @@ const nextConfig = {
   
   // Configuración de webpack para mejorar la estabilidad y evitar errores de resolución
   webpack: (config, { dev, isServer, webpack }) => {
+    // Agregar plugin de Prisma para incluir binarios en el bundle
+    if (isServer) {
+      config.plugins = [...(config.plugins || []), new PrismaPlugin()];
+    }
     // Mejorar la resolución de módulos en desarrollo
     if (dev) {
       // Asegurar que los módulos se resuelvan correctamente
