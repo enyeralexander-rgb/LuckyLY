@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 import { readdir } from "fs/promises";
 import { join } from "path";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
