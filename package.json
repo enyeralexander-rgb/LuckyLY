@@ -22,7 +22,8 @@
     "fix:webpack": "npm run stop && npm run clean:webpack && npm run clean:deep && echo '✅ Caché de webpack limpiada. Ejecuta: npm run dev'",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "postbuild": "node scripts/copy-prisma-binary.js"
   },
   "prisma": {
     "seed": "node --loader ts-node/esm prisma/seed.ts"
