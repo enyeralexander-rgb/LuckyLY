@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const { PrismaPlugin } = require('@prisma/nextjs-monorepo-workaround-plugin');
+import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin';
 
 const nextConfig = {
   // Solo usar standalone en producción explícitamente (evitar en desarrollo)
@@ -84,5 +84,5 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
 
