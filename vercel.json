@@ -1,0 +1,14 @@
+{
+  "buildCommand": "prisma generate && npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "includeFiles": "node_modules/.prisma/client/**,node_modules/@prisma/client/**"
+    }
+  },
+  "env": {
+    "PRISMA_SKIP_POSTINSTALL_GENERATE": "true"
+  }
+}
