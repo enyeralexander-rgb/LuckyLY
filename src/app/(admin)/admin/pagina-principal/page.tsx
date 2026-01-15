@@ -18,15 +18,6 @@ type HomePageConfig = {
   heroAutoSlideMode: string;
   heroAutoSlideInterval: number;
   heroImageSize?: string;
-  heroOpacity: number;
-  heroBlur: number;
-  heroTextColor: string | null;
-  heroSubtitleColor: string | null;
-  heroOverlayColor: string | null;
-  heroOverlayOpacity: number;
-  heroEffect: string | null;
-  heroEffectParams: Record<string, any> | null;
-  heroScrollFade: boolean;
   instagramVideoUrl: string | null;
 };
 
@@ -56,15 +47,6 @@ function PaginaPrincipalContent() {
     heroAutoSlideMode: "linear",
     heroAutoSlideInterval: 5000,
     heroImageSize: "contain",
-    heroOpacity: 0.8,
-    heroBlur: 4.0,
-    heroTextColor: null,
-    heroSubtitleColor: null,
-    heroOverlayColor: null,
-    heroOverlayOpacity: 0.7,
-    heroEffect: "fade",
-    heroEffectParams: {},
-    heroScrollFade: true,
     instagramVideoUrl: "/images/RULETA FONDO REDES.mp4"
   });
 
@@ -114,15 +96,6 @@ function PaginaPrincipalContent() {
           heroAutoSlideMode: data.heroAutoSlideMode || "linear",
           heroAutoSlideInterval: data.heroAutoSlideInterval || 5000,
           heroImageSize: data.heroImageSize || "contain",
-          heroOpacity: data.heroOpacity !== undefined ? data.heroOpacity : 0.8,
-          heroBlur: data.heroBlur !== undefined ? data.heroBlur : 4.0,
-          heroTextColor: data.heroTextColor || null,
-          heroSubtitleColor: data.heroSubtitleColor || null,
-          heroOverlayColor: data.heroOverlayColor || null,
-          heroOverlayOpacity: data.heroOverlayOpacity !== undefined ? data.heroOverlayOpacity : 0.7,
-          heroEffect: data.heroEffect || "fade",
-          heroEffectParams: data.heroEffectParams || {},
-          heroScrollFade: data.heroScrollFade !== undefined ? data.heroScrollFade : true,
           instagramVideoUrl: data.instagramVideoUrl || ""
         });
       }
@@ -154,16 +127,17 @@ function PaginaPrincipalContent() {
         heroAutoSlideMode: config.heroAutoSlideMode || "linear",
         heroAutoSlideInterval: config.heroAutoSlideInterval ?? 5000,
         heroImageSize: config.heroImageSize || "contain",
-        heroOpacity: config.heroOpacity !== undefined ? config.heroOpacity : 0.8,
-        heroBlur: config.heroBlur !== undefined ? config.heroBlur : 4.0,
-        heroTextColor: config.heroTextColor || null,
-        heroSubtitleColor: config.heroSubtitleColor || null,
-        heroOverlayColor: config.heroOverlayColor || null,
-        heroOverlayOpacity: config.heroOverlayOpacity !== undefined ? config.heroOverlayOpacity : 0.7,
-        heroEffect: config.heroEffect || "fade",
-        heroEffectParams: config.heroEffectParams || {},
-        heroScrollFade: config.heroScrollFade !== undefined ? config.heroScrollFade : true,
         instagramVideoUrl: config.instagramVideoUrl || null,
+        // Campos eliminados - mantener compatibilidad con API
+        heroEffect: null,
+        heroEffectParams: {},
+        heroScrollFade: false,
+        heroOpacity: 1.0,
+        heroBlur: 0,
+        heroTextColor: null,
+        heroSubtitleColor: null,
+        heroOverlayColor: null,
+        heroOverlayOpacity: 0,
         // NO enviar sectionOrder ni sectionVisibility - el Header NO se puede modificar desde este módulo
         sectionOrder: null,
         sectionVisibility: null
@@ -416,238 +390,6 @@ function PaginaPrincipalContent() {
                   : config.heroImageSize === "cover"
                   ? "⚠ La imagen puede recortarse para llenar todo el espacio"
                   : "✓ La imagen se ajustará automáticamente para llenar todo el espacio sin dejar vacíos arriba o abajo, preservando sus proporciones originales (sin estirar)"}
-              </div>
-            </div>
-
-            {/* Opacidad de la Imagen de Portada */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
-                Opacidad de la Imagen de Portada
-              </label>
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={Math.round((config.heroOpacity || 0.8) * 100)}
-                  onChange={(e) => setConfig({ ...config, heroOpacity: parseInt(e.target.value) / 100 })}
-                  style={{ flex: 1 }}
-                />
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={Math.round((config.heroOpacity || 0.8) * 100)}
-                  onChange={(e) => {
-                    const value = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                    setConfig({ ...config, heroOpacity: value / 100 });
-                  }}
-                  style={{ width: "80px", padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
-                />
-                <span style={{ color: "#6b7280", fontSize: "0.875rem", minWidth: "30px" }}>%</span>
-              </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
-                Valor actual: {Math.round((config.heroOpacity || 0.8) * 100)}% (0% = Transparente, 100% = Opaco)
-              </div>
-            </div>
-
-            {/* Desenfoque de la Imagen de Portada */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
-                Desenfoque de la Imagen de Portada
-              </label>
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={Math.round((config.heroBlur || 4.0) / 20 * 100)}
-                  onChange={(e) => setConfig({ ...config, heroBlur: (parseInt(e.target.value) / 100) * 20 })}
-                  style={{ flex: 1 }}
-                />
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={Math.round((config.heroBlur || 4.0) / 20 * 100)}
-                  onChange={(e) => {
-                    const value = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                    setConfig({ ...config, heroBlur: (value / 100) * 20 });
-                  }}
-                  style={{ width: "80px", padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
-                />
-                <span style={{ color: "#6b7280", fontSize: "0.875rem", minWidth: "30px" }}>%</span>
-              </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
-                Valor actual: {Math.round((config.heroBlur || 4.0) / 20 * 100)}% (0% = Sin desenfoque, 100% = Máximo desenfoque ~20px)
-              </div>
-            </div>
-
-            {/* Color del Texto del Título */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
-                Color del Texto del Título
-              </label>
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <input
-                  type="color"
-                  value={config.heroTextColor || "#e2e8f0"}
-                  onChange={(e) => setConfig({ ...config, heroTextColor: e.target.value })}
-                  style={{ width: "60px", height: "40px", borderRadius: "4px", border: "1px solid #d0fdd7", cursor: "pointer" }}
-                />
-                <input
-                  type="text"
-                  value={config.heroTextColor || "#e2e8f0"}
-                  onChange={(e) => setConfig({ ...config, heroTextColor: e.target.value || null })}
-                  placeholder="#e2e8f0"
-                  style={{ flex: 1, padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
-                />
-                <button
-                  onClick={() => setConfig({ ...config, heroTextColor: null })}
-                  style={{ padding: "0.5rem 1rem", background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "0.875rem" }}
-                >
-                  Reset
-                </button>
-              </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
-                {config.heroTextColor ? `Color personalizado: ${config.heroTextColor}` : "Usar color por defecto (#e2e8f0)"}
-              </div>
-            </div>
-
-            {/* Color del Texto del Subtítulo */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
-                Color del Texto del Subtítulo
-              </label>
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <input
-                  type="color"
-                  value={config.heroSubtitleColor || "#cbd5e1"}
-                  onChange={(e) => setConfig({ ...config, heroSubtitleColor: e.target.value })}
-                  style={{ width: "60px", height: "40px", borderRadius: "4px", border: "1px solid #d0fdd7", cursor: "pointer" }}
-                />
-                <input
-                  type="text"
-                  value={config.heroSubtitleColor || "#cbd5e1"}
-                  onChange={(e) => setConfig({ ...config, heroSubtitleColor: e.target.value || null })}
-                  placeholder="#cbd5e1"
-                  style={{ flex: 1, padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
-                />
-                <button
-                  onClick={() => setConfig({ ...config, heroSubtitleColor: null })}
-                  style={{ padding: "0.5rem 1rem", background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "0.875rem" }}
-                >
-                  Reset
-                </button>
-              </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
-                {config.heroSubtitleColor ? `Color personalizado: ${config.heroSubtitleColor}` : "Usar color por defecto (#cbd5e1)"}
-              </div>
-            </div>
-
-            {/* Color del Overlay */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
-                Color del Overlay (Capa Oscura)
-              </label>
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <input
-                  type="color"
-                  value={config.heroOverlayColor || "#0b1221"}
-                  onChange={(e) => setConfig({ ...config, heroOverlayColor: e.target.value })}
-                  style={{ width: "60px", height: "40px", borderRadius: "4px", border: "1px solid #d0fdd7", cursor: "pointer" }}
-                />
-                <input
-                  type="text"
-                  value={config.heroOverlayColor || "#0b1221"}
-                  onChange={(e) => setConfig({ ...config, heroOverlayColor: e.target.value || null })}
-                  placeholder="#0b1221"
-                  style={{ flex: 1, padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
-                />
-                <button
-                  onClick={() => setConfig({ ...config, heroOverlayColor: null })}
-                  style={{ padding: "0.5rem 1rem", background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "0.875rem" }}
-                >
-                  Reset
-                </button>
-              </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
-                {config.heroOverlayColor ? `Color personalizado: ${config.heroOverlayColor}` : "Usar color por defecto (#0b1221)"}
-              </div>
-            </div>
-
-            {/* Opacidad del Overlay */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
-                Opacidad del Overlay (Capa Oscura)
-              </label>
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={Math.round((config.heroOverlayOpacity || 0.7) * 100)}
-                  onChange={(e) => setConfig({ ...config, heroOverlayOpacity: parseInt(e.target.value) / 100 })}
-                  style={{ flex: 1 }}
-                />
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={Math.round((config.heroOverlayOpacity || 0.7) * 100)}
-                  onChange={(e) => {
-                    const value = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                    setConfig({ ...config, heroOverlayOpacity: value / 100 });
-                  }}
-                  style={{ width: "80px", padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
-                />
-                <span style={{ color: "#6b7280", fontSize: "0.875rem", minWidth: "30px" }}>%</span>
-              </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
-                Valor actual: {Math.round((config.heroOverlayOpacity || 0.7) * 100)}% (0% = Transparente, 100% = Opaco)
-              </div>
-            </div>
-
-            {/* Efecto Visual */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
-                Efecto Visual de la Imagen
-              </label>
-              <select
-                value={config.heroEffect || "fade"}
-                onChange={(e) => setConfig({ ...config, heroEffect: e.target.value || null })}
-                style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
-              >
-                <option value="fade">Desvanecimiento (Fade)</option>
-                <option value="slide">Deslizamiento (Slide)</option>
-                <option value="parallax">Parallax</option>
-                <option value="fade-in-reveal">Revelación con Desvanecimiento</option>
-                <option value="zoom-in-out">Zoom In/Out</option>
-                <option value="none">Ninguno</option>
-              </select>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
-                Efecto aplicado a las transiciones entre imágenes
-              </div>
-            </div>
-
-            {/* Desvanecimiento al Hacer Scroll */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={config.heroScrollFade || false}
-                  onChange={(e) => setConfig({ ...config, heroScrollFade: e.target.checked })}
-                />
-                <span style={{ color: "#1a5c2e", fontWeight: 600 }}>Desvanecimiento al Hacer Scroll</span>
-              </label>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
-                La imagen se desvanece gradualmente al hacer scroll hacia abajo
               </div>
             </div>
 
