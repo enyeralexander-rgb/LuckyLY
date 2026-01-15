@@ -1,0 +1,117 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  
+  /* Nueva Paleta de Colores Verde */
+  --color-primary-dark: #2a8c4a;
+  --color-primary: #64c27b;
+  --color-primary-light: #9bfab0;
+  --color-primary-very-light: #d0fdd7;
+  --color-white: #ffffff;
+  
+  /* Colores adicionales sugeridos */
+  --color-dark: #1a5c2e;
+  --color-medium-dark: #3a9c5a;
+  --color-almost-white: #e8f5eb;
+  --color-text-dark: #1a5c2e;
+  --color-text-medium: #2a8c4a;
+  --color-border: #9bfab0;
+  --color-border-light: #d0fdd7;
+  
+  background-color: var(--color-almost-white);
+  color: var(--color-text-dark);
+}
+
+/* Aplicar Cherry Bomb One a botones, títulos y encabezados - TODO EN MAYÚSCULAS */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-cherry-bomb), cursive, system-ui, sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+button, 
+[role="button"],
+input[type="submit"],
+input[type="button"] {
+  font-family: var(--font-cherry-bomb), cursive, system-ui, sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-almost-white);
+  overflow-x: hidden;
+}
+
+/* Asegurar que el Hero no quede tapado y se muestre completo */
+header {
+  position: relative;
+  z-index: 100;
+}
+
+/* Hero section responsive */
+section[style*="calc(100vh"] {
+  position: relative !important;
+}
+
+@media (max-width: 768px) {
+  section[style*="calc(100vh"] {
+    min-height: calc(100vh - 70px) !important;
+    height: calc(100vh - 70px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  section[style*="calc(100vh"] {
+    min-height: calc(100vh - 60px) !important;
+    height: calc(100vh - 60px) !important;
+  }
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 6px 24px rgba(42, 140, 74, 0.1);
+  color: var(--color-text-dark);
+}
+
+/* Media queries para responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0.75rem;
+  }
+  
+  .card {
+    padding: 0.75rem;
+    border-radius: 8px;
+  }
+}
