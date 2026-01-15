@@ -1,11 +1,11 @@
 {
-  "buildCommand": "prisma generate && npm run build",
+  "buildCommand": "prisma generate && npm run build && npm run postbuild",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
   "functions": {
     "src/app/api/**/*.ts": {
-      "includeFiles": "node_modules/.prisma/client/**"
+      "includeFiles": "node_modules/.prisma/client/**,.next/server/libquery_engine-rhel-openssl-3.0.x.so.node"
     }
   }
 }
