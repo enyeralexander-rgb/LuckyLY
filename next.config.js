@@ -76,6 +76,9 @@ const nextConfig = {
     // Mejorar la estabilidad del bundling
     optimizePackageImports: ['@prisma/client'],
   },
+  
+  // Asegurar que Prisma Client se incluya correctamente en el bundle
+  serverExternalPackages: ['@prisma/client'],
 };
 
 export default nextConfig;
