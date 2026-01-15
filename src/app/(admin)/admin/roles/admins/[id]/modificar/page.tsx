@@ -1,4 +1,5 @@
 "use client";
+// Importaciones usando rutas relativas para compatibilidad con Vercel
 import { AdminNavBar } from "../../../../../../../components/AdminNavBar";
 import { AuthGuard } from "../../../../../../../components/AuthGuard";
 import { useEffect, useState } from "react";
