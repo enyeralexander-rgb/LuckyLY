@@ -154,7 +154,10 @@ export function Hero() {
   const textColor = config.heroTextColor || "#e2e8f0";
   const subtitleColor = config.heroSubtitleColor || "#cbd5e1";
   const overlayColor = config.heroOverlayColor || "#0b1221";
-  const overlayOpacity = config.heroOverlayOpacity ?? 0.7;
+  // Convertir overlayOpacity de 0-100% a 0-1
+  const overlayOpacity = typeof config.heroOverlayOpacity === 'number' && config.heroOverlayOpacity > 1 
+    ? config.heroOverlayOpacity / 100 
+    : (config.heroOverlayOpacity ?? 0.7);
 
   const hexToRgba = (hex: string, alpha: number) => {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -182,6 +185,11 @@ export function Hero() {
       ? "cover" // Llena todo el espacio sin dejar vacíos
       : backgroundSize;
     
+    // Aplicar blur: 0-100% se convierte a 0-20px (100% = 20px)
+    const blurValue = (config.heroBlur ?? 0) / 5;
+    // Aplicar opacidad: 0-100% se convierte a 0-1
+    const opacityValue = (config.heroOpacity ?? 80) / 100;
+    
     const baseStyle: React.CSSProperties = {
       position: "absolute",
       inset: 0,
@@ -191,8 +199,8 @@ export function Hero() {
       backgroundRepeat: "no-repeat",
       minHeight: "100%",
       height: "100%",
-      filter: "none",
-      opacity: 1.0,
+      filter: blurValue > 0 ? `blur(${blurValue}px)` : "none",
+      opacity: opacityValue,
       zIndex: 0,
       backgroundColor: imageSize === "contain" ? "#1a1a1a" : "transparent"
     };
@@ -218,7 +226,7 @@ export function Hero() {
         return {
           ...baseStyle,
           transition: `opacity ${duration}ms ease-out`,
-          opacity: opacity * (config.heroOpacity ?? 0.8)
+          opacity: opacity * opacityValue
         };
       case "zoom-in-out":
         const scale = effectParams.scale || 1.2;
@@ -280,6 +288,10 @@ export function Hero() {
               ? "cover" // Llena todo el espacio sin dejar vacíos
               : backgroundSize;
             
+            // Aplicar blur y opacidad también en el modo slide
+            const slideBlurValue = (config.heroBlur ?? 0) / 5;
+            const slideOpacityValue = (config.heroOpacity ?? 80) / 100;
+            
             return (
               <div
                 key={index}
@@ -291,11 +303,11 @@ export function Hero() {
                   backgroundRepeat: "no-repeat",
                   minHeight: "100%",
                   height: "100%",
-                  filter: "none",
+                  filter: slideBlurValue > 0 ? `blur(${slideBlurValue}px)` : "none",
                   backgroundColor: imageSize === "contain" ? "#0a0a0a" : "transparent",
                   opacity: config.heroAutoSlide && slideMode === "fade" 
-                    ? (index === currentImageIndex ? 1.0 : 0)
-                    : 1.0,
+                    ? (index === currentImageIndex ? slideOpacityValue : 0)
+                    : slideOpacityValue,
                   transition,
                   transform
                 }}
