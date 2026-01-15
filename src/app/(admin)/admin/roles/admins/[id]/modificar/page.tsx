@@ -1,9 +1,8 @@
 "use client";
-// Importaciones usando rutas relativas para compatibilidad con Vercel
-import { AdminNavBar } from "../../../../../../../components/AdminNavBar";
-import { AuthGuard } from "../../../../../../../components/AuthGuard";
+import { AdminNavBar } from "@/components/AdminNavBar";
+import { AuthGuard } from "@/components/AuthGuard";
 import { useEffect, useState } from "react";
-import { getStoredAuth } from "../../../../../../../lib/clientAuth";
+import { getStoredAuth } from "@/lib/clientAuth";
 import { useParams, useRouter } from "next/navigation";
 
 type Admin = {
