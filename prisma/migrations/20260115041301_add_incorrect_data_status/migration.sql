@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "PrizeStatus" ADD VALUE 'INCORRECT_DATA';
