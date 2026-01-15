@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "postinstall": "prisma generate",
     "clean": "rm -rf .next node_modules/.cache",
     "clean:deep": "rm -rf .next node_modules/.cache .next/cache .swc",
     "clean:full": "rm -rf .next node_modules/.cache node_modules/.next .swc tsconfig.tsbuildinfo",
