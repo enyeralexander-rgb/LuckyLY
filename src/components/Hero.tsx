@@ -191,7 +191,7 @@ export function Hero() {
       backgroundRepeat: "no-repeat",
       minHeight: "100%",
       height: "100%",
-      filter: "none",
+      filter: `blur(${config.heroBlur / 5}px)`, // Convert 0-100 to 0-20px
       opacity: 1.0,
       zIndex: 0,
       backgroundColor: imageSize === "contain" ? "#1a1a1a" : "transparent"
@@ -218,7 +218,8 @@ export function Hero() {
         return {
           ...baseStyle,
           transition: `opacity ${duration}ms ease-out`,
-          opacity: opacity * (config.heroOpacity ?? 0.8)
+          opacity: opacity * (config.heroOpacity ?? 0.8),
+          filter: `blur(${config.heroBlur / 5}px)`
         };
       case "zoom-in-out":
         const scale = effectParams.scale || 1.2;
@@ -232,7 +233,9 @@ export function Hero() {
       default:
         return {
           ...baseStyle,
-          transition: `opacity ${duration}ms ease-in-out`
+          transition: `opacity ${duration}ms ease-in-out`,
+          opacity: config.heroOpacity ?? 0.8,
+          filter: `blur(${config.heroBlur / 5}px)`
         };
     }
   };
@@ -246,7 +249,7 @@ export function Hero() {
         height: "calc(100vh - 80px)",
         maxHeight: "none",
         overflow: "hidden",
-        opacity: opacity,
+        opacity: config.heroScrollFade ? opacity : 1.0,
         transition: "opacity 0.3s ease-out",
         display: "flex",
         alignItems: "center",
@@ -291,7 +294,7 @@ export function Hero() {
                   backgroundRepeat: "no-repeat",
                   minHeight: "100%",
                   height: "100%",
-                  filter: "none",
+                  filter: `blur(${config.heroBlur / 5}px)`, // Convert 0-100 to 0-20px
                   backgroundColor: imageSize === "contain" ? "#0a0a0a" : "transparent",
                   opacity: config.heroAutoSlide && slideMode === "fade" 
                     ? (index === currentImageIndex ? 1.0 : 0)
