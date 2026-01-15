@@ -59,9 +59,8 @@
     "socket.io-client": "^4.8.3",
     "ts-node": "^10.9.2",
     "typescript": "5.6.3",
-    "zod": "3.23.8"
-  },
-  "devDependencies": {
+    "zod": "3.23.8",
     "@prisma/nextjs-monorepo-workaround-plugin": "^7.2.0"
-  }
+  },
+  "devDependencies": {}
 }
