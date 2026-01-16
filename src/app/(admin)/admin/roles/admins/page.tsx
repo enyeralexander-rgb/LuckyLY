@@ -407,36 +407,34 @@ function GestionarAdminsPageContent() {
                   >
                     Modificar
                   </button>
-                  {admin.role !== "MASTER" && (
-                    <>
-                      <button
-                        onClick={() => handleSuspend(admin)}
-                        style={{
-                          padding: ".5rem 1rem",
-                          background: admin.suspended ? "#85BB65" : "#f59e0b",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: "8px",
-                          cursor: "pointer"
-                        }}
-                      >
-                        {admin.suspended ? "Reactivar" : "Suspender"}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(admin.id, admin.name)}
-                        style={{
-                          padding: ".5rem 1rem",
-                          background: "#dc2626",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: "8px",
-                          cursor: "pointer"
-                        }}
-                      >
-                        Borrar
-                      </button>
-                    </>
-                  )}
+                  <button
+                    onClick={() => handleSuspend(admin)}
+                    disabled={admin.role === "MASTER"}
+                    style={{
+                      padding: ".5rem 1rem",
+                      background: admin.suspended ? "#85BB65" : "#f59e0b",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: admin.role === "MASTER" ? "not-allowed" : "pointer",
+                      opacity: admin.role === "MASTER" ? 0.5 : 1
+                    }}
+                  >
+                    {admin.suspended ? "Reactivar" : "Suspender"}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(admin.id, admin.name)}
+                    style={{
+                      padding: ".5rem 1rem",
+                      background: "#dc2626",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Borrar
+                  </button>
                 </div>
               </div>
             ))}
