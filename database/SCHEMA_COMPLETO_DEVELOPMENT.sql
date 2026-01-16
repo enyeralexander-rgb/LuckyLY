@@ -47,7 +47,7 @@ CREATE TABLE "User" (
     "name" TEXT NOT NULL,
     "username" TEXT,
     "avatarUrl" TEXT,
-    "birthDate" TIMESTAMP(3) NOT NULL,
+    "documentId" TEXT NOT NULL,
     "phoneNumber" TEXT,
     "nationalId" TEXT,
     "nationalIdType" TEXT,
@@ -357,6 +357,8 @@ CREATE TABLE "HomePageConfig" (
 -- Índices para User
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
+CREATE UNIQUE INDEX "User_documentId_key" ON "User"("documentId");
+CREATE INDEX "User_documentId_idx" ON "User"("documentId");
 CREATE INDEX "User_role_idx" ON "User"("role");
 CREATE INDEX "User_username_idx" ON "User"("username");
 CREATE INDEX "User_suspended_idx" ON "User"("suspended");
