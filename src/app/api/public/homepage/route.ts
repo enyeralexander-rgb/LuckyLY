@@ -55,9 +55,8 @@ export async function GET(request: Request) {
         headerConfig: null,
         contactConfig: null,
         footerConfig: null,
-        sectionOrder: ["header", "hero", "raffles", "live", "footer"],
+        sectionOrder: ["hero", "raffles", "live", "footer"],
         sectionVisibility: {
-          header: true,
           hero: true,
           raffles: true,
           live: true,

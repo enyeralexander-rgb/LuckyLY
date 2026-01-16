@@ -43,8 +43,24 @@ export async function sendEmail(to: string, subject: string, html: string, text?
   }
 }
 
+// Función helper para obtener la URL base de la aplicación
+function getAppUrl(): string {
+  // Prioridad 1: NEXT_PUBLIC_APP_URL (si está definida)
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+  
+  // Prioridad 2: VERCEL_URL (automático en Vercel)
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Prioridad 3: Fallback a localhost (solo desarrollo)
+  return "http://localhost:3000";
+}
+
 export async function sendPasswordResetEmail(email: string, resetToken: string) {
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/reset-password?token=${resetToken}`;
+  const resetUrl = `${getAppUrl()}/auth/reset-password?token=${resetToken}`;
   
   const html = `
     <!DOCTYPE html>
@@ -80,7 +96,7 @@ export async function sendPasswordResetEmail(email: string, resetToken: string) 
 }
 
 export async function sendEmailVerificationEmail(email: string, verificationToken: string) {
-  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/verify-email?token=${verificationToken}`;
+  const verificationUrl = `${getAppUrl()}/auth/verify-email?token=${verificationToken}`;
   
   const html = `
     <!DOCTYPE html>
@@ -147,7 +163,7 @@ export async function sendPrizePaymentEmail(email: string, userName: string, raf
 }
 
 export async function sendIncorrectBankDataEmail(email: string, userName: string, raffleTitle: string) {
-  const updateUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/cuenta/datos-bancarios`;
+  const updateUrl = `${getAppUrl()}/cuenta/datos-bancarios`;
   
   const html = `
     <!DOCTYPE html>

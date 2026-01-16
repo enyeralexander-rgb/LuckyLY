@@ -6,37 +6,34 @@ import { sendEmailVerificationEmail } from "../../../../lib/email";
 import crypto from "crypto";
 import { getCountryFromIP } from "../../../../lib/geolocation";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
-  const body = await request.json();
-  
-  // Obtener IP para geolocalización
-  const headersList = request.headers;
-  const ip = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || null;
-  const parsed = registerSchema.safeParse(body);
+  try {
+    const body = await request.json();
+    
+    // Obtener IP para geolocalización
+    const headersList = request.headers;
+    const ip = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || null;
+    const parsed = registerSchema.safeParse(body);
 
-  if (!parsed.success) {
-    const errors = parsed.error.flatten().fieldErrors;
-    const errorMessage = Object.values(errors).flat().join(", ");
-    return NextResponse.json({ error: errorMessage || "Datos inválidos" }, { status: 400 });
-  }
+    if (!parsed.success) {
+      const errors = parsed.error.flatten().fieldErrors;
+      const errorMessage = Object.values(errors).flat().join(", ");
+      console.error("Error de validación en registro:", errors);
+      return NextResponse.json({ error: errorMessage || "Datos inválidos" }, { status: 400 });
+    }
 
-  const { email, password, name, username, birthDate, acceptTerms, referralCode } = parsed.data;
-
-  // Validar edad (mayor de 18 años)
-  const today = new Date();
-  const birth = new Date(birthDate);
-  const age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate()) ? age - 1 : age;
-  
-  if (actualAge < 18) {
-    return NextResponse.json({ error: "Debes ser mayor de 18 años para registrarte" }, { status: 400 });
-  }
+  const { email, password, name, username, documentId, acceptTerms, referralCode } = parsed.data;
 
   // Validar aceptación de términos
   if (!acceptTerms) {
     return NextResponse.json({ error: "Debes aceptar los términos y condiciones" }, { status: 400 });
   }
+
+  // Validaciones estrictas de unicidad
+  const cleanUsername = username.trim().toLowerCase();
+  const cleanDocumentId = documentId.trim();
 
   // Verificar email único
   const existingEmail = await prisma.user.findUnique({ where: { email } });
@@ -45,13 +42,35 @@ export async function POST(request: Request) {
   }
 
   // Verificar username único
-  const cleanUsername = username.trim().toLowerCase();
   const existingUsername = await prisma.user.findUnique({ where: { username: cleanUsername } });
   if (existingUsername) {
     return NextResponse.json({ error: "Este nombre de usuario ya está en uso. Por favor, elige otro." }, { status: 409 });
   }
 
+  // Verificar documentId único
+  const existingDocumentId = await prisma.user.findUnique({ where: { documentId: cleanDocumentId } });
+  if (existingDocumentId) {
+    return NextResponse.json({ error: "Este ID ya está registrado" }, { status: 409 });
+  }
+
   const passwordHash = await bcrypt.hash(password, 10);
+
+  // Extraer tipo y número del documentId (formato: "V-12345678" o "E-12345678")
+  let nationalIdType: "V" | "E" = "V";
+  let nationalId: string = "";
+  
+  if (cleanDocumentId.includes("-")) {
+    const parts = cleanDocumentId.split("-");
+    if (parts.length >= 2) {
+      nationalIdType = (parts[0] === "E" ? "E" : "V") as "V" | "E";
+      nationalId = parts.slice(1).join(""); // En caso de que haya más de un guión
+    } else {
+      nationalId = cleanDocumentId;
+    }
+  } else {
+    // Si no tiene guión, asumir que es solo el número y tipo V por defecto
+    nationalId = cleanDocumentId;
+  }
 
   // Buscar link de referido si existe
   let referralLinkId: string | null = null;
@@ -70,7 +89,9 @@ export async function POST(request: Request) {
       passwordHash,
       name,
       username: cleanUsername,
-      birthDate: new Date(birthDate),
+      documentId: cleanDocumentId,
+      nationalId: nationalId, // Guardar solo el número
+      nationalIdType: nationalIdType, // Guardar el tipo (V o E)
       role: "USER"
     }
   });
@@ -150,10 +171,43 @@ export async function POST(request: Request) {
   // Enviar email de verificación
   await sendEmailVerificationEmail(user.email, verificationToken);
 
-  return NextResponse.json({ 
-    id: user.id, 
-    email: user.email,
-    message: "Registro exitoso. Por favor verifica tu email." 
-  }, { status: 201 });
+    return NextResponse.json({ 
+      id: user.id, 
+      email: user.email,
+      message: "Registro exitoso. Por favor verifica tu email." 
+    }, { status: 201 });
+  } catch (error) {
+    console.error("Error en registro:", error);
+    
+    // Si es un error de Prisma, dar un mensaje más amigable
+    if (error && typeof error === 'object' && 'code' in error) {
+      const prismaError = error as { code: string; meta?: any };
+      
+      if (prismaError.code === 'P2002') {
+        // Violación de constraint único
+        const target = prismaError.meta?.target;
+        if (Array.isArray(target)) {
+          if (target.includes('email')) {
+            return NextResponse.json({ error: "Este correo ya está registrado" }, { status: 409 });
+          }
+          if (target.includes('username')) {
+            return NextResponse.json({ error: "Este nombre de usuario ya está en uso" }, { status: 409 });
+          }
+          if (target.includes('documentId')) {
+            return NextResponse.json({ error: "Este ID ya está registrado" }, { status: 409 });
+          }
+        }
+        return NextResponse.json({ error: "Los datos proporcionados ya están en uso" }, { status: 409 });
+      }
+      
+      if (prismaError.code === 'P2022') {
+        return NextResponse.json({ error: "Error de base de datos. Por favor contacta al administrador." }, { status: 500 });
+      }
+    }
+    
+    // Error genérico
+    const errorMessage = error instanceof Error ? error.message : "Error interno del servidor";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
 }
 

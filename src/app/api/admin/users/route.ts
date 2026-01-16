@@ -77,7 +77,7 @@ export async function GET(request: Request) {
         id: true,
         name: true,
         email: true,
-        birthDate: true,
+        documentId: true,
         phoneNumber: true,
         nationalId: true,
         nationalIdType: true,

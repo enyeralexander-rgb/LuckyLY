@@ -41,32 +41,32 @@ async function main() {
   // Crear 5 usuarios de prueba de cada tipo
   const testUsers = [
     // 5 usuarios USER (clientes)
-    { email: "cliente1@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Uno", username: "cliente1", birthDate: new Date("1995-01-15") },
-    { email: "cliente2@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Dos", username: "cliente2", birthDate: new Date("1996-05-22") },
-    { email: "cliente3@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Tres", username: "cliente3", birthDate: new Date("1997-08-30") },
-    { email: "cliente4@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Cuatro", username: "cliente4", birthDate: new Date("1998-11-12") },
-    { email: "cliente5@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Cinco", username: "cliente5", birthDate: new Date("1999-02-28") },
+    { email: "cliente1@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Uno", username: "cliente1", documentId: "V-12345678" },
+    { email: "cliente2@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Dos", username: "cliente2", documentId: "V-12345679" },
+    { email: "cliente3@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Tres", username: "cliente3", documentId: "V-12345680" },
+    { email: "cliente4@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Cuatro", username: "cliente4", documentId: "V-12345681" },
+    { email: "cliente5@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Cinco", username: "cliente5", documentId: "V-12345682" },
     
     // 5 usuarios AGENT
-    { email: "agent1@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Uno", username: "agent1", birthDate: new Date("1990-03-15") },
-    { email: "agent2@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Dos", username: "agent2", birthDate: new Date("1991-06-20") },
-    { email: "agent3@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Tres", username: "agent3", birthDate: new Date("1992-09-10") },
-    { email: "agent4@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Cuatro", username: "agent4", birthDate: new Date("1993-12-25") },
-    { email: "agent5@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Cinco", username: "agent5", birthDate: new Date("1994-04-05") },
+    { email: "agent1@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Uno", username: "agent1", documentId: "V-22345678" },
+    { email: "agent2@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Dos", username: "agent2", documentId: "V-22345679" },
+    { email: "agent3@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Tres", username: "agent3", documentId: "V-22345680" },
+    { email: "agent4@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Cuatro", username: "agent4", documentId: "V-22345681" },
+    { email: "agent5@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Cinco", username: "agent5", documentId: "V-22345682" },
     
     // 5 usuarios SUPERADMIN
-    { email: "superadmin1@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Uno", username: "superadmin1", birthDate: new Date("1985-01-15") },
-    { email: "superadmin2@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Dos", username: "superadmin2", birthDate: new Date("1986-05-22") },
-    { email: "superadmin3@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Tres", username: "superadmin3", birthDate: new Date("1987-08-30") },
-    { email: "superadmin4@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Cuatro", username: "superadmin4", birthDate: new Date("1988-11-12") },
-    { email: "superadmin5@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Cinco", username: "superadmin5", birthDate: new Date("1989-02-28") },
+    { email: "superadmin1@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Uno", username: "superadmin1", documentId: "V-32345678" },
+    { email: "superadmin2@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Dos", username: "superadmin2", documentId: "V-32345679" },
+    { email: "superadmin3@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Tres", username: "superadmin3", documentId: "V-32345680" },
+    { email: "superadmin4@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Cuatro", username: "superadmin4", documentId: "V-32345681" },
+    { email: "superadmin5@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Cinco", username: "superadmin5", documentId: "V-32345682" },
     
     // 5 usuarios MASTER
-    { email: "master1@test.com", password: "Master123!", role: Role.MASTER, name: "Master Uno", username: "master1", birthDate: new Date("1980-01-15") },
-    { email: "master2@test.com", password: "Master123!", role: Role.MASTER, name: "Master Dos", username: "master2", birthDate: new Date("1981-05-22") },
-    { email: "master3@test.com", password: "Master123!", role: Role.MASTER, name: "Master Tres", username: "master3", birthDate: new Date("1982-08-30") },
-    { email: "master4@test.com", password: "Master123!", role: Role.MASTER, name: "Master Cuatro", username: "master4", birthDate: new Date("1983-11-12") },
-    { email: "master5@test.com", password: "Master123!", role: Role.MASTER, name: "Master Cinco", username: "master5", birthDate: new Date("1984-02-28") }
+    { email: "master1@test.com", password: "Master123!", role: Role.MASTER, name: "Master Uno", username: "master1", documentId: "V-42345678" },
+    { email: "master2@test.com", password: "Master123!", role: Role.MASTER, name: "Master Dos", username: "master2", documentId: "V-42345679" },
+    { email: "master3@test.com", password: "Master123!", role: Role.MASTER, name: "Master Tres", username: "master3", documentId: "V-42345680" },
+    { email: "master4@test.com", password: "Master123!", role: Role.MASTER, name: "Master Cuatro", username: "master4", documentId: "V-42345681" },
+    { email: "master5@test.com", password: "Master123!", role: Role.MASTER, name: "Master Cinco", username: "master5", documentId: "V-42345682" }
   ];
 
   for (const u of testUsers) {
@@ -77,8 +77,8 @@ async function main() {
         passwordHash,
         name: u.name,
         username: u.username,
-        role: u.role,
-        birthDate: u.birthDate
+        documentId: u.documentId,
+        role: u.role
       }
     });
     console.log(`  ✅ ${u.role} creado: ${u.email} (username: ${u.username})`);

@@ -1,5 +1,4 @@
 "use client";
-import { NavBar } from "../../components/NavBar";
 import { Footer } from "../../components/Footer";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -114,7 +113,6 @@ export default function AllRafflesPage() {
 
   return (
     <>
-      <NavBar />
       <main className="container" style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
           <h1 style={{ margin: 0 }}>Todos los Sorteos Activos</h1>

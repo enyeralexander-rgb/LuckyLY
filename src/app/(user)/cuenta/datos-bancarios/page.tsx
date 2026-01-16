@@ -1,5 +1,4 @@
 "use client";
-import { NavBar } from "../../../../components/NavBar";
 import { AuthGuard } from "../../../../components/AuthGuard";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
@@ -11,6 +10,7 @@ type UserData = {
   id: string;
   name: string;
   email: string;
+  documentId: string | null;
   nationalId: string | null;
   nationalIdType: string | null;
   phoneNumber: string | null;
@@ -50,23 +50,11 @@ export default function DatosBancariosPage() {
             return;
           }
           setUserData(data);
-          // Extraer tipo y número de cédula si existe
-          let idType = "V";
-          let idNumber = "";
-          if (data.nationalId) {
-            if (data.nationalIdType) {
-              idType = data.nationalIdType;
-              idNumber = data.nationalId;
-            } else if (data.nationalId.startsWith("V-") || data.nationalId.startsWith("E-")) {
-              idType = data.nationalId.substring(0, 1);
-              idNumber = data.nationalId.substring(2);
-            } else {
-              idNumber = data.nationalId;
-            }
-          }
+          // El nationalId se deriva automáticamente del documentId en el backend
+          // Solo necesitamos mostrar los datos bancarios editables
           setFormData({
-            nationalIdType: data.nationalIdType || idType,
-            nationalId: idNumber,
+            nationalIdType: data.nationalIdType || "V",
+            nationalId: data.nationalId || "",
             bank: data.bank || "",
             phoneNumber: data.phoneNumber || ""
           });
@@ -82,15 +70,15 @@ export default function DatosBancariosPage() {
   async function handleSave() {
     if (!auth?.token || saving) return;
 
-    if (!formData.nationalIdType || !formData.nationalId || !formData.bank || !formData.phoneNumber) {
-      alert("Todos los campos son obligatorios");
+    if (!formData.bank || !formData.phoneNumber || formData.phoneNumber.trim().length < 11) {
+      alert("Todos los campos son obligatorios. El teléfono debe tener al menos 11 números.");
       return;
     }
 
     setSaving(true);
     try {
-      // Guardar solo el número de cédula (sin el prefijo V/E)
-      // El tipo se guarda por separado en nationalIdType
+      // El backend extrae automáticamente nationalId y nationalIdType del documentId
+      // Solo enviamos los campos editables: bank y phoneNumber
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: {
@@ -98,10 +86,8 @@ export default function DatosBancariosPage() {
           Authorization: `Bearer ${auth.token}`
         },
         body: JSON.stringify({
-          nationalId: formData.nationalId, // Solo números
-          nationalIdType: formData.nationalIdType, // V o E
           bank: formData.bank,
-          phoneNumber: formData.phoneNumber
+          phoneNumber: formData.phoneNumber.trim()
         })
       });
 
@@ -122,13 +108,14 @@ export default function DatosBancariosPage() {
   }
 
   function hasCompleteData(): boolean {
-    return !!(formData.nationalId && formData.bank && formData.phoneNumber);
+    // Solo validar bank y phoneNumber ya que documentId es readonly
+    // El teléfono debe tener mínimo 11 números
+    return !!(formData.bank && formData.phoneNumber && formData.phoneNumber.trim().length >= 11);
   }
 
   if (loading) {
     return (
       <AuthGuard requiredRole={["USER"]}>
-        <NavBar />
         <main className="container" style={{ paddingTop: "2rem" }}>
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         </main>
@@ -138,7 +125,6 @@ export default function DatosBancariosPage() {
 
   return (
     <AuthGuard requiredRole={["USER"]}>
-      <NavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
           <h1>DATOS BANCARIOS</h1>
@@ -164,45 +150,56 @@ export default function DatosBancariosPage() {
           <div style={{ display: "grid", gap: "1rem" }}>
             <div>
               <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontWeight: 600 }}>
+                Documento de Identidad *
+              </label>
+              <input
+                type="text"
+                value={userData?.documentId || ""}
+                disabled
+                readOnly
+                style={{
+                  width: "100%",
+                  padding: ".75rem",
+                  borderRadius: "8px",
+                  border: "1px solid #d4d4c4",
+                  background: "#e5e5e5",
+                  color: "#6b7280",
+                  fontSize: "1rem",
+                  cursor: "not-allowed"
+                }}
+              />
+              <small style={{ color: "#6b7280", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>
+                Este dato no se puede modificar. Fue registrado al crear tu cuenta.
+              </small>
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontWeight: 600 }}>
                 Cédula de Identidad *
               </label>
-              <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "0.5rem" }}>
-                <select
-                  value={formData.nationalIdType}
-                  onChange={(e) => setFormData({ ...formData, nationalIdType: e.target.value })}
-                  style={{
-                    padding: ".75rem",
-                    borderRadius: "8px",
-                    border: "1px solid #d4d4c4",
-                    background: "#F5F5E6",
-                    color: "#3E3E3C",
-                    fontSize: "1rem"
-                  }}
-                >
-                  <option value="V">V</option>
-                  <option value="E">E</option>
-                </select>
-                <input
-                  type="text"
-                  value={formData.nationalId}
-                  onChange={(e) => {
-                    // Solo permitir números
-                    const value = e.target.value.replace(/\D/g, "");
-                    setFormData({ ...formData, nationalId: value });
-                  }}
-                  placeholder="Solo números"
-                  maxLength={10}
-                  style={{
-                    width: "100%",
-                    padding: ".75rem",
-                    borderRadius: "8px",
-                    border: "1px solid #d4d4c4",
-                    background: "#F5F5E6",
-                    color: "#3E3E3C",
-                    fontSize: "1rem"
-                  }}
-                />
-              </div>
+              <input
+                type="text"
+                value={
+                  userData?.nationalId && userData?.nationalIdType
+                    ? `${userData.nationalIdType}-${userData.nationalId}`
+                    : userData?.nationalId || ""
+                }
+                disabled
+                readOnly
+                style={{
+                  width: "100%",
+                  padding: ".75rem",
+                  borderRadius: "8px",
+                  border: "1px solid #d4d4c4",
+                  background: "#e5e5e5",
+                  color: "#6b7280",
+                  fontSize: "1rem",
+                  cursor: "not-allowed"
+                }}
+              />
+              <small style={{ color: "#6b7280", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>
+                Este dato se deriva automáticamente del Documento de Identidad y no se puede modificar.
+              </small>
             </div>
 
             <div>
@@ -238,8 +235,12 @@ export default function DatosBancariosPage() {
               <input
                 type="text"
                 value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                placeholder="Ej: 0412-1234567"
+                onChange={(e) => {
+                  // Solo permitir números (sin mostrarlo visiblemente)
+                  const value = e.target.value.replace(/\D/g, "");
+                  setFormData({ ...formData, phoneNumber: value });
+                }}
+                placeholder="Ej: 04121234567"
                 style={{
                   width: "100%",
                   padding: ".75rem",
@@ -250,6 +251,9 @@ export default function DatosBancariosPage() {
                   fontSize: "1rem"
                 }}
               />
+              <small style={{ color: "#6b7280", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>
+                Solo números (sin guiones ni espacios)
+              </small>
             </div>
           </div>
 

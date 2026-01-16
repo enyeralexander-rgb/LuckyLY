@@ -317,6 +317,9 @@ export async function GET(request: Request) {
         id: user.id,
         name: user.name,
         email: user.email,
+        documentId: user.documentId,
+        nationalId: user.nationalId,
+        nationalIdType: user.nationalIdType,
         totalSpent: user.tickets.reduce((sum, t) => sum + Number(t.totalPaid), 0),
         purchaseCount: user.tickets.length
       })).sort((a, b) => b.totalSpent - a.totalSpent);
