@@ -112,6 +112,17 @@ export async function PUT(request: Request) {
       }
     });
 
+    // Crear notificación de actualización de perfil
+    await prisma.notification.create({
+      data: {
+        userId: auth.userId,
+        type: "ACCOUNT_UPDATED",
+        title: "Datos bancarios actualizados",
+        message: "Tus datos bancarios han sido actualizados exitosamente. Podrás recibir pagos de premios con esta información.",
+        read: false
+      }
+    });
+
     return NextResponse.json(user);
   } catch (err) {
     if (err instanceof AuthError) {

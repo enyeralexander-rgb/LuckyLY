@@ -171,6 +171,17 @@ export async function POST(request: Request) {
   // Enviar email de verificación
   await sendEmailVerificationEmail(user.email, verificationToken);
 
+  // Crear notificación de bienvenida
+  await prisma.notification.create({
+    data: {
+      userId: user.id,
+      type: "SYSTEM",
+      title: "¡Bienvenido a LuckyLY!",
+      message: `Hola ${name}, gracias por registrarte en LuckyLY. Estamos emocionados de tenerte con nosotros. No olvides verificar tu email para activar tu cuenta.`,
+      read: false
+    }
+  });
+
     return NextResponse.json({ 
       id: user.id, 
       email: user.email,
