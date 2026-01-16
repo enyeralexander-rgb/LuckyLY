@@ -10,7 +10,7 @@ type User = {
   id: string;
   name: string;
   email: string;
-  birthDate: string;
+  documentId: string;
   phoneNumber: string | null;
   nationalId: string | null;
   nationalIdType: string | null;
@@ -369,7 +369,7 @@ function DatosUsuariosPageContent() {
                   <tr style={{ borderBottom: "2px solid #d4d4c4", background: "#F5F5E6" }}>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>Nombre</th>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>Email</th>
-                    <th style={{ padding: ".75rem", textAlign: "left" }}>Fecha Nacimiento</th>
+                    <th style={{ padding: ".75rem", textAlign: "left" }}>ID</th>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>Cédula</th>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>Teléfono</th>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>Banco</th>
@@ -381,7 +381,7 @@ function DatosUsuariosPageContent() {
                     <tr key={user.id} style={{ borderBottom: "1px solid #d4d4c4" }}>
                       <td style={{ padding: ".75rem" }}>{user.name}</td>
                       <td style={{ padding: ".75rem" }}>{user.email}</td>
-                      <td style={{ padding: ".75rem" }}>{formatDate(user.birthDate)}</td>
+                      <td style={{ padding: ".75rem" }}>{user.documentId}</td>
                       <td style={{ padding: ".75rem" }}>
                         {user.nationalId 
                           ? `${user.nationalIdType || ""}${user.nationalIdType ? "-" : ""}${user.nationalId}` 

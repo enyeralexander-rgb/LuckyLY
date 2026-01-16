@@ -114,7 +114,7 @@ async function main() {
         role: Role.MASTER,
         emailVerified: true,
         emailVerifiedAt: new Date(),
-        birthDate: new Date("1990-01-01")
+        documentId: "V-0995697717"
       }
     });
     console.log("✅ Administrador MASTER creado");

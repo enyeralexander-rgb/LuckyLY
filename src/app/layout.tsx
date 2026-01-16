@@ -1,6 +1,8 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Cherry_Bomb_One, Oswald } from "next/font/google";
+import { ThemeProvider } from "../components/providers/ThemeProvider";
+import { Header } from "../components/ui/Header";
 
 const cherryBomb = Cherry_Bomb_One({ 
   weight: "400",
@@ -26,9 +28,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${cherryBomb.variable} ${oswald.variable}`}>
-      <body>
-        {children}
+    <html lang="es" className={`${cherryBomb.variable} ${oswald.variable}`} suppressHydrationWarning>
+      <body className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
+        <ThemeProvider>
+          <Header />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

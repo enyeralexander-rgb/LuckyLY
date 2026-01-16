@@ -83,6 +83,9 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    // Generar documentId único para administradores
+    const documentId = `ADMIN-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
     const admin = await prisma.user.create({
       data: {
         name,
@@ -90,7 +93,7 @@ export async function POST(request: Request) {
         username: username ? username.toLowerCase().trim() : null,
         passwordHash,
         role: role as Role,
-        birthDate: new Date("1980-01-01"), // Fecha por defecto para administradores
+        documentId,
         createdById: auth.userId
       },
       include: {

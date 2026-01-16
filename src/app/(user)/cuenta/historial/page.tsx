@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { NavBar } from "../../../../components/NavBar";
 import { AuthGuard } from "../../../../components/AuthGuard";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
@@ -94,7 +93,6 @@ export default function HistorialPage() {
   if (loading) {
     return (
       <AuthGuard requiredRole={["USER"]}>
-        <NavBar />
         <main className="container" style={{ paddingTop: "2rem" }}>
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         </main>
@@ -104,7 +102,6 @@ export default function HistorialPage() {
 
   return (
     <AuthGuard requiredRole={["USER"]}>
-      <NavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "1200px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
           <h1 style={{ margin: 0 }}>HISTORIAL</h1>

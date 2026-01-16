@@ -3,7 +3,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { setStoredAuth } from "../../../lib/clientAuth";
-import { NavBar } from "../../../components/NavBar";
 import { Footer } from "../../../components/Footer";
 
 export default function LoginPage() {
@@ -11,11 +10,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const router = useRouter();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
+    setEmailError(null);
+
+    // Validar formato de email antes de enviar
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      setEmailError("Formato de correo inválido");
+      return;
+    }
+
+    if (!password || password.length === 0) {
+      setMessage("La contraseña es requerida");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
@@ -60,27 +74,48 @@ export default function LoginPage() {
 
   return (
     <>
-      <NavBar />
       <main className="container" style={{ paddingTop: "3rem", paddingBottom: "3rem", maxWidth: "420px", minHeight: "calc(100vh - 200px)" }}>
         <div className="card" style={{ display: "grid", gap: "1rem" }}>
           <h1 style={{ margin: 0 }}>Ingresar</h1>
           <form style={{ display: "grid", gap: ".75rem" }} onSubmit={handleSubmit}>
             <label style={{ display: "grid", gap: ".35rem" }}>
-              <span>Email</span>
+              <span>Correo</span>
               <input
                 type="email"
                 name="email"
+                autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailError(null);
+                }}
+                onBlur={() => {
+                  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                  if (email && !emailRegex.test(email)) {
+                    setEmailError("Formato de correo inválido");
+                  } else {
+                    setEmailError(null);
+                  }
+                }}
+                style={{ 
+                  padding: ".75rem", 
+                  borderRadius: "8px", 
+                  border: emailError ? "2px solid #ef4444" : "1px solid #d4d4c4", 
+                  background: "#F5F5E6", 
+                  color: "#3E3E3C" 
+                }}
               />
+              {emailError && (
+                <small style={{ color: "#ef4444", fontSize: "0.75rem" }}>{emailError}</small>
+              )}
             </label>
             <label style={{ display: "grid", gap: ".35rem" }}>
               <span>Contraseña</span>
               <input
                 type="password"
                 name="password"
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

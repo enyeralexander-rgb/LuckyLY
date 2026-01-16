@@ -1,5 +1,4 @@
 "use client";
-import { NavBar } from "../../../../components/NavBar";
 import { AuthGuard } from "../../../../components/AuthGuard";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
@@ -276,7 +275,6 @@ export default function RaffleDetailPage({ params }: Props) {
   if (loading) {
     return (
       <AuthGuard>
-        <NavBar />
         <main className="container" style={{ paddingTop: "2rem" }}>
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         </main>
@@ -287,7 +285,6 @@ export default function RaffleDetailPage({ params }: Props) {
   if (!raffle) {
     return (
       <AuthGuard>
-        <NavBar />
         <main className="container" style={{ paddingTop: "2rem" }}>
           <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
             Sorteo no encontrado
@@ -306,7 +303,6 @@ export default function RaffleDetailPage({ params }: Props) {
 
   return (
     <AuthGuard requiredRole={["USER"]}>
-      <NavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "1200px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
