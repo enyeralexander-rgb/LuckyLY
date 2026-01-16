@@ -80,6 +80,123 @@ body {
   }
 }
 
+/* ===== DARK MODE THEME ===== */
+/* Variables para modo claro (por defecto) */
+body[data-theme="light"] {
+  --bg-primary: #e8f5eb;
+  --bg-secondary: #ffffff;
+  --bg-accent: #d0fdd7;
+  --text-primary: #1a5c2e;
+  --text-secondary: #2a8c4a;
+  --text-muted: #6b7280;
+  --border-color: #d0fdd7;
+  --button-primary: #2a8c4a;
+  --button-secondary: #64c27b;
+  --button-danger: #ef4444;
+  --footer-bg: #d0fdd7;
+  --footer-text: #1a5c2e;
+  --footer-link: #2a8c4a;
+}
+
+/* Variables para modo oscuro */
+body[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-accent: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-color: #475569;
+  --button-primary: #3b82f6;
+  --button-secondary: #60a5fa;
+  --button-danger: #ef4444;
+  --footer-bg: #1e293b;
+  --footer-text: #f1f5f9;
+  --footer-link: #60a5fa;
+}
+
+/* Aplicar variables de tema */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.footer-theme {
+  margin-top: 3rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--footer-bg);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.footer-text {
+  color: var(--footer-text);
+  transition: color 0.3s ease;
+}
+
+.footer-link {
+  color: var(--footer-link);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer-link:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.theme-toggle-button {
+  padding: 0.5rem 1rem;
+  background: var(--button-secondary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.25rem;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+.theme-toggle-button:hover {
+  transform: scale(1.1) rotate(15deg);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle-button:active {
+  transform: scale(0.95);
+}
+
+/* ===== MOBILE MENU AUTH BUTTONS ===== */
+.header-mobile-divider {
+  border-top: 2px solid #d0fdd7;
+  margin: 0.5rem 0;
+}
+
+.header-mobile-login,
+.header-mobile-register {
+  font-weight: 600;
+}
+
+.header-mobile-login {
+  background: rgba(42, 140, 74, 0.1);
+}
+
+.header-mobile-register {
+  background: rgba(42, 140, 74, 0.2);
+}
+
+.header-mobile-login:hover {
+  background: rgba(42, 140, 74, 0.2);
+}
+
+.header-mobile-register:hover {
+  background: rgba(42, 140, 74, 0.3);
+}
+
 /* Asegurar que el Hero no quede tapado y se muestre completo */
 header {
   position: relative;
