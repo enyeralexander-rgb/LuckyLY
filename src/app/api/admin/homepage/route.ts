@@ -50,6 +50,11 @@ export async function PUT(request: Request) {
     const auth = requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
     const body = await request.json();
 
+    console.log("📥 [Homepage API] Recibiendo actualización de configuración");
+    console.log("   heroOpacity:", body.heroOpacity);
+    console.log("   heroBlur:", body.heroBlur);
+    console.log("   heroOverlayOpacity:", body.heroOverlayOpacity);
+
     // Validar máximo 5 imágenes
     if (body.heroImages && Array.isArray(body.heroImages) && body.heroImages.length > 5) {
       return NextResponse.json({ error: "Máximo 5 imágenes permitidas" }, { status: 400 });
@@ -100,6 +105,11 @@ export async function PUT(request: Request) {
         where: { id: config.id },
         data: updateData
       });
+      console.log("✅ [Homepage API] Configuración actualizada exitosamente");
+      console.log("   ID:", config.id);
+      console.log("   heroOpacity guardado:", config.heroOpacity);
+      console.log("   heroBlur guardado:", config.heroBlur);
+      console.log("   heroOverlayOpacity guardado:", config.heroOverlayOpacity);
     } else {
       // Crear nueva configuración con valores por defecto
       config = await prisma.homePageConfig.create({
@@ -122,6 +132,7 @@ export async function PUT(request: Request) {
           updatedById: auth.userId
         }
       });
+      console.log("✅ [Homepage API] Nueva configuración creada exitosamente");
     }
 
     return NextResponse.json(config);

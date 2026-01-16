@@ -258,6 +258,7 @@ export function Hero() {
 
   return (
     <section 
+      className="hero-section-responsive"
       style={{ 
         position: "relative", 
         width: "100%", 

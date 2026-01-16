@@ -4,6 +4,7 @@ import { prisma } from "../../../../lib/prisma";
 
 export async function GET(request: Request) {
   try {
+    console.log("📤 [Public Homepage API] Solicitando configuración pública");
     const config = await prisma.homePageConfig.findFirst({
       orderBy: { updatedAt: "desc" },
       select: {
@@ -31,6 +32,13 @@ export async function GET(request: Request) {
         sectionVisibility: true
       }
     });
+
+    if (config) {
+      console.log("✅ [Public Homepage API] Configuración encontrada");
+      console.log("   heroOpacity:", config.heroOpacity);
+      console.log("   heroBlur:", config.heroBlur);
+      console.log("   heroOverlayOpacity:", config.heroOverlayOpacity);
+    }
 
     // Configuración por defecto si no existe
     if (!config) {

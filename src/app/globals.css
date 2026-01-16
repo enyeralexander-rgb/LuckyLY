@@ -49,6 +49,37 @@ body {
   overflow-x: hidden;
 }
 
+/* ===== HERO SECTION RESPONSIVE ===== */
+.hero-section-responsive {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Desktop - pantallas grandes */
+@media (min-width: 1024px) {
+  .hero-section-responsive {
+    min-height: calc(100vh - 80px);
+    height: calc(100vh - 80px);
+  }
+}
+
+/* Tablet - pantallas medianas */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hero-section-responsive {
+    min-height: 500px;
+    height: 60vh;
+  }
+}
+
+/* Mobile - pantallas pequeñas */
+@media (max-width: 767px) {
+  .hero-section-responsive {
+    min-height: 400px;
+    height: 50vh;
+  }
+}
+
 /* Asegurar que el Hero no quede tapado y se muestre completo */
 header {
   position: relative;

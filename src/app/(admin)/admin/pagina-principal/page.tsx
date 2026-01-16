@@ -535,7 +535,10 @@ function PaginaPrincipalContent() {
                   max="100"
                   step="1"
                   value={config.heroOpacity ?? 80}
-                  onChange={(e) => setConfig({ ...config, heroOpacity: parseInt(e.target.value) || 80 })}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setConfig({ ...config, heroOpacity: isNaN(val) ? 80 : val });
+                  }}
                   style={{ flex: 1 }}
                 />
                 <input
@@ -544,7 +547,10 @@ function PaginaPrincipalContent() {
                   max="100"
                   step="1"
                   value={config.heroOpacity ?? 80}
-                  onChange={(e) => setConfig({ ...config, heroOpacity: Math.max(0, Math.min(100, parseInt(e.target.value) || 80)) })}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setConfig({ ...config, heroOpacity: isNaN(val) ? 80 : Math.max(0, Math.min(100, val)) });
+                  }}
                   style={{ width: "80px", padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
                 />
                 <span style={{ color: "#6b7280", fontSize: "0.875rem", minWidth: "30px" }}>%</span>
@@ -571,7 +577,10 @@ function PaginaPrincipalContent() {
                   max="100"
                   step="1"
                   value={config.heroBlur ?? 0}
-                  onChange={(e) => setConfig({ ...config, heroBlur: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setConfig({ ...config, heroBlur: isNaN(val) ? 0 : val });
+                  }}
                   style={{ flex: 1 }}
                 />
                 <input
@@ -580,7 +589,10 @@ function PaginaPrincipalContent() {
                   max="100"
                   step="1"
                   value={config.heroBlur ?? 0}
-                  onChange={(e) => setConfig({ ...config, heroBlur: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setConfig({ ...config, heroBlur: isNaN(val) ? 0 : Math.max(0, Math.min(100, val)) });
+                  }}
                   style={{ width: "80px", padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
                 />
                 <span style={{ color: "#6b7280", fontSize: "0.875rem", minWidth: "30px" }}>%</span>
@@ -699,7 +711,10 @@ function PaginaPrincipalContent() {
                   max="100"
                   step="1"
                   value={config.heroOverlayOpacity ?? 70}
-                  onChange={(e) => setConfig({ ...config, heroOverlayOpacity: parseInt(e.target.value) || 70 })}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setConfig({ ...config, heroOverlayOpacity: isNaN(val) ? 70 : val });
+                  }}
                   style={{ flex: 1 }}
                 />
                 <input
@@ -708,7 +723,10 @@ function PaginaPrincipalContent() {
                   max="100"
                   step="1"
                   value={config.heroOverlayOpacity ?? 70}
-                  onChange={(e) => setConfig({ ...config, heroOverlayOpacity: Math.max(0, Math.min(100, parseInt(e.target.value) || 70)) })}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setConfig({ ...config, heroOverlayOpacity: isNaN(val) ? 70 : Math.max(0, Math.min(100, val)) });
+                  }}
                   style={{ width: "80px", padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
                 />
                 <span style={{ color: "#6b7280", fontSize: "0.875rem", minWidth: "30px" }}>%</span>
