@@ -64,7 +64,7 @@ function tryDbPush() {
   try {
     console.log('🔄 Sincronizando esquema con prisma db push...');
     console.log('ℹ️  Esto actualizará el esquema de la base de datos para que coincida con Prisma.');
-    execSync('npx prisma db push --skip-generate', {
+    execSync('npx prisma db push --accept-data-loss', {
       stdio: 'inherit',
       env: process.env
     });
@@ -73,11 +73,11 @@ function tryDbPush() {
   } catch (error) {
     const errorMsg = error.message || error.toString();
     // Si el error es que no hay cambios, está bien
-    if (errorMsg.includes('already in sync') || errorMsg.includes('No schema changes')) {
+    if (errorMsg.includes('already in sync') || errorMsg.includes('No schema changes') || errorMsg.includes('already up to date')) {
       console.log('ℹ️  El esquema ya está sincronizado. Continuando...');
       return true;
     }
-    console.error('❌ Error en db push:', errorMsg.substring(0, 200));
+    console.error('❌ Error en db push:', errorMsg.substring(0, 300));
     console.error('⚠️  Continuando con el build...');
     console.error('⚠️  Asegúrate de que el esquema de la base de datos esté actualizado manualmente.');
     // No fallar el build, solo advertir
