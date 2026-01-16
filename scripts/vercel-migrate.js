@@ -3,11 +3,14 @@
 /**
  * Script para aplicar migraciones en Vercel
  * Maneja el caso de base de datos existente (P3005) haciendo baseline automático
+ * También crea/actualiza el usuario MASTER automáticamente
  */
 
 import { execSync } from 'child_process';
 import { readdirSync } from 'fs';
 import { join } from 'path';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const MIGRATIONS_DIR = './prisma/migrations';
 
@@ -85,6 +88,64 @@ function tryDbPush() {
   }
 }
 
+async function createMasterUser() {
+  const prisma = new PrismaClient();
+  
+  try {
+    console.log('\n👤 Verificando/creando usuario MASTER...');
+    
+    const email = "enyeralexander@gmail.com";
+    const password = "0995697717";
+    const documentId = "V-0995697717";
+
+    const existingMaster = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    if (existingMaster) {
+      // Actualizar el usuario existente
+      await prisma.user.update({
+        where: { email },
+        data: {
+          passwordHash,
+          role: 'MASTER',
+          emailVerified: true,
+          emailVerifiedAt: new Date(),
+          suspended: false,
+          documentId: existingMaster.documentId || documentId
+        }
+      });
+      console.log('✅ Administrador MASTER actualizado');
+      console.log(`   Email: ${email}`);
+    } else {
+      // Crear nuevo administrador MASTER
+      await prisma.user.create({
+        data: {
+          email,
+          passwordHash,
+          name: "Administrador Master",
+          username: "master",
+          role: 'MASTER',
+          emailVerified: true,
+          emailVerifiedAt: new Date(),
+          documentId
+        }
+      });
+      console.log('✅ Administrador MASTER creado');
+      console.log(`   Email: ${email}`);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error al crear/actualizar usuario MASTER:', error.message);
+    return false;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 // Ejecutar
 const success = tryMigrateDeploy();
 
@@ -93,4 +154,16 @@ if (!success) {
   console.warn('⚠️  Asegúrate de aplicar las migraciones manualmente si es necesario.');
 }
 
-process.exit(0); // No fallar el build
+// Crear usuario MASTER
+createMasterUser()
+  .then((created) => {
+    if (!created) {
+      console.warn('⚠️  No se pudo crear el usuario MASTER automáticamente.');
+      console.warn('⚠️  Podrás crearlo manualmente visitando: /api/setup/create-master');
+    }
+    process.exit(0); // No fallar el build
+  })
+  .catch((error) => {
+    console.error('❌ Error fatal:', error);
+    process.exit(0); // No fallar el build incluso si falla
+  });
