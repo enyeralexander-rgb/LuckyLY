@@ -321,15 +321,14 @@ function ModificarAdminPageContent() {
             <select
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value as "AGENT" | "SUPERADMIN" | "CONTABLE" | "MASTER" })}
-              disabled={admin.role === "MASTER"}
               style={{
                 width: "100%",
                 padding: ".75rem",
                 borderRadius: "8px",
                 border: "1px solid #d4d4c4",
-                background: admin.role === "MASTER" ? "#e5e7eb" : "#F5F5E6",
+                background: "#F5F5E6",
                 color: "#3E3E3C",
-                cursor: admin.role === "MASTER" ? "not-allowed" : "pointer"
+                cursor: "pointer"
               }}
             >
               <option value="AGENT">Agente</option>
@@ -337,11 +336,6 @@ function ModificarAdminPageContent() {
               <option value="CONTABLE">Contable</option>
               <option value="MASTER">Master</option>
             </select>
-            {admin.role === "MASTER" && (
-              <div style={{ marginTop: ".5rem", fontSize: ".875rem", color: "#94a3b8" }}>
-                No se puede modificar el rol de un administrador MASTER
-              </div>
-            )}
           </div>
           <div>
             <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "#3E3E3C" }}>

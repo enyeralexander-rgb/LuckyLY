@@ -25,10 +25,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "El usuario no es un administrador" }, { status: 400 });
     }
 
-    // No permitir modificar MASTER
-    if (admin.role === Role.MASTER && admin.id !== auth.userId) {
-      return NextResponse.json({ error: "No se pueden modificar otros administradores MASTER" }, { status: 403 });
-    }
+    // Permitir modificar MASTER (solo otros MASTER pueden modificar MASTER)
+    // No hay restricción adicional, ya que solo MASTER puede acceder a esta ruta
 
     const updateData: any = {};
 
@@ -55,14 +53,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       }
     }
     if (role && role !== admin.role) {
-      // Validar que el rol sea válido
-      const validRoles: Role[] = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN];
+      // Validar que el rol sea válido (ahora permitir cambiar a MASTER)
+      const validRoles: Role[] = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER];
       if (!validRoles.includes(role as Role)) {
         return NextResponse.json({ error: "Rol inválido o no permitido" }, { status: 400 });
-      }
-      // No permitir cambiar a MASTER
-      if (role === Role.MASTER) {
-        return NextResponse.json({ error: "No se puede asignar el rol MASTER desde esta interfaz" }, { status: 403 });
       }
       updateData.role = role as Role;
     }
@@ -128,11 +122,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       return NextResponse.json({ error: "El usuario no es un administrador" }, { status: 400 });
     }
 
-    // No permitir eliminar MASTER
-    if (admin.role === Role.MASTER) {
-      return NextResponse.json({ error: "No se pueden eliminar administradores MASTER" }, { status: 403 });
-    }
-
+    // Permitir eliminar MASTER (solo otros MASTER pueden eliminar MASTER)
     // No permitir auto-eliminación
     if (admin.id === auth.userId) {
       return NextResponse.json({ error: "No puedes eliminar tu propia cuenta" }, { status: 400 });
