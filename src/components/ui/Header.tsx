@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { getStoredAuth, clearStoredAuth } from "../../lib/clientAuth";
 import { useRouter, usePathname } from "next/navigation";
+import NotificationBell from "./NotificationBell";
 
 type UserRole = "USER" | "AGENT" | "CONTABLE" | "SUPERADMIN" | "MASTER";
 
@@ -249,6 +250,9 @@ export function Header() {
               </>
             ) : (
               <div className="header-user-icon-container">
+                {/* Campana de notificaciones solo para usuarios (no admins) */}
+                {isClient && <NotificationBell />}
+                
                 <button
                   className="header-user-icon-button"
                   onClick={() => router.push(isAdmin ? "/admin" : "/cuenta")}

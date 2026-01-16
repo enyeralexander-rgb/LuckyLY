@@ -199,6 +199,7 @@ model Notification {
   data      Json? // Datos adicionales (ticketId, raffleId, etc.)
   read      Boolean          @default(false)
   createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
   readAt    DateTime?
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 

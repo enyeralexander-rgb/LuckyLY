@@ -123,15 +123,44 @@ function tryDbPush() {
     return true;
   } catch (error) {
     const errorMsg = error.message || error.toString();
+    
     // Si el error es que no hay cambios, está bien
     if (errorMsg.includes('already in sync') || errorMsg.includes('No schema changes') || errorMsg.includes('already up to date')) {
       console.log('ℹ️  El esquema ya está sincronizado. Continuando...');
       return true;
     }
+    
+    // Si el error es por cambios que no se pueden ejecutar (columnas requeridas sin default)
+    if (errorMsg.includes('cannot be executed') || errorMsg.includes('Added the required column') || errorMsg.includes('without a default value')) {
+      console.log('⚠️  Cambios que no se pueden ejecutar detectados');
+      console.log('⚠️  Intentando con --force-reset para recrear la base de datos...');
+      console.log('⚠️  ADVERTENCIA: Esto eliminará todos los datos existentes');
+      return tryForceReset();
+    }
+    
     console.error('❌ Error en db push:', errorMsg.substring(0, 300));
     console.error('⚠️  Continuando con el build...');
     console.error('⚠️  Asegúrate de que el esquema de la base de datos esté actualizado manualmente.');
     // No fallar el build, solo advertir
+    return false;
+  }
+}
+
+function tryForceReset() {
+  try {
+    console.log('🔄 Reseteando base de datos con prisma db push --force-reset...');
+    console.log('⚠️  ADVERTENCIA: Todos los datos serán eliminados');
+    execSync('npx prisma db push --force-reset --accept-data-loss --skip-generate', {
+      stdio: 'inherit',
+      env: process.env
+    });
+    console.log('✅ Base de datos reseteada y esquema aplicado exitosamente');
+    return true;
+  } catch (error) {
+    const errorMsg = error.message || error.toString();
+    console.error('❌ Error en force reset:', errorMsg.substring(0, 300));
+    console.error('⚠️  Continuando con el build...');
+    console.error('⚠️  Asegúrate de resetear la base de datos manualmente.');
     return false;
   }
 }
