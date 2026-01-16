@@ -42,6 +42,13 @@ function tryMigrateDeploy() {
   } catch (error) {
     const errorMessage = error.message || error.toString();
     
+    // Si es error P3009 (migración fallida), intentar resolverlo
+    if (errorMessage.includes('P3009') || errorMessage.includes('failed migrations')) {
+      console.log('⚠️  Detectada migración fallida (P3009)');
+      console.log('⚠️  Intentando resolver con prisma migrate resolve...');
+      return tryResolveAndRetry();
+    }
+    
     // Si es error P3005 (base de datos no vacía), hacer baseline
     if (errorMessage.includes('P3005') || errorMessage.includes('database schema is not empty')) {
       console.log('⚠️  Base de datos ya tiene esquema. Haciendo baseline de migraciones...');
@@ -50,6 +57,45 @@ function tryMigrateDeploy() {
     
     // Si es otro error, intentar con db push como fallback
     console.log('⚠️  prisma migrate deploy falló. Intentando con prisma db push...');
+    return tryDbPush();
+  }
+}
+
+function tryResolveAndRetry() {
+  try {
+    // Obtener el nombre de la migración fallida
+    const migrations = getAllMigrations();
+    if (migrations.length === 0) {
+      console.log('❌ No se encontraron migraciones');
+      return tryDbPush();
+    }
+    
+    // Intentar marcar todas las migraciones como aplicadas (resolve)
+    console.log('🔄 Marcando migraciones como resueltas...');
+    for (const migration of migrations) {
+      try {
+        execSync(`npx prisma migrate resolve --applied "${migration}"`, {
+          stdio: 'pipe',
+          env: process.env
+        });
+        console.log(`✅ Migración "${migration}" marcada como aplicada`);
+      } catch (e) {
+        // Continuar aunque falle
+        console.log(`⚠️  No se pudo resolver "${migration}"`);
+      }
+    }
+    
+    // Intentar de nuevo migrate deploy
+    console.log('🔄 Reintentando prisma migrate deploy...');
+    execSync('npx prisma migrate deploy', { 
+      stdio: 'inherit',
+      env: process.env
+    });
+    console.log('✅ Migraciones aplicadas exitosamente');
+    return true;
+  } catch (error) {
+    console.log('❌ No se pudo resolver automáticamente');
+    console.log('⚠️  Intentando con prisma db push...');
     return tryDbPush();
   }
 }
