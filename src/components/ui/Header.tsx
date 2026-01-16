@@ -300,6 +300,29 @@ export function Header() {
                   </Link>
                 );
               })}
+              
+              {/* Agregar Ingresar/Registrarse en móvil cuando no hay autenticación */}
+              {!auth && (
+                <>
+                  <div className="header-mobile-divider" />
+                  <Link
+                    href="/auth/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="header-mobile-item header-mobile-login"
+                  >
+                    <span>🔑</span>
+                    <span>Ingresar</span>
+                  </Link>
+                  <Link
+                    href="/auth/register"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="header-mobile-item header-mobile-register"
+                  >
+                    <span>📝</span>
+                    <span>Registrarse</span>
+                  </Link>
+                </>
+              )}
             </nav>
           )}
         </div>

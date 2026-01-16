@@ -58,6 +58,9 @@ function PaginaPrincipalContent() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<"mobile" | "tablet" | "desktop">("desktop");
+  const [uploading, setUploading] = useState(false);
+  const [selectedImageForDeletion, setSelectedImageForDeletion] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [config, setConfig] = useState<HomePageConfig>({
     heroImages: ["/images/ruleta-fortuna-hero.jpg"],
     heroAutoSlide: false,
@@ -254,6 +257,100 @@ function PaginaPrincipalContent() {
     setDraggedIndex(null);
   }
 
+  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file || !auth?.token) return;
+
+    // Validar tipo de archivo
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      alert("Tipo de archivo no permitido. Solo se permiten: JPG, PNG, GIF, WEBP");
+      return;
+    }
+
+    // Validar tamaño (máximo 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("El archivo es muy grande. Tamaño máximo: 5MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/admin/homepage/images/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${auth.token}`
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(`✅ Imagen subida exitosamente: ${data.name}`);
+        // Recargar imágenes disponibles
+        await loadAvailableImages();
+        // Limpiar input
+        event.target.value = "";
+      } else {
+        alert(`❌ Error: ${data.error || "No se pudo subir la imagen"}`);
+      }
+    } catch (err) {
+      console.error("Error al subir imagen:", err);
+      alert(`Error al subir la imagen: ${err instanceof Error ? err.message : "Error desconocido"}`);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleDeleteImage(imageUrl: string) {
+    if (!auth?.token) return;
+
+    // Verificar que la imagen no esté en uso en el carrusel
+    if (config.heroImages.includes(imageUrl)) {
+      alert("⚠️ No puedes eliminar una imagen que está en uso en el carrusel. Primero remuévela del carrusel.");
+      return;
+    }
+
+    const imageName = imageUrl.replace("/images/", "");
+    const confirmed = window.confirm(`¿Estás seguro de que quieres eliminar la imagen "${imageName}"?\n\nEsta acción no se puede deshacer.`);
+    
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setSelectedImageForDeletion(imageUrl);
+    try {
+      const res = await fetch("/api/admin/homepage/images/delete", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`
+        },
+        body: JSON.stringify({ imageUrl })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("✅ Imagen eliminada exitosamente");
+        // Recargar imágenes disponibles
+        await loadAvailableImages();
+      } else {
+        alert(`❌ Error: ${data.error || "No se pudo eliminar la imagen"}`);
+      }
+    } catch (err) {
+      console.error("Error al eliminar imagen:", err);
+      alert(`Error al eliminar la imagen: ${err instanceof Error ? err.message : "Error desconocido"}`);
+    } finally {
+      setDeleting(false);
+      setSelectedImageForDeletion(null);
+    }
+  }
+
   if (loading) {
     return (
       <AuthGuard requiredRole={["AGENT", "SUPERADMIN", "MASTER"]}>
@@ -346,12 +443,38 @@ function PaginaPrincipalContent() {
 
               {config.heroImages.length < 5 && (
                 <>
-                  <button
-                    onClick={() => setShowImageSelector(!showImageSelector)}
-                    style={{ padding: "0.75rem 1.5rem", background: "#2a8c4a", color: "#ffffff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}
-                  >
-                    {showImageSelector ? "✖ Cerrar Selector" : "📁 Seleccionar Imágenes"}
-                  </button>
+                  <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                    <button
+                      onClick={() => setShowImageSelector(!showImageSelector)}
+                      style={{ padding: "0.75rem 1.5rem", background: "#2a8c4a", color: "#ffffff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}
+                    >
+                      {showImageSelector ? "✖ Cerrar Selector" : "📁 Seleccionar Imágenes"}
+                    </button>
+                    
+                    <label
+                      htmlFor="file-upload"
+                      style={{ 
+                        padding: "0.75rem 1.5rem", 
+                        background: uploading ? "#6b7280" : "#3b82f6", 
+                        color: "#ffffff", 
+                        border: "none", 
+                        borderRadius: "8px", 
+                        cursor: uploading ? "not-allowed" : "pointer", 
+                        fontWeight: 600,
+                        display: "inline-block"
+                      }}
+                    >
+                      {uploading ? "⏳ Subiendo..." : "📤 Subir Archivo"}
+                    </label>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                      style={{ display: "none" }}
+                    />
+                  </div>
 
                   {showImageSelector && (
                     <div style={{ marginTop: "1rem", padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
@@ -360,35 +483,65 @@ function PaginaPrincipalContent() {
                         {availableImages.filter(img => img.type === "image").map((img) => (
                           <div
                             key={img.url}
-                            onClick={() => selectImage(img.url)}
                             style={{
-                              cursor: config.heroImages.includes(img.url) ? "not-allowed" : "pointer",
-                              opacity: config.heroImages.includes(img.url) ? 0.5 : 1,
+                              position: "relative",
                               padding: "0.5rem",
                               background: config.heroImages.includes(img.url) ? "#9ca3af" : "#fff",
                               borderRadius: "8px",
                               border: config.heroImages.includes(img.url) ? "2px solid #9ca3af" : "2px solid #d4d4c4",
                               transition: "all 0.2s"
                             }}
-                            onMouseEnter={(e) => {
-                              if (!config.heroImages.includes(img.url)) {
-                                e.currentTarget.style.borderColor = "#2a8c4a";
-                                e.currentTarget.style.transform = "scale(1.05)";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!config.heroImages.includes(img.url)) {
-                                e.currentTarget.style.borderColor = "#d4d4c4";
-                                e.currentTarget.style.transform = "scale(1)";
-                              }
-                            }}
                           >
-                            <div style={{ width: "100%", height: "100px", backgroundImage: `url(${img.url})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat", borderRadius: "4px", maxWidth: "100%" }} />
-                            <div style={{ fontSize: "0.75rem", color: "#1a5c2e", marginTop: "0.25rem", textAlign: "center", wordBreak: "break-all" }}>
-                              {img.name}
+                            <div 
+                              onClick={() => selectImage(img.url)}
+                              style={{
+                                cursor: config.heroImages.includes(img.url) ? "not-allowed" : "pointer",
+                                opacity: config.heroImages.includes(img.url) ? 0.5 : 1,
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!config.heroImages.includes(img.url)) {
+                                  e.currentTarget.parentElement!.style.borderColor = "#2a8c4a";
+                                  e.currentTarget.style.transform = "scale(1.05)";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!config.heroImages.includes(img.url)) {
+                                  e.currentTarget.parentElement!.style.borderColor = "#d4d4c4";
+                                  e.currentTarget.style.transform = "scale(1)";
+                                }
+                              }}
+                            >
+                              <div style={{ width: "100%", height: "100px", backgroundImage: `url(${img.url})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat", borderRadius: "4px", maxWidth: "100%" }} />
+                              <div style={{ fontSize: "0.75rem", color: "#1a5c2e", marginTop: "0.25rem", textAlign: "center", wordBreak: "break-all" }}>
+                                {img.name}
+                              </div>
+                              {config.heroImages.includes(img.url) && (
+                                <div style={{ fontSize: "0.75rem", color: "#6b7280", textAlign: "center", marginTop: "0.25rem" }}>✓ Seleccionada</div>
+                              )}
                             </div>
-                            {config.heroImages.includes(img.url) && (
-                              <div style={{ fontSize: "0.75rem", color: "#6b7280", textAlign: "center", marginTop: "0.25rem" }}>✓ Seleccionada</div>
+                            
+                            {!config.heroImages.includes(img.url) && (
+                              <button
+                                onClick={() => handleDeleteImage(img.url)}
+                                disabled={deleting && selectedImageForDeletion === img.url}
+                                style={{
+                                  position: "absolute",
+                                  top: "0.5rem",
+                                  right: "0.5rem",
+                                  padding: "0.25rem 0.5rem",
+                                  background: (deleting && selectedImageForDeletion === img.url) ? "#6b7280" : "#ef4444",
+                                  color: "#fff",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  cursor: (deleting && selectedImageForDeletion === img.url) ? "not-allowed" : "pointer",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 600,
+                                  zIndex: 10
+                                }}
+                                title="Borrar imagen"
+                              >
+                                {(deleting && selectedImageForDeletion === img.url) ? "..." : "🗑️"}
+                              </button>
                             )}
                           </div>
                         ))}
