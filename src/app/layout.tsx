@@ -15,7 +15,7 @@ const oswald = Oswald({
 });
 
 export const metadata: Metadata = {
-  title: "audio",
+  title: "LuckyLY",
   description: "Plataforma de sorteos con ruleta, recargas y panel administrativo",
   icons: {
     icon: "/images/LuckyLy-Isotipo.png",
