@@ -102,12 +102,15 @@ export function Hero() {
             heroAutoSlideMode: data.heroAutoSlideMode || "linear",
             heroAutoSlideInterval: data.heroAutoSlideInterval || 5000,
             heroScrollFade: data.heroScrollFade ?? true,
-            heroOpacity: data.heroOpacity !== undefined ? data.heroOpacity : 0.8,
-            heroBlur: data.heroBlur !== undefined ? data.heroBlur : 4.0,
+            // Convertir de formato base de datos (0-1) a formato del componente (0-100%)
+            heroOpacity: data.heroOpacity !== undefined ? (data.heroOpacity > 1 ? data.heroOpacity : data.heroOpacity * 100) : 80,
+            // Convertir de formato base de datos (0-20px) a formato del componente (0-100%)
+            heroBlur: data.heroBlur !== undefined ? (data.heroBlur > 20 ? data.heroBlur : data.heroBlur * 5) : 0,
             heroTextColor: data.heroTextColor || null,
             heroSubtitleColor: data.heroSubtitleColor || null,
             heroOverlayColor: data.heroOverlayColor || null,
-            heroOverlayOpacity: data.heroOverlayOpacity !== undefined ? data.heroOverlayOpacity : 0.7,
+            // Convertir de formato base de datos (0-1) a formato del componente (0-100%)
+            heroOverlayOpacity: data.heroOverlayOpacity !== undefined ? (data.heroOverlayOpacity > 1 ? data.heroOverlayOpacity : data.heroOverlayOpacity * 100) : 70,
             heroImageSize: data.heroImageSize || "contain"
           });
         }
