@@ -10,6 +10,8 @@ import { execSync } from 'child_process';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 
 const MIGRATIONS_DIR = './prisma/migrations';
@@ -89,7 +91,8 @@ function tryDbPush() {
 }
 
 async function createMasterUser() {
-  const prisma = new PrismaClient();
+  let prisma;
+  let pool;
   
   try {
     console.log('\n👤 Verificando/creando usuario MASTER...');
@@ -97,6 +100,17 @@ async function createMasterUser() {
     const email = "enyeralexander@gmail.com";
     const password = "0995697717";
     const documentId = "V-0995697717";
+
+    // Configurar Prisma Client con adaptador para Prisma 7
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      console.error('❌ DATABASE_URL no está definida');
+      return false;
+    }
+
+    pool = new Pool({ connectionString: databaseUrl });
+    const adapter = new PrismaPg(pool);
+    prisma = new PrismaClient({ adapter });
 
     const existingMaster = await prisma.user.findUnique({
       where: { email }
@@ -142,7 +156,12 @@ async function createMasterUser() {
     console.error('❌ Error al crear/actualizar usuario MASTER:', error.message);
     return false;
   } finally {
-    await prisma.$disconnect();
+    if (prisma) {
+      await prisma.$disconnect();
+    }
+    if (pool) {
+      await pool.end();
+    }
   }
 }
 
