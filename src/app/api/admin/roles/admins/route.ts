@@ -63,15 +63,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
     }
 
-    // Validar que el rol sea válido (no permitir crear MASTER desde API)
-    const validRoles: Role[] = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN];
+    // Validar que el rol sea válido (ahora permitir crear MASTER)
+    const validRoles: Role[] = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER];
     if (!validRoles.includes(role as Role)) {
       return NextResponse.json({ error: "Rol inválido" }, { status: 400 });
-    }
-
-    // No permitir crear MASTER desde la API (solo manualmente)
-    if (role === Role.MASTER) {
-      return NextResponse.json({ error: "No se pueden crear administradores MASTER desde esta interfaz" }, { status: 403 });
     }
 
     const existing = await prisma.user.findUnique({ where: { email } });
