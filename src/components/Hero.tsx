@@ -46,39 +46,46 @@ export function Hero() {
   useEffect(() => {
     setMounted(true);
     
-    // Primero verificar si hay configuración de preview en sessionStorage
-    const previewConfigStr = sessionStorage.getItem("previewConfig");
-    if (previewConfigStr) {
-      try {
-        const previewConfig = JSON.parse(previewConfigStr);
-        if (previewConfig) {
-          setConfig({
-            heroImages: Array.isArray(previewConfig.heroImages) ? previewConfig.heroImages.slice(0, 5) : [previewConfig.heroImages || "/images/ruleta-fortuna-hero.jpg"].filter(Boolean).slice(0, 5),
-            heroTitle: previewConfig.heroTitle || "Participa en la ruleta en vivo",
-            heroSubtitle: previewConfig.heroSubtitle || "Cinco categorías: Números, Animales, Estados, Banderas y Objetos. Compra cupos, mira la ruleta y cobra tu premio.",
-            heroEffect: previewConfig.heroEffect || "fade",
-            heroEffectParams: previewConfig.heroEffectParams || {},
-            heroAutoSlide: previewConfig.heroAutoSlide ?? false,
-            heroAutoSlideMode: previewConfig.heroAutoSlideMode || "linear",
-            heroAutoSlideInterval: previewConfig.heroAutoSlideInterval || 5000,
-            heroScrollFade: previewConfig.heroScrollFade ?? true,
-            heroOpacity: previewConfig.heroOpacity !== undefined ? previewConfig.heroOpacity : 0.8,
-            heroBlur: previewConfig.heroBlur !== undefined ? previewConfig.heroBlur : 4.0,
-            heroTextColor: previewConfig.heroTextColor || null,
-            heroSubtitleColor: previewConfig.heroSubtitleColor || null,
-            heroOverlayColor: previewConfig.heroOverlayColor || null,
-            heroOverlayOpacity: previewConfig.heroOverlayOpacity !== undefined ? previewConfig.heroOverlayOpacity : 0.7,
-            heroImageSize: previewConfig.heroImageSize || "contain"
-          });
-          return; // No cargar desde API si hay preview config
+    // Solo usar sessionStorage si estamos en la ruta /preview
+    // En producción, siempre cargar desde la API pública para que los cambios se reflejen para todos
+    const isPreviewPage = typeof window !== 'undefined' && window.location.pathname === '/preview';
+    
+    if (isPreviewPage) {
+      // En modo preview, verificar si hay configuración de preview en sessionStorage
+      const previewConfigStr = sessionStorage.getItem("previewConfig");
+      if (previewConfigStr) {
+        try {
+          const previewConfig = JSON.parse(previewConfigStr);
+          if (previewConfig) {
+            setConfig({
+              heroImages: Array.isArray(previewConfig.heroImages) ? previewConfig.heroImages.slice(0, 5) : [previewConfig.heroImages || "/images/ruleta-fortuna-hero.jpg"].filter(Boolean).slice(0, 5),
+              heroTitle: previewConfig.heroTitle || "Participa en la ruleta en vivo",
+              heroSubtitle: previewConfig.heroSubtitle || "Cinco categorías: Números, Animales, Estados, Banderas y Signos Zodiacales. Compra cupos, mira la ruleta y cobra tu premio.",
+              heroEffect: previewConfig.heroEffect || "fade",
+              heroEffectParams: previewConfig.heroEffectParams || {},
+              heroAutoSlide: previewConfig.heroAutoSlide ?? false,
+              heroAutoSlideMode: previewConfig.heroAutoSlideMode || "linear",
+              heroAutoSlideInterval: previewConfig.heroAutoSlideInterval || 5000,
+              heroScrollFade: previewConfig.heroScrollFade ?? true,
+              heroOpacity: previewConfig.heroOpacity !== undefined ? previewConfig.heroOpacity : 0.8,
+              heroBlur: previewConfig.heroBlur !== undefined ? previewConfig.heroBlur : 4.0,
+              heroTextColor: previewConfig.heroTextColor || null,
+              heroSubtitleColor: previewConfig.heroSubtitleColor || null,
+              heroOverlayColor: previewConfig.heroOverlayColor || null,
+              heroOverlayOpacity: previewConfig.heroOverlayOpacity !== undefined ? previewConfig.heroOverlayOpacity : 0.7,
+              heroImageSize: previewConfig.heroImageSize || "contain"
+            });
+            return; // No cargar desde API si hay preview config
+          }
+        } catch (err) {
+          console.error("Error parsing preview config:", err);
         }
-      } catch (err) {
-        console.error("Error parsing preview config:", err);
       }
     }
     
-    // Si no hay preview config, cargar desde API
-    fetch("/api/public/homepage")
+    // En producción o si no hay preview config, cargar desde API pública
+    // Esto asegura que todos los usuarios vean los cambios guardados en el servidor
+    fetch("/api/public/homepage", { cache: 'no-store' })
       .then((r) => {
         if (!r.ok) return null;
         return r.json();
