@@ -33,22 +33,21 @@ export function AdminNavBar() {
   const canSeeHistory = isSuper || isMaster;
 
   return (
-    <header style={{ borderBottom: "1px solid #d4d4c4", background: "#f5f5e6" }}>
+    <header className="navbar-responsive" style={{ borderBottom: "1px solid #d4d4c4", background: "#f5f5e6" }}>
       <div className="container" style={{ display: "flex", alignItems: "center", gap: "1rem", justifyContent: "center", padding: "1rem 0" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: "2rem", width: "100%", maxWidth: "1200px" }}>
-          <div style={{ cursor: "pointer", display: "flex", alignItems: "center", height: "37.5px", justifySelf: "start" }} onClick={() => router.push("/admin")}>
+        <div className="navbar-grid">
+          <div className="navbar-logo" onClick={() => router.push("/admin")}>
             <img 
               src="/images/LuckyLy-Logo.png" 
-              alt="LuckyLY Logo" 
-              style={{ height: "100%", width: "auto", maxWidth: "150px", objectFit: "contain", display: "block" }}
+              alt="LuckyLY Logo"
             />
           </div>
-          <nav style={{ display: "flex", gap: "1rem", alignItems: "center", justifyContent: "center", gridColumn: "2" }}>
+          <nav className="navbar-nav">
             <Link href="/admin" style={{ padding: ".5rem 1rem", borderRadius: "8px", background: "#85BB65", color: "#ffffff", fontWeight: 700, textDecoration: "none", textTransform: "uppercase" }}>
               Dashboard
             </Link>
           </nav>
-          <div style={{ display: "flex", alignItems: "center", justifySelf: "end", gridColumn: "3" }}>
+          <div className="navbar-actions">
             <button
               onClick={logout}
               style={{ padding: ".5rem .75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#f5f5e6", color: "#3E3E3C", cursor: "pointer" }}

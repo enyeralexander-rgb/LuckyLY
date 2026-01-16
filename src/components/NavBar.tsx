@@ -74,22 +74,21 @@ export function NavBar() {
   }
 
   return (
-    <header style={{ borderBottom: "1px solid #d0fdd7", background: "#ffffff" }}>
+    <header className="navbar-responsive">
       <div className="container" style={{ display: "flex", alignItems: "center", gap: "1rem", justifyContent: "center", padding: "1rem 0" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: "2rem", width: "100%", maxWidth: "1200px" }}>
-          <div style={{ cursor: "pointer", display: "flex", alignItems: "center", height: "37.5px", justifySelf: "start" }} onClick={() => router.push("/")}>
+        <div className="navbar-grid">
+          <div className="navbar-logo" onClick={() => router.push("/")}>
             <img 
               src="/images/LuckyLy-Logo.png" 
-              alt="LuckyLY Logo" 
-              style={{ height: "100%", width: "auto", maxWidth: "150px", objectFit: "contain", display: "block" }}
+              alt="LuckyLY Logo"
             />
           </div>
-          <nav style={{ display: "flex", gap: "1.5rem", alignItems: "center", justifyContent: "center", gridColumn: "2" }}>
-            <Link href="/" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>Inicio</Link>
-            <Link href="/live" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>En Vivo</Link>
-            <Link href="/results" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>Resultados</Link>
+          <nav className="navbar-nav">
+            <Link href="/">Inicio</Link>
+            <Link href="/live">En Vivo</Link>
+            <Link href="/results">Resultados</Link>
           </nav>
-          <div style={{ display: "flex", gap: ".75rem", alignItems: "center", justifySelf: "end", gridColumn: "3" }}>
+          <div className="navbar-actions">
             {!mounted || !auth ? (
               <>
                 <Link href="/auth/login" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>Ingresar</Link>

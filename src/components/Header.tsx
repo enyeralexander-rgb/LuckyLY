@@ -10,6 +10,7 @@ export function Header() {
   const [userData, setUserData] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -50,32 +51,40 @@ export function Header() {
   }
 
   return (
-    <header style={{ 
-      background: "#ffffff", 
-      borderBottom: "1px solid #d0fdd7", 
-      padding: "1rem 0",
-      position: "relative",
-      zIndex: 100,
-      width: "100%"
-    }}>
-      <div className="container" style={{ display: "flex", alignItems: "center", gap: "1rem", justifyContent: "center", padding: "1rem 0" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: "2rem", width: "100%", maxWidth: "1200px" }}>
-          <div style={{ cursor: "pointer", display: "flex", alignItems: "center", height: "37.5px", justifySelf: "start" }} onClick={() => router.push("/")}>
+    <header className="header-responsive">
+      <div className="header-container">
+        <div className="header-grid">
+          <div className="header-logo" onClick={() => router.push("/")}>
             <img 
               src="/images/LuckyLy-Logo.png" 
-              alt="LuckyLY Logo" 
-              style={{ height: "100%", width: "auto", maxWidth: "150px", objectFit: "contain", display: "block" }}
+              alt="LuckyLY Logo"
+              style={{ maxWidth: "100%", height: "auto" }}
             />
           </div>
           
-          <nav style={{ display: "flex", gap: "1.5rem", alignItems: "center", justifyContent: "center", gridColumn: "2" }}>
-            <Link href="/" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>Inicio</Link>
-            <Link href="/raffles" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>Sorteos</Link>
-            <Link href="/live" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>En Vivo</Link>
-            <Link href="/results" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>Resultados</Link>
+          <nav className="header-nav">
+            <Link href="/">Inicio</Link>
+            <Link href="/raffles">Sorteos</Link>
+            <Link href="/live">En Vivo</Link>
+            <Link href="/results">Resultados</Link>
           </nav>
           
-          <div style={{ display: "flex", gap: ".75rem", alignItems: "center", justifySelf: "end", gridColumn: "3" }}>
+          <button
+            className="header-mobile-menu"
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            aria-label="Menú"
+          >
+            {mobileMenuOpen ? "✕" : "☰"}
+          </button>
+          
+          <nav className={`header-nav-mobile ${mobileMenuOpen ? 'show' : ''}`}>
+            <Link href="/" onClick={() => setMobileMenuOpen(false)}>Inicio</Link>
+            <Link href="/raffles" onClick={() => setMobileMenuOpen(false)}>Sorteos</Link>
+            <Link href="/live" onClick={() => setMobileMenuOpen(false)}>En Vivo</Link>
+            <Link href="/results" onClick={() => setMobileMenuOpen(false)}>Resultados</Link>
+          </nav>
+          
+          <div className="header-actions">
             {!auth ? (
               <>
                 <Link href="/auth/login" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>Ingresar</Link>
@@ -88,15 +97,8 @@ export function Header() {
             ) : (
               <div style={{ position: "relative" }}>
                 <button
+                  className="header-menu-button"
                   onClick={() => setMenuOpen((v) => !v)}
-                  style={{
-                    padding: ".5rem .75rem",
-                    borderRadius: "999px",
-                    border: "1px solid #d0fdd7",
-                    background: "#e8f5eb",
-                    color: "#1a5c2e",
-                    cursor: "pointer"
-                  }}
                 >
                   👤 {userData?.username || auth.user?.username || auth.user?.email?.split("@")[0] || "Usuario"}
                 </button>
