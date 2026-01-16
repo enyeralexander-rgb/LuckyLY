@@ -383,7 +383,7 @@ function PaginaPrincipalContent() {
                               }
                             }}
                           >
-                            <div style={{ width: "100%", height: "100px", backgroundImage: `url(${img.url})`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: "4px" }} />
+                            <div style={{ width: "100%", height: "100px", backgroundImage: `url(${img.url})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat", borderRadius: "4px", maxWidth: "100%" }} />
                             <div style={{ fontSize: "0.75rem", color: "#1a5c2e", marginTop: "0.25rem", textAlign: "center", wordBreak: "break-all" }}>
                               {img.name}
                             </div>

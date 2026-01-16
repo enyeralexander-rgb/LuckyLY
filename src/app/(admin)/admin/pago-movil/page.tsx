@@ -181,10 +181,12 @@ function PagoMovilPageContent() {
                   style={{ 
                     width: "100%", 
                     maxWidth: "300px", 
+                    height: "auto",
                     borderRadius: "8px", 
                     border: "1px solid #1f2937",
                     display: "block",
-                    margin: "0 auto"
+                    margin: "0 auto",
+                    objectFit: "contain"
                   }} 
                 />
               </div>

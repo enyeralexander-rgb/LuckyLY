@@ -209,6 +209,7 @@ export function Hero() {
       backgroundRepeat: "no-repeat",
       minHeight: "100%",
       height: "100%",
+      width: "100%",
       filter: blurValue > 0 ? `blur(${blurValue}px)` : "none",
       opacity: opacityValue,
       zIndex: 0,
@@ -313,6 +314,7 @@ export function Hero() {
                   backgroundRepeat: "no-repeat",
                   minHeight: "100%",
                   height: "100%",
+                  maxWidth: "100%",
                   filter: slideBlurValue > 0 ? `blur(${slideBlurValue}px)` : "none",
                   backgroundColor: imageSize === "contain" ? "#0a0a0a" : "transparent",
                   opacity: config.heroAutoSlide && slideMode === "fade" 
