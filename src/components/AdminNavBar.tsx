@@ -7,11 +7,27 @@ import { useEffect, useState } from "react";
 export function AdminNavBar() {
   const router = useRouter();
   const [role, setRole] = useState<string | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     const auth = getStoredAuth();
     setRole(auth?.user.role ?? null);
+    
+    // Cargar preferencia de dark mode
+    const savedTheme = localStorage.getItem("theme");
+    const isDark = savedTheme === "dark" || 
+                   (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    setDarkMode(isDark);
+    document.body.setAttribute("data-theme", isDark ? "dark" : "light");
   }, []);
+
+  function toggleDarkMode() {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    const theme = newMode ? "dark" : "light";
+    localStorage.setItem("theme", theme);
+    document.body.setAttribute("data-theme", theme);
+  }
 
   async function logout() {
     try {
@@ -33,7 +49,7 @@ export function AdminNavBar() {
   const canSeeHistory = isSuper || isMaster;
 
   return (
-    <header className="navbar-responsive" style={{ borderBottom: "1px solid #d4d4c4", background: "#f5f5e6" }}>
+    <header className="navbar-responsive">
       <div className="container" style={{ display: "flex", alignItems: "center", gap: "1rem", justifyContent: "center", padding: "1rem 0" }}>
         <div className="navbar-grid">
           <div className="navbar-logo" onClick={() => router.push("/admin")}>
@@ -43,14 +59,21 @@ export function AdminNavBar() {
             />
           </div>
           <nav className="navbar-nav">
-            <Link href="/admin" style={{ padding: ".5rem 1rem", borderRadius: "8px", background: "#85BB65", color: "#ffffff", fontWeight: 700, textDecoration: "none", textTransform: "uppercase" }}>
+            <Link href="/admin" style={{ padding: ".5rem 1rem", borderRadius: "8px", background: "var(--color-primary)", color: "#ffffff", fontWeight: 700, textDecoration: "none", textTransform: "uppercase" }}>
               Dashboard
             </Link>
           </nav>
           <div className="navbar-actions">
             <button
+              onClick={toggleDarkMode}
+              className="theme-toggle-button"
+              title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            >
+              {darkMode ? "☀️" : "🌙"}
+            </button>
+            <button
               onClick={logout}
-              style={{ padding: ".5rem .75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#f5f5e6", color: "#3E3E3C", cursor: "pointer" }}
+              className="admin-logout-button"
             >
               Cerrar sesión
             </button>
