@@ -1,10 +1,77 @@
 import bcrypt from "bcryptjs";
 import { PrismaClient, Role } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
-const prisma = new PrismaClient();
+const { Pool } = pg;
+
+// Prisma 7 con adapter para seeds
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL no está definida");
+}
+
+const pool = new Pool({
+  connectionString: databaseUrl,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false
+});
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("🧹 Limpiando todos los datos del sistema...");
+  console.log("👑 Creando usuario MASTER de producción...\n");
+
+  // Crear usuario MASTER específico (sin eliminar nada)
+  const masterEmail = "enyeralexander@gmail.com";
+  const masterPassword = "0995697717";
+  const masterDocumentId = "V-0995697717";
+  const masterNationalId = "0995697717";
+  const masterNationalIdType = "V";
+
+  try {
+    const existingMaster = await prisma.user.findUnique({
+      where: { email: masterEmail }
+    });
+
+    const passwordHash = await bcrypt.hash(masterPassword, 10);
+
+    if (existingMaster) {
+      await prisma.user.update({
+        where: { email: masterEmail },
+        data: {
+          passwordHash,
+          role: Role.MASTER,
+          emailVerified: true,
+          emailVerifiedAt: new Date(),
+          suspended: false,
+          documentId: existingMaster.documentId || masterDocumentId,
+          nationalId: existingMaster.nationalId || masterNationalId,
+          nationalIdType: existingMaster.nationalIdType || masterNationalIdType,
+        }
+      });
+      console.log("  ✅ Usuario MASTER actualizado:", masterEmail);
+    } else {
+      await prisma.user.create({
+        data: {
+          email: masterEmail,
+          passwordHash,
+          name: "Administrador Master",
+          username: "master",
+          role: Role.MASTER,
+          emailVerified: true,
+          emailVerifiedAt: new Date(),
+          documentId: masterDocumentId,
+          nationalId: masterNationalId,
+          nationalIdType: masterNationalIdType,
+        }
+      });
+      console.log("  ✅ Usuario MASTER creado:", masterEmail);
+    }
+  } catch (error) {
+    console.log("  ⚠️  Error al crear/actualizar MASTER (continuando):", error instanceof Error ? error.message : String(error));
+  }
+
+  console.log("\n🧹 Limpiando datos de prueba...\n");
 
   // Eliminar todas las notificaciones
   await prisma.notification.deleteMany({});

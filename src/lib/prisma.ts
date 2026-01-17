@@ -15,7 +15,11 @@ if (!databaseUrl) {
 }
 
 // Crear pool de conexiones y adapter
-const pool = new Pool({ connectionString: databaseUrl });
+// Configuración SSL explícita para evitar warnings de Node.js
+const pool = new Pool({ 
+  connectionString: databaseUrl,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false
+});
 const adapter = new PrismaPg(pool);
 
 export const prisma =

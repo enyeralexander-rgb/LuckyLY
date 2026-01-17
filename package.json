@@ -28,6 +28,12 @@
   "prisma": {
     "seed": "node --loader ts-node/esm prisma/seed.ts"
   },
+  "ts-node": {
+    "esm": true,
+    "compilerOptions": {
+      "module": "ESNext"
+    }
+  },
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",

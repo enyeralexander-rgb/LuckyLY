@@ -3,11 +3,10 @@
 /**
  * Script para aplicar schema de Prisma a PostgreSQL en Vercel
  * Usa prisma db push directamente (sin psql ni migraciones)
+ * Compatible con Prisma 7 + PrismaPg adapter
  */
 
 import { execSync } from 'child_process';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
 
 console.log('\n═══════════════════════════════════════════════════════');
 console.log('🐘 APLICAR SCHEMA DE PRISMA A POSTGRESQL');
@@ -32,7 +31,7 @@ async function applySchema() {
   console.log('🔄 Aplicando schema con prisma db push...\n');
   
   try {
-    // Primero intentar sin force-reset (preserva datos si existen)
+    // Intentar sin force-reset (preserva datos si existen)
     runCommand('npx prisma db push --accept-data-loss');
     console.log('✅ Schema aplicado exitosamente\n');
     return true;
@@ -51,71 +50,6 @@ async function applySchema() {
   }
 }
 
-async function createMasterUser() {
-  console.log('👤 Verificando/creando usuario MASTER...\n');
-  
-  const prisma = new PrismaClient();
-  
-  try {
-    const email = "enyeralexander@gmail.com";
-    const password = "0995697717";
-    const documentId = "V-0995697717";
-    const nationalId = "0995697717";
-    const nationalIdType = "V";
-    
-    // Verificar si existe
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-    
-    const passwordHash = await bcrypt.hash(password, 10);
-    
-    if (existingUser) {
-      // Actualizar usuario existente
-      await prisma.user.update({
-        where: { email },
-        data: {
-          passwordHash,
-          role: 'MASTER',
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          suspended: false,
-          documentId: existingUser.documentId || documentId,
-          nationalId: existingUser.nationalId || nationalId,
-          nationalIdType: existingUser.nationalIdType || nationalIdType,
-        }
-      });
-      console.log('✅ Usuario MASTER actualizado');
-      console.log(`   Email: ${email}\n`);
-    } else {
-      // Crear nuevo usuario
-      await prisma.user.create({
-        data: {
-          email,
-          passwordHash,
-          name: "Administrador Master",
-          username: "master",
-          role: 'MASTER',
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          documentId,
-          nationalId,
-          nationalIdType,
-        }
-      });
-      console.log('✅ Usuario MASTER creado');
-      console.log(`   Email: ${email}\n`);
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('❌ Error al crear/actualizar MASTER:', error.message);
-    console.log('⚠️  Puedes crearlo manualmente en: /api/setup/create-master\n');
-    return false;
-  } finally {
-    await prisma.$disconnect();
-  }
-}
 
 // Ejecutar
 async function main() {
@@ -127,14 +61,17 @@ async function main() {
       process.exit(0);
     }
     
-    console.log(`📍 Database: ${process.env.DATABASE_URL.split('@')[1]?.split('/')[0] || 'PostgreSQL'}\n`);
+    const dbHost = process.env.DATABASE_URL.split('@')[1]?.split('/')[0] || 'PostgreSQL';
+    console.log(`📍 Database: ${dbHost}\n`);
     
     // Aplicar schema
     const schemaApplied = await applySchema();
-    
+
     if (schemaApplied) {
-      // Crear usuario MASTER
-      await createMasterUser();
+      // Ejecutar seed para crear datos iniciales (incluyendo MASTER)
+      console.log('🌱 Ejecutando seed...\n');
+      runCommand('npx prisma db seed');
+      console.log('✅ Seed ejecutado\n');
     }
     
     console.log('═══════════════════════════════════════════════════════');
