@@ -35,11 +35,17 @@ const cleanDatabaseUrl = (url: string): string => {
 
 databaseUrl = cleanDatabaseUrl(databaseUrl);
 
-// Crear pool de conexiones y adapter
+// Crear pool de conexiones y adapter con configuración robusta
 // Configuración SSL moderna para evitar warnings de pg-connection-string
 const pool = new Pool({
   connectionString: databaseUrl,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
+  // Configuración robusta para evitar errores P1017 (ConnectionClosed)
+  max: 20, // Máximo de conexiones en el pool
+  min: 2,  // Mínimo de conexiones en el pool
+  idleTimeoutMillis: 30000, // Cerrar conexiones idle después de 30 segundos
+  connectionTimeoutMillis: 20000, // Timeout de conexión de 20 segundos
+  allowExitOnIdle: true, // Permitir salir cuando esté idle
 });
 const adapter = new PrismaPg(pool);
 
@@ -47,9 +53,14 @@ export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === "development" 
-      ? ["warn", "error"] 
+    log: process.env.NODE_ENV === "development"
+      ? ["warn", "error"]
       : ["error"],
+    // Configuración robusta para manejar reconexiones
+    transactionOptions: {
+      maxWait: 20000, // Máximo tiempo de espera para transacción
+      timeout: 10000, // Timeout de transacción
+    },
   });
 
 if (process.env.NODE_ENV !== "production") {

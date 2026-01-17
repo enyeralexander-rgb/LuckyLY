@@ -87,10 +87,22 @@ async function createMasterUserManually() {
   // Crear pool y adapter para Prisma 7
   const pool = new Pool({
     connectionString: databaseUrl,
-    ssl: { rejectUnauthorized: true }
+    ssl: { rejectUnauthorized: true },
+    // Configuración robusta para evitar errores P1017 (ConnectionClosed)
+    max: 20,
+    min: 2,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 20000,
+    allowExitOnIdle: true,
   });
   const adapter = new PrismaPg(pool);
-  const prisma = new PrismaClient({ adapter });
+  const prisma = new PrismaClient({
+    adapter,
+    transactionOptions: {
+      maxWait: 20000,
+      timeout: 10000,
+    },
+  });
 
   try {
     const email = "alexander@gmail.com";

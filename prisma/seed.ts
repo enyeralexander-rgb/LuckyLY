@@ -34,10 +34,22 @@ databaseUrl = cleanDatabaseUrl(databaseUrl);
 
 const pool = new Pool({
   connectionString: databaseUrl,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
+  // Configuración robusta para evitar errores P1017 (ConnectionClosed)
+  max: 20,
+  min: 2,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 20000,
+  allowExitOnIdle: true,
 });
 const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient({
+  adapter,
+  transactionOptions: {
+    maxWait: 20000,
+    timeout: 10000,
+  },
+});
 
 async function main() {
   console.log("🧹 Limpiando datos de prueba...\n");
