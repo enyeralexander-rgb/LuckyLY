@@ -66,7 +66,7 @@ async function createMasterUserManually() {
   // Crear pool y adapter para Prisma 7
   const pool = new Pool({
     connectionString: databaseUrl,
-    ssl: { rejectUnauthorized: true }
+    ssl: { rejectUnauthorized: false }
   });
   const adapter = new PrismaPg(pool);
   const prisma = new PrismaClient({ adapter });
