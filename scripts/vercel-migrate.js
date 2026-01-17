@@ -42,6 +42,13 @@ function tryMigrateDeploy() {
   } catch (error) {
     const errorMessage = error.message || error.toString();
     
+    // Si es error P3018 (migración fallida por conflicto de schema)
+    if (errorMessage.includes('P3018') || errorMessage.includes('already exists')) {
+      console.log('⚠️  Detectado conflicto de schema (enums o tablas ya existen)');
+      console.log('🔧  Base de datos parcialmente inicializada. Usando db push para sincronizar...');
+      return tryDbPushForceReset();
+    }
+    
     // Si es error P3009 (migración fallida), intentar resolverlo
     if (errorMessage.includes('P3009') || errorMessage.includes('failed migrations')) {
       console.log('⚠️  Detectada migración fallida (P3009)');
@@ -115,6 +122,29 @@ function tryBaseline() {
   } catch (error) {
     console.error('❌ Error en baseline:', error.message);
     return false;
+  }
+}
+
+function tryDbPushForceReset() {
+  try {
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('🔧 ESTRATEGIA: Reset completo y aplicar schema');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('⚠️  Base de datos parcialmente inicializada detectada');
+    console.log('🔄  Aplicando reset completo y sincronizando schema...\n');
+    
+    // Usar --force-reset para limpiar y aplicar schema completo
+    execSync('npx prisma db push --force-reset --accept-data-loss', {
+      stdio: 'inherit',
+      env: process.env
+    });
+    
+    console.log('\n✅ Schema sincronizado exitosamente con reset completo');
+    return true;
+  } catch (error) {
+    console.log('\n❌ Error al aplicar reset completo:', error.message);
+    console.log('⚠️  Intentando con db push sin reset...');
+    return tryDbPush();
   }
 }
 
