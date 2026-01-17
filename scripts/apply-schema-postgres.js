@@ -107,46 +107,58 @@ async function createMasterUserManually() {
     const now = new Date().toISOString();
 
     try {
+      // Insertar solo campos obligatorios primero, luego actualizar
       await prisma.$executeRaw`
         INSERT INTO "User" (
-          "email", "passwordHash", "name", "username", "documentId",
-          "nationalId", "nationalIdType", "role", "emailVerified",
-          "emailVerifiedAt", "suspended", "createdAt", "updatedAt"
+          "email", "passwordHash", "name", "role", "emailVerified", "createdAt", "updatedAt"
         ) VALUES (
           ${email}::text,
           ${passwordHash}::text,
           ${"Administrador Master"}::text,
-          ${"master"}::text,
-          ${documentId}::text,
-          ${nationalId}::text,
-          ${nationalIdType}::text,
-          ${"MASTER"}::text,
+          ${"MASTER"}::"Role",
           ${true}::boolean,
-          ${now}::timestamp,
-          ${false}::boolean,
           ${now}::timestamp,
           ${now}::timestamp
         )
         ON CONFLICT ("email")
         DO UPDATE SET
           "passwordHash" = EXCLUDED."passwordHash",
+          "name" = EXCLUDED."name",
           "role" = EXCLUDED."role",
           "emailVerified" = EXCLUDED."emailVerified",
-          "emailVerifiedAt" = EXCLUDED."emailVerifiedAt",
-          "suspended" = EXCLUDED."suspended",
           "updatedAt" = EXCLUDED."updatedAt"
       `;
+
+      // Actualizar campos adicionales si el usuario ya existe
+      await prisma.$executeRaw`
+        UPDATE "User"
+        SET
+          "documentId" = ${documentId}::text,
+          "nationalId" = ${nationalId}::text,
+          "nationalIdType" = ${nationalIdType}::text,
+          "emailVerifiedAt" = ${now}::timestamp,
+          "suspended" = ${false}::boolean
+        WHERE "email" = ${email}::text
+      `;
+
     } catch (sqlError) {
       console.error('❌ Error SQL detallado:', sqlError.message);
 
-      // Intentar con sintaxis alternativa si falla
-      console.log('⚠️  Intentando con sintaxis alternativa...');
-      await prisma.$executeRaw`
-        INSERT INTO "User" ("email", "passwordHash", "name", "username", "role", "emailVerified", "createdAt", "updatedAt")
-        VALUES (${email}, ${passwordHash}, ${"Administrador Master"}, ${"master"}, ${"MASTER"}, ${true}, ${now}::timestamp, ${now}::timestamp)
-        ON CONFLICT ("email")
-        DO UPDATE SET "passwordHash" = EXCLUDED."passwordHash"
-      `;
+      // Intentar con sintaxis mínima como último recurso
+      console.log('⚠️  Intentando con sintaxis mínima...');
+      try {
+        await prisma.$executeRaw`
+          INSERT INTO "User" ("email", "passwordHash", "name", "role", "emailVerified", "createdAt", "updatedAt")
+          VALUES (${email}, ${passwordHash}, ${"Administrador Master"}, ${"MASTER"}::"Role", ${true}, ${now}::timestamp, ${now}::timestamp)
+          ON CONFLICT ("email")
+          DO UPDATE SET
+            "passwordHash" = EXCLUDED."passwordHash",
+            "updatedAt" = ${now}::timestamp
+        `;
+      } catch (fallbackError) {
+        console.error('❌ Error incluso en fallback:', fallbackError.message);
+        throw fallbackError;
+      }
     }
 
     console.log('  ✅ Usuario MASTER insertado/actualizado:', email);
