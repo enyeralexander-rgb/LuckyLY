@@ -147,8 +147,8 @@ export default function TwoFactorAuthPage() {
       <AdminNavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-          <h1 style={{ margin: 0, color: var(--text-primary) }}>Autenticación de Dos Factores (2FA)</h1>
-          <Link href="/admin" style={{ color: var(--color-primary), textDecoration: "none", fontWeight: 600 }}>
+          <h1 style={{ margin: 0, color: "var(--text-primary)" }}>Autenticación de Dos Factores (2FA)</h1>
+          <Link href="/admin" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: 600 }}>
             ← Volver al Dashboard
           </Link>
         </div>
@@ -158,8 +158,8 @@ export default function TwoFactorAuthPage() {
         ) : setupStep === "enabled" || twoFactorAuth?.enabled ? (
           <div className="card" style={{ padding: "2rem" }}>
             <div style={{ padding: "1rem", background: "rgba(133, 187, 101, 0.1)", borderRadius: "8px", marginBottom: "1.5rem" }}>
-              <h3 style={{ margin: "0 0 0.5rem", color: var(--color-primary) }}>✅ 2FA Habilitado</h3>
-              <p style={{ margin: 0, color: var(--text-primary) }}>
+              <h3 style={{ margin: "0 0 0.5rem", color: "var(--color-primary)" }}>✅ 2FA Habilitado</h3>
+              <p style={{ margin: 0, color: "var(--text-primary)" }}>
                 Tu cuenta está protegida con autenticación de dos factores. Se te pedirá un código adicional al iniciar sesión.
               </p>
             </div>
@@ -181,21 +181,21 @@ export default function TwoFactorAuthPage() {
           </div>
         ) : setupStep === "qr" ? (
           <div className="card" style={{ padding: "2rem" }}>
-            <h2 style={{ margin: "0 0 1.5rem", color: var(--text-primary) }}>Configurar 2FA</h2>
-            <p style={{ margin: "0 0 1.5rem", color: var(--text-tertiary) }}>
+            <h2 style={{ margin: "0 0 1.5rem", color: "var(--text-primary)" }}>Configurar 2FA</h2>
+            <p style={{ margin: "0 0 1.5rem", color: "var(--text-tertiary)" }}>
               1. Escanea el código QR con tu app autenticadora (Google Authenticator, Authy, etc.)
             </p>
-            <p style={{ margin: "0 0 1.5rem", color: var(--text-tertiary) }}>
-              2. O ingresa manualmente este código: <strong style={{ fontFamily: "monospace", color: var(--text-primary) }}>{secret}</strong>
+            <p style={{ margin: "0 0 1.5rem", color: "var(--text-tertiary)" }}>
+              2. O ingresa manualmente este código: <strong style={{ fontFamily: "monospace", color: "var(--text-primary)" }}>{secret}</strong>
             </p>
 
             {qrCode && (
               <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-                <img src={qrCode} alt="QR Code" style={{ maxWidth: "300px", border: 1px solid var(--border-color), borderRadius: "8px" }} />
+                <img src={qrCode} alt="QR Code" style={{ maxWidth: "300px", border: "1px solid var(--border-color)", borderRadius: "8px" }} />
               </div>
             )}
 
-            <p style={{ margin: "0 0 1rem", color: var(--text-tertiary) }}>
+            <p style={{ margin: "0 0 1rem", color: "var(--text-tertiary)" }}>
               3. Ingresa el código de 6 dígitos que muestra tu app:
             </p>
 
@@ -210,9 +210,9 @@ export default function TwoFactorAuthPage() {
                   width: "100%",
                   padding: "0.75rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary),
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)",
                   fontSize: "1.5rem",
                   textAlign: "center",
                   letterSpacing: "0.5rem",
@@ -228,7 +228,7 @@ export default function TwoFactorAuthPage() {
                     flex: 1,
                     padding: "0.75rem 1.5rem",
                     background: verifying || verificationToken.length !== 6 ? "#6b7280" : "#85BB65",
-                    color: var(--text-primary),
+                    color: "var(--text-primary)",
                     border: "none",
                     borderRadius: "8px",
                     fontWeight: 700,
@@ -262,13 +262,13 @@ export default function TwoFactorAuthPage() {
         ) : (
           <div className="card" style={{ padding: "2rem" }}>
             <div style={{ marginBottom: "1.5rem" }}>
-              <h2 style={{ margin: "0 0 1rem", color: var(--text-primary) }}>¿Qué es 2FA?</h2>
-              <p style={{ margin: "0 0 1rem", color: var(--text-tertiary), lineHeight: 1.6 }}>
+              <h2 style={{ margin: "0 0 1rem", color: "var(--text-primary)" }}>¿Qué es 2FA?</h2>
+              <p style={{ margin: "0 0 1rem", color: "var(--text-tertiary)", lineHeight: 1.6 }}>
                 La autenticación de dos factores (2FA) añade una capa adicional de seguridad a tu cuenta. 
                 Cuando esté habilitado, necesitarás tu contraseña y un código temporal generado por una app autenticadora 
                 para iniciar sesión.
               </p>
-              <p style={{ margin: 0, color: var(--text-tertiary), lineHeight: 1.6 }}>
+              <p style={{ margin: 0, color: "var(--text-tertiary)", lineHeight: 1.6 }}>
                 <strong>Recomendado para:</strong> Todos los administradores que manejan información sensible o transacciones.
               </p>
             </div>
@@ -285,7 +285,7 @@ export default function TwoFactorAuthPage() {
               style={{
                 padding: "0.75rem 1.5rem",
                 background: settingUp ? "#6b7280" : "#85BB65",
-                color: var(--text-primary),
+                color: "var(--text-primary)",
                 border: "none",
                 borderRadius: "8px",
                 fontWeight: 700,

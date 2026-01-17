@@ -140,35 +140,35 @@ function CrearSorteosPageContent() {
     <>
       <AdminNavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
-        <h1 style={{ color: var(--text-primary) }}>Crear Sorteo</h1>
+        <h1 style={{ color: "var(--text-primary)" }}>Crear Sorteo</h1>
         <form onSubmit={handleSubmit} className="card" style={{ display: "grid", gap: "1.5rem" }}>
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: var(--text-primary) }}>Título del sorteo</label>
+            <label style={{ color: "var(--text-primary)" }}>Título del sorteo</label>
             <input
               type="text"
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: var(--text-primary) }}>Descripción (opcional)</label>
+            <label style={{ color: "var(--text-primary)" }}>Descripción (opcional)</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: var(--text-primary) }}>Tipo de ruleta</label>
+            <label style={{ color: "var(--text-primary)" }}>Tipo de ruleta</label>
             <select
               value={formData.type}
               onChange={(e) => handleTypeChange(e.target.value)}
-              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             >
               <option value="NUMBERS">NÚMEROS (10-100)</option>
               <option value="ANIMALS">ANIMALES (10-50)</option>
@@ -179,7 +179,7 @@ function CrearSorteosPageContent() {
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: var(--text-primary) }}>Precio por cupo (Bs.)</label>
+            <label style={{ color: "var(--text-primary)" }}>Precio por cupo (Bs.)</label>
             <input
               type="number"
               step="0.01"
@@ -187,12 +187,12 @@ function CrearSorteosPageContent() {
               required
               value={formData.pricePerSlot}
               onChange={(e) => setFormData({ ...formData, pricePerSlot: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: var(--text-primary) }}>Cantidad de cupos</label>
+            <label style={{ color: "var(--text-primary)" }}>Cantidad de cupos</label>
             <input
               type="number"
               min={formData.type === "STATES" || formData.type === "ZODIAC" ? (formData.type === "STATES" ? 24 : 12) : formData.type === "NUMBERS" || formData.type === "FLAGS" ? 10 : 10}
@@ -208,19 +208,19 @@ function CrearSorteosPageContent() {
               style={{ 
                 padding: ".75rem", 
                 borderRadius: "8px", 
-                border: 1px solid var(--border-color), 
+                border: "1px solid var(--border-color)", 
                 background: (formData.type === "STATES" || formData.type === "ZODIAC") ? "#e5e7eb" : "#F5F5E6", 
-                color: var(--text-primary),
+                color: "var(--text-primary)",
                 cursor: (formData.type === "STATES" || formData.type === "ZODIAC") ? "not-allowed" : "text"
               }}
             />
-            <small style={{ color: var(--text-primary), opacity: 0.7 }}>
+            <small style={{ color: "var(--text-primary)", opacity: 0.7 }}>
               {formData.type === "STATES" ? "24 estados fijos (automático)" : formData.type === "ZODIAC" ? "12 signos zodiacales fijos (automático)" : formData.type === "NUMBERS" || formData.type === "FLAGS" ? "Entre 10 y 100" : "Entre 10 y 50"}
             </small>
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: var(--text-primary) }}>Cantidad de ganadores (1-3)</label>
+            <label style={{ color: "var(--text-primary)" }}>Cantidad de ganadores (1-3)</label>
             <input
               type="number"
               min="1"
@@ -239,23 +239,23 @@ function CrearSorteosPageContent() {
                   handleWinnersCountChange(clampedValue);
                 }
               }}
-              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: var(--text-primary) }}>Fecha y hora de inicio</label>
+            <label style={{ color: "var(--text-primary)" }}>Fecha y hora de inicio</label>
             <input
               type="datetime-local"
               value={formData.startsAt}
               onChange={(e) => setFormData({ ...formData, startsAt: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
-            <small style={{ color: var(--text-primary), opacity: 0.7 }}>Modificable hasta agotar los cupos</small>
+            <small style={{ color: "var(--text-primary)", opacity: 0.7 }}>Modificable hasta agotar los cupos</small>
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: var(--text-primary) }}>Premios (Bs.) - {formData.winnersCount} premio(s) requerido(s)</label>
+            <label style={{ color: "var(--text-primary)" }}>Premios (Bs.) - {formData.winnersCount} premio(s) requerido(s)</label>
             {Array.from({ length: formData.winnersCount }, (_, idx) => {
               const prize = formData.prizes[idx] || "";
               const validation = validatePrizes();
@@ -263,7 +263,7 @@ function CrearSorteosPageContent() {
               
               return (
                 <div key={idx} style={{ display: "grid", gap: ".25rem" }}>
-                  <label style={{ color: var(--text-primary), fontSize: ".875rem", fontWeight: 600 }}>
+                  <label style={{ color: "var(--text-primary)", fontSize: ".875rem", fontWeight: 600 }}>
                     {idx === 0 ? "1°" : idx === 1 ? "2°" : "3°"} Ganador
                   </label>
                   <input
@@ -278,8 +278,8 @@ function CrearSorteosPageContent() {
                       padding: ".75rem", 
                       borderRadius: "8px", 
                       border: hasError ? "1px solid #ef4444" : "1px solid #d4d4c4", 
-                      background: var(--input-bg), 
-                      color: var(--text-primary) 
+                      background: "var(--input-bg)", 
+                      color: "var(--text-primary)" 
                     }}
                   />
                   {hasError && validation.error && (
@@ -288,7 +288,7 @@ function CrearSorteosPageContent() {
                 </div>
               );
             })}
-            <small style={{ color: var(--text-primary), opacity: 0.7 }}>
+            <small style={{ color: "var(--text-primary)", opacity: 0.7 }}>
               Los premios deben estar ordenados de mayor a menor (1° ganador ≥ 2° ganador ≥ 3° ganador)
             </small>
           </div>
@@ -305,7 +305,7 @@ function CrearSorteosPageContent() {
           <button
             type="submit"
             disabled={loading}
-            style={{ padding: ".75rem 1.5rem", borderRadius: "8px", border: "none", background: "#85BB65", color: var(--text-primary), fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}
+            style={{ padding: ".75rem 1.5rem", borderRadius: "8px", border: "none", background: "#85BB65", color: "var(--text-primary)", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}
           >
             {loading ? "Guardando..." : "Crear Sorteo"}
           </button>

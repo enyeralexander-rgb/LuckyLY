@@ -207,7 +207,7 @@ function EstadisticasPageContent() {
     <>
       <AdminNavBar />
       <main className="container" style={{ paddingTop: "2rem" }}>
-        <h1 style={{ color: var(--text-primary), marginBottom: "2rem" }}>Estadísticas</h1>
+        <h1 style={{ color: "var(--text-primary)", marginBottom: "2rem" }}>Estadísticas</h1>
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem", borderBottom: "2px solid #e5e7eb" }}>
@@ -316,13 +316,13 @@ function EstadisticasPageContent() {
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: var(--text-tertiary), marginBottom: "0.5rem" }}>Ingresos Totales</h3>
-                    <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: var(--text-primary) }}>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Ingresos Totales</h3>
+                    <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "var(--text-primary)" }}>
                       {incomeData.totalIncome.toFixed(2)} Bs.
                     </p>
                   </div>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: var(--text-tertiary), marginBottom: "0.5rem" }}>Premios Pagados</h3>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Premios Pagados</h3>
                     <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#ef4444" }}>
                       -{incomeData.totalPrizesPaid.toFixed(2)} Bs.
                     </p>
@@ -334,7 +334,7 @@ function EstadisticasPageContent() {
                     </p>
                   </div>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: var(--text-tertiary), marginBottom: "0.5rem" }}>Crecimiento Neto</h3>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Crecimiento Neto</h3>
                     <p
                       style={{
                         margin: 0,
@@ -402,19 +402,19 @@ function EstadisticasPageContent() {
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: var(--text-tertiary), marginBottom: "0.5rem" }}>Con Referido</h3>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Con Referido</h3>
                     <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#8b5cf6" }}>{referralsData.withReferral}</p>
                   </div>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: var(--text-tertiary), marginBottom: "0.5rem" }}>Sin Referido</h3>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Sin Referido</h3>
                     <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#10b981" }}>{referralsData.withoutReferral}</p>
                   </div>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: var(--text-tertiary), marginBottom: "0.5rem" }}>Total</h3>
-                    <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: var(--text-primary) }}>{referralsData.total}</p>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Total</h3>
+                    <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "var(--text-primary)" }}>{referralsData.total}</p>
                   </div>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: var(--text-tertiary), marginBottom: "0.5rem" }}>Crecimiento</h3>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Crecimiento</h3>
                     <p
                       style={{
                         margin: 0,
@@ -477,7 +477,7 @@ function EstadisticasPageContent() {
                           <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{index + 1}</td>
                           <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{user.name}</td>
                           <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{user.email}</td>
-                          <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "right", fontWeight: 600, color: var(--color-primary) }}>
+                          <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "right", fontWeight: 600, color: "var(--color-primary)" }}>
                             {user.totalSpent.toFixed(2)} Bs.
                           </td>
                           <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "center" }}>{user.purchaseCount}</td>
@@ -597,7 +597,7 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
             type="date"
             value={filters.startDate}
             onChange={(e) => handleFilterChange("startDate", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: 1px solid var(--border-color) }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
           />
         </div>
         <div>
@@ -606,7 +606,7 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
             type="date"
             value={filters.endDate}
             onChange={(e) => handleFilterChange("endDate", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: 1px solid var(--border-color) }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
           />
         </div>
         <div>
@@ -617,10 +617,10 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
               value={filters.userSearch}
               onChange={(e) => handleFilterChange("userSearch", e.target.value)}
               placeholder="Buscar por nombre o email..."
-              style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: 1px solid var(--border-color) }}
+              style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
             />
             {userSuggestions.length > 0 && (
-              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: var(--card-bg), border: 1px solid var(--border-color), borderRadius: "4px", marginTop: "0.25rem", maxHeight: "200px", overflowY: "auto", zIndex: 10, boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--card-bg)", border: "1px solid var(--border-color)", borderRadius: "4px", marginTop: "0.25rem", maxHeight: "200px", overflowY: "auto", zIndex: 10, boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
                 {userSuggestions.map((user) => (
                   <div
                     key={user.id}
@@ -634,7 +634,7 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
                     onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}
                   >
                     <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{user.name}</div>
-                    <div style={{ fontSize: "0.75rem", color: var(--text-tertiary) }}>{user.email}</div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>{user.email}</div>
                   </div>
                 ))}
               </div>
@@ -657,7 +657,7 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
           <select
             value={filters.paymentMethod}
             onChange={(e) => handleFilterChange("paymentMethod", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: 1px solid var(--border-color) }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
           >
             <option value="">Todos</option>
             <option value="BANESCO">Banesco</option>
@@ -703,7 +703,7 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
                     </td>
                     <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{payment.nombreUsuario}</td>
                     <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{payment.metodoPago}</td>
-                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "right", fontWeight: 600, color: var(--color-primary) }}>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "right", fontWeight: 600, color: "var(--color-primary)" }}>
                       {payment.monto.toFixed(2)} Bs.
                     </td>
                   </tr>
@@ -735,7 +735,7 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
           )}
         </>
       ) : (
-        <div style={{ padding: "2rem", textAlign: "center", color: var(--text-tertiary) }}>No hay pagos en el período seleccionado</div>
+        <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-tertiary)" }}>No hay pagos en el período seleccionado</div>
       )}
     </div>
   );
@@ -838,7 +838,7 @@ function ReferralList({ auth, period, customStartDate, customEndDate }: { auth: 
             type="date"
             value={filters.startDate}
             onChange={(e) => handleFilterChange("startDate", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: 1px solid var(--border-color) }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
           />
         </div>
         <div>
@@ -847,7 +847,7 @@ function ReferralList({ auth, period, customStartDate, customEndDate }: { auth: 
             type="date"
             value={filters.endDate}
             onChange={(e) => handleFilterChange("endDate", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: 1px solid var(--border-color) }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
           />
         </div>
         <div>
@@ -855,7 +855,7 @@ function ReferralList({ auth, period, customStartDate, customEndDate }: { auth: 
           <select
             value={filters.linkId}
             onChange={(e) => handleFilterChange("linkId", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: 1px solid var(--border-color) }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
           >
             <option value="">Todos</option>
             {links.map((link) => (
@@ -868,7 +868,7 @@ function ReferralList({ auth, period, customStartDate, customEndDate }: { auth: 
           <select
             value={filters.country}
             onChange={(e) => handleFilterChange("country", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: 1px solid var(--border-color) }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
           >
             <option value="all">Todos</option>
             <option value="">Sin país (N/A)</option>
@@ -943,7 +943,7 @@ function ReferralList({ auth, period, customStartDate, customEndDate }: { auth: 
           )}
         </>
       ) : (
-        <div style={{ padding: "2rem", textAlign: "center", color: var(--text-tertiary) }}>No hay referencias en el período seleccionado</div>
+        <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-tertiary)" }}>No hay referencias en el período seleccionado</div>
       )}
     </div>
   );

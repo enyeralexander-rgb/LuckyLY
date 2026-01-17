@@ -145,7 +145,7 @@ function ReferidosPageContent() {
       <AdminNavBar />
       <main className="container" style={{ paddingTop: "2rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-          <h1 style={{ color: var(--text-primary) }}>Referidos</h1>
+          <h1 style={{ color: "var(--text-primary)" }}>Referidos</h1>
           <button
             className="button"
             onClick={() => setShowCreateForm(!showCreateForm)}
@@ -192,10 +192,10 @@ function ReferidosPageContent() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
                   <div>
                     <h3 style={{ margin: 0, marginBottom: "0.5rem" }}>{link.name}</h3>
-                    <p style={{ margin: 0, color: var(--text-tertiary), fontSize: "0.875rem" }}>
+                    <p style={{ margin: 0, color: "var(--text-tertiary)", fontSize: "0.875rem" }}>
                       Creado por: {link.createdBy.name} ({link.createdBy.email})
                     </p>
-                    <p style={{ margin: "0.25rem 0 0", color: var(--text-tertiary), fontSize: "0.875rem" }}>
+                    <p style={{ margin: "0.25rem 0 0", color: "var(--text-tertiary)", fontSize: "0.875rem" }}>
                       Creado el: {formatDate(link.createdAt)}
                     </p>
                   </div>
@@ -210,20 +210,20 @@ function ReferidosPageContent() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
                   <div style={{ padding: "1rem", background: "#f3f4f6", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "0.875rem", color: var(--text-tertiary), marginBottom: "0.25rem" }}>Clicks</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>{link.clicks}</div>
+                    <div style={{ fontSize: "0.875rem", color: "var(--text-tertiary)", marginBottom: "0.25rem" }}>Clicks</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>{link.clicks}</div>
                   </div>
                   <div style={{ padding: "1rem", background: "#f3f4f6", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "0.875rem", color: var(--text-tertiary), marginBottom: "0.25rem" }}>Registros</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>{link.registrations}</div>
+                    <div style={{ fontSize: "0.875rem", color: "var(--text-tertiary)", marginBottom: "0.25rem" }}>Registros</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>{link.registrations}</div>
                   </div>
                   <div style={{ padding: "1rem", background: "#f3f4f6", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "0.875rem", color: var(--text-tertiary), marginBottom: "0.25rem" }}>Compras</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>{link.purchases}</div>
+                    <div style={{ fontSize: "0.875rem", color: "var(--text-tertiary)", marginBottom: "0.25rem" }}>Compras</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>{link.purchases}</div>
                   </div>
                   <div style={{ padding: "1rem", background: "#f3f4f6", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "0.875rem", color: var(--text-tertiary), marginBottom: "0.25rem" }}>Ingresos</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: 700, color: var(--color-primary) }}>
+                    <div style={{ fontSize: "0.875rem", color: "var(--text-tertiary)", marginBottom: "0.25rem" }}>Ingresos</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--color-primary)" }}>
                       {Number(link.revenue).toFixed(2)} Bs.
                     </div>
                   </div>
@@ -260,7 +260,7 @@ function ReferidosPageContent() {
                   <div style={{ marginTop: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid #e5e7eb" }}>
                     <h4 style={{ marginBottom: "1rem" }}>Historial de Visitas</h4>
                     {link.visits.length === 0 ? (
-                      <p style={{ color: var(--text-tertiary) }}>No hay visitas registradas</p>
+                      <p style={{ color: "var(--text-tertiary)" }}>No hay visitas registradas</p>
                     ) : (
                       <div style={{ maxHeight: "400px", overflowY: "auto" }}>
                         <table style={{ width: "100%", borderCollapse: "collapse" }}>

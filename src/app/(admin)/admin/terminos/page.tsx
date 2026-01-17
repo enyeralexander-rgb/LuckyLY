@@ -136,7 +136,7 @@ function TerminosPageContent() {
               style={{
                 padding: ".5rem 1rem",
                 borderRadius: "8px",
-                border: 1px solid var(--border-color),
+                border: "1px solid var(--border-color)",
                 background: showPreview ? "#85BB65" : "#F5F5E6",
                 color: showPreview ? "#fff" : "#3E3E3C",
                 cursor: "pointer",
@@ -172,51 +172,51 @@ function TerminosPageContent() {
               dangerouslySetInnerHTML={{ __html: content || "<p>No hay contenido para mostrar</p>" }}
               style={{
                 lineHeight: "1.6",
-                color: var(--text-primary)
+                color: "var(--text-primary)"
               }}
             />
           </div>
         ) : (
           <div className="card" style={{ display: "grid", gap: "1rem" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: ".5rem", padding: ".75rem", background: var(--input-bg), borderRadius: "8px", border: 1px solid var(--border-color) }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: ".5rem", padding: ".75rem", background: "var(--input-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
               <button
                 onClick={() => insertTag("h1")}
-                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: 1px solid var(--border-color), background: var(--card-bg), cursor: "pointer", fontSize: ".875rem" }}
+                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", cursor: "pointer", fontSize: ".875rem" }}
                 title="Título Principal"
               >
                 H1
               </button>
               <button
                 onClick={() => insertTag("h2")}
-                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: 1px solid var(--border-color), background: var(--card-bg), cursor: "pointer", fontSize: ".875rem" }}
+                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", cursor: "pointer", fontSize: ".875rem" }}
                 title="Subtítulo"
               >
                 H2
               </button>
               <button
                 onClick={() => insertTag("h3")}
-                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: 1px solid var(--border-color), background: var(--card-bg), cursor: "pointer", fontSize: ".875rem" }}
+                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", cursor: "pointer", fontSize: ".875rem" }}
                 title="Título Menor"
               >
                 H3
               </button>
               <button
                 onClick={() => insertTag("p")}
-                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: 1px solid var(--border-color), background: var(--card-bg), cursor: "pointer", fontSize: ".875rem" }}
+                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", cursor: "pointer", fontSize: ".875rem" }}
                 title="Párrafo"
               >
                 P
               </button>
               <button
                 onClick={() => insertTag("strong")}
-                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: 1px solid var(--border-color), background: var(--card-bg), cursor: "pointer", fontSize: ".875rem", fontWeight: 700 }}
+                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", cursor: "pointer", fontSize: ".875rem", fontWeight: 700 }}
                 title="Negrita"
               >
                 <strong>B</strong>
               </button>
               <button
                 onClick={() => insertTag("em")}
-                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: 1px solid var(--border-color), background: var(--card-bg), cursor: "pointer", fontSize: ".875rem", fontStyle: "italic" }}
+                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", cursor: "pointer", fontSize: ".875rem", fontStyle: "italic" }}
                 title="Cursiva"
               >
                 I
@@ -228,7 +228,7 @@ function TerminosPageContent() {
                     insertTag("img", url);
                   }
                 }}
-                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: 1px solid var(--border-color), background: var(--card-bg), cursor: "pointer", fontSize: ".875rem" }}
+                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", cursor: "pointer", fontSize: ".875rem" }}
                 title="Insertar Imagen"
               >
                 🖼️
@@ -240,28 +240,28 @@ function TerminosPageContent() {
                     insertTag("link", url);
                   }
                 }}
-                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: 1px solid var(--border-color), background: var(--card-bg), cursor: "pointer", fontSize: ".875rem" }}
+                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", cursor: "pointer", fontSize: ".875rem" }}
                 title="Insertar Enlace"
               >
                 🔗
               </button>
               <button
                 onClick={() => insertTag("ul")}
-                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: 1px solid var(--border-color), background: var(--card-bg), cursor: "pointer", fontSize: ".875rem" }}
+                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", cursor: "pointer", fontSize: ".875rem" }}
                 title="Lista con viñetas"
               >
                 • Lista
               </button>
               <button
                 onClick={() => insertTag("ol")}
-                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: 1px solid var(--border-color), background: var(--card-bg), cursor: "pointer", fontSize: ".875rem" }}
+                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", cursor: "pointer", fontSize: ".875rem" }}
                 title="Lista numerada"
               >
                 1. Lista
               </button>
               <button
                 onClick={() => insertTag("hr")}
-                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: 1px solid var(--border-color), background: var(--card-bg), cursor: "pointer", fontSize: ".875rem" }}
+                style={{ padding: ".5rem .75rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", cursor: "pointer", fontSize: ".875rem" }}
                 title="Línea horizontal"
               >
                 ─
@@ -275,9 +275,9 @@ function TerminosPageContent() {
               style={{
                 padding: "1rem",
                 borderRadius: "8px",
-                border: 1px solid var(--border-color),
-                background: var(--input-bg),
-                color: var(--text-primary),
+                border: "1px solid var(--border-color)",
+                background: "var(--input-bg)",
+                color: "var(--text-primary)",
                 fontFamily: "monospace",
                 fontSize: ".875rem",
                 lineHeight: "1.5",
@@ -285,7 +285,7 @@ function TerminosPageContent() {
               }}
               placeholder="Ingresa el contenido de términos y condiciones usando HTML. Usa los botones de arriba para insertar elementos comunes..."
             />
-            <div style={{ padding: ".75rem", background: "#e5e7eb", borderRadius: "8px", fontSize: ".875rem", color: var(--text-primary) }}>
+            <div style={{ padding: ".75rem", background: "#e5e7eb", borderRadius: "8px", fontSize: ".875rem", color: "var(--text-primary)" }}>
               <strong>💡 Consejos:</strong>
               <ul style={{ margin: ".5rem 0 0 1.5rem", padding: 0 }}>
                 <li>Puedes usar HTML directamente para formatear el contenido</li>
