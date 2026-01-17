@@ -325,6 +325,24 @@ body[data-theme="dark"] {
   transform: scale(0.95);
 }
 
+/* ===== ADMIN BUTTONS ===== */
+.admin-logout-button {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--button-secondary-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-weight: 500;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.admin-logout-button:hover {
+  background: var(--button-secondary-hover);
+  border-color: var(--color-primary);
+}
+
 /* ===== MOBILE MENU AUTH BUTTONS ===== */
 .header-mobile-divider {
   border-top: 2px solid var(--header-border);
@@ -770,12 +788,13 @@ video {
 
 /* Estilos responsive para NavBar y AdminNavBar */
 .navbar-responsive {
-  border-bottom: 1px solid #d0fdd7;
-  background: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   padding: 1rem 0;
   position: relative;
   z-index: 100;
   width: 100%;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .navbar-grid {
@@ -813,7 +832,7 @@ video {
 
 .navbar-nav a {
   text-decoration: none;
-  color: var(--header-text);
+  color: var(--text-primary);
   font-weight: 500;
   text-transform: uppercase;
   white-space: nowrap;

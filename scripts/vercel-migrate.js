@@ -188,18 +188,23 @@ function tryDbPush() {
     }
     
     // Si el error es por cambios que no se pueden ejecutar (columnas requeridas sin default)
-    // O si contiene el error de RaffleTemplate o Notification
+    // NOTA: Ya no usamos force-reset automático para preservar datos de producción
     if (fullOutput.includes('cannot be executed') || 
         fullOutput.includes('added the required column') || 
         fullOutput.includes('without a default value') ||
         fullOutput.includes('raffletemplate') ||
         fullOutput.includes('notification') ||
         fullOutput.includes('it is not possible to execute this step')) {
-      console.log('⚠️  Cambios que no se pueden ejecutar detectados');
-      console.log('⚠️  Columnas requeridas sin default value encontradas');
-      console.log('⚠️  Ejecutando --force-reset para recrear la base de datos...');
-      console.log('⚠️  ADVERTENCIA: Esto eliminará TODOS los datos existentes');
-      return tryForceReset();
+      console.error('❌ Cambios que no se pueden ejecutar detectados');
+      console.error('⚠️  El esquema requiere cambios que no se pueden aplicar automáticamente.');
+      console.error('⚠️  Esto puede deberse a columnas requeridas sin valores por defecto.');
+      console.error('\n📋 SOLUCIONES POSIBLES:');
+      console.error('   1. Agregar valores por defecto a las columnas en el schema.prisma');
+      console.error('   2. Hacer las columnas opcionales (agregar ?)');
+      console.error('   3. Crear una migración personalizada que maneje los datos existentes');
+      console.error('   4. Si es un entorno de desarrollo/prueba, resetear manualmente:');
+      console.error('      npx prisma db push --force-reset --accept-data-loss\n');
+      return false;
     }
     
     console.error('❌ Error en db push:', errorMsg.substring(0, 300));
@@ -210,40 +215,15 @@ function tryDbPush() {
   }
 }
 
+// Función deshabilitada para evitar pérdida de datos en producción
+// Si necesitas resetear la base de datos, hazlo manualmente con:
+// npx prisma db push --force-reset --accept-data-loss
 function tryForceReset() {
-  try {
-    console.log('\n═══════════════════════════════════════════════════════');
-    console.log('🚨 RESETEANDO BASE DE DATOS COMPLETA');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('⚠️  ADVERTENCIA: Todos los datos serán eliminados');
-    console.log('⚠️  Se recreará el esquema completo desde cero');
-    console.log('⚠️  El usuario MASTER se recreará automáticamente');
-    console.log('═══════════════════════════════════════════════════════\n');
-    
-    execSync('npx prisma db push --force-reset --accept-data-loss', {
-      stdio: 'inherit',
-      env: process.env
-    });
-    
-    console.log('\n✅✅✅ Base de datos reseteada y esquema aplicado exitosamente ✅✅✅');
-    console.log('✅ Todas las tablas fueron recreadas');
-    console.log('✅ Esquema está sincronizado con prisma/schema.prisma');
-    console.log('✅ Listo para crear el usuario MASTER\n');
-    return true;
-  } catch (error) {
-    const errorMsg = error.message || error.toString();
-    const stdout = error.stdout || '';
-    const stderr = error.stderr || '';
-    
-    console.error('\n❌❌❌ ERROR EN FORCE RESET ❌❌❌');
-    console.error('Mensaje:', errorMsg.substring(0, 500));
-    if (stdout) console.error('Stdout:', stdout.substring(0, 500));
-    if (stderr) console.error('Stderr:', stderr.substring(0, 500));
-    console.error('⚠️  Continuando con el build...');
-    console.error('⚠️  Asegúrate de resetear la base de datos manualmente.');
-    console.error('⚠️  Comando sugerido: npx prisma db push --force-reset\n');
-    return false;
-  }
+  console.error('\n⚠️⚠️⚠️ FORCE RESET DESHABILITADO ⚠️⚠️⚠️');
+  console.error('Esta función ha sido deshabilitada para proteger los datos de producción.');
+  console.error('Si necesitas resetear la base de datos manualmente, ejecuta:');
+  console.error('  npx prisma db push --force-reset --accept-data-loss\n');
+  return false;
 }
 
 async function createMasterUser() {
