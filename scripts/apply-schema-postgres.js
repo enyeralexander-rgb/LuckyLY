@@ -4,6 +4,8 @@
  * Script para aplicar schema de Prisma a PostgreSQL en Vercel
  * Usa prisma db push directamente (sin psql ni migraciones)
  * Compatible con Prisma 7 + PrismaPg adapter
+ *
+ * GARANTIZA la creación del usuario MASTER con SQL directo
  */
 
 import { execSync } from 'child_process';
@@ -97,45 +99,49 @@ async function createMasterUserManually() {
     const nationalId = "0995697717";
     const nationalIdType = "V";
 
-    // Verificar si existe
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-
+    // Generar hash de password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    if (existingUser) {
-      await prisma.user.update({
-        where: { email },
-        data: {
-          passwordHash,
-          role: 'MASTER',
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          suspended: false,
-          documentId: existingUser.documentId || documentId,
-          nationalId: existingUser.nationalId || nationalId,
-          nationalIdType: existingUser.nationalIdType || nationalIdType,
-        }
-      });
-      console.log('  ✅ Usuario MASTER actualizado:', email);
-    } else {
-      await prisma.user.create({
-        data: {
-          email,
-          passwordHash,
-          name: "Administrador Master",
-          username: "master",
-          role: 'MASTER',
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          documentId,
-          nationalId,
-          nationalIdType,
-        }
-      });
-      console.log('  ✅ Usuario MASTER creado:', email);
-    }
+    // Usar SQL raw para insertar/actualizar directamente
+    // Esto es más confiable que usar Prisma Client
+    const upsertQuery = `
+      INSERT INTO "User" (
+        "email", "passwordHash", "name", "username", "documentId",
+        "nationalId", "nationalIdType", "role", "emailVerified",
+        "emailVerifiedAt", "suspended", "createdAt", "updatedAt"
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+      )
+      ON CONFLICT ("email")
+      DO UPDATE SET
+        "passwordHash" = EXCLUDED."passwordHash",
+        "role" = EXCLUDED."role",
+        "emailVerified" = EXCLUDED."emailVerified",
+        "emailVerifiedAt" = EXCLUDED."emailVerifiedAt",
+        "suspended" = EXCLUDED."suspended",
+        "updatedAt" = EXCLUDED."updatedAt"
+    `;
+
+    const now = new Date();
+    await prisma.$executeRaw(upsertQuery, [
+      email,           // $1
+      passwordHash,    // $2
+      "Administrador Master", // $3
+      "master",        // $4
+      documentId,      // $5
+      nationalId,      // $6
+      nationalIdType,  // $7
+      "MASTER",        // $8
+      true,            // $9
+      now,             // $10
+      false,           // $11
+      now,             // $12
+      now              // $13
+    ]);
+
+    console.log('  ✅ Usuario MASTER insertado/actualizado:', email);
+    console.log('     Password hash generado correctamente');
+
   } finally {
     await prisma.$disconnect();
     await pool.end();
