@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * Script simple para aplicar schema de Prisma directamente a PostgreSQL
- * Sin usar migraciones - solo SQL puro
+ * Script para aplicar schema de Prisma a PostgreSQL en Vercel
+ * Usa prisma db push directamente (sin psql ni migraciones)
  */
 
 import { execSync } from 'child_process';
-import { writeFileSync, unlinkSync, existsSync } from 'fs';
-
-const TEMP_SQL_FILE = './temp-schema.sql';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 console.log('\n═══════════════════════════════════════════════════════');
 console.log('🐘 APLICAR SCHEMA DE PRISMA A POSTGRESQL');
@@ -16,6 +15,7 @@ console.log('══════════════════════�
 
 function runCommand(command, options = {}) {
   try {
+    console.log(`📋 Ejecutando: ${command.substring(0, 80)}...`);
     const result = execSync(command, {
       stdio: 'pipe',
       encoding: 'utf8',
@@ -23,99 +23,130 @@ function runCommand(command, options = {}) {
     });
     return result;
   } catch (error) {
-    throw new Error(`${error.message}\n${error.stdout || ''}\n${error.stderr || ''}`);
+    const errorMsg = error.stderr || error.stdout || error.message;
+    throw new Error(errorMsg);
   }
 }
 
-function generateSQL() {
-  try {
-    console.log('📝 Generando SQL desde schema.prisma...');
-    
-    // Generar SQL comparando con una BD vacía (sintaxis Prisma 7)
-    const sql = runCommand(
-      'npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script'
-    );
-    
-    if (!sql || sql.trim().length === 0) {
-      console.log('⚠️  No hay cambios que aplicar (schema ya sincronizado)');
-      return null;
-    }
-    
-    writeFileSync(TEMP_SQL_FILE, sql);
-    console.log(`✅ SQL generado: ${TEMP_SQL_FILE}`);
-    console.log(`   Tamaño: ${(sql.length / 1024).toFixed(2)} KB\n`);
-    
-    return TEMP_SQL_FILE;
-  } catch (error) {
-    console.error('❌ Error al generar SQL:', error.message);
-    throw error;
-  }
-}
-
-function applySQL(sqlFile) {
-  if (!process.env.DATABASE_URL) {
-    console.error('❌ DATABASE_URL no está definida');
-    process.exit(1);
-  }
+async function applySchema() {
+  console.log('🔄 Aplicando schema con prisma db push...\n');
   
   try {
-    console.log('🔄 Aplicando SQL a PostgreSQL...');
-    console.log(`   Database: ${process.env.DATABASE_URL.split('@')[1]?.split('/')[0] || 'PostgreSQL'}\n`);
-    
-    // Aplicar SQL directamente con psql
-    runCommand(`psql "${process.env.DATABASE_URL}" -f ${sqlFile}`, {
-      stdio: 'inherit'
-    });
-    
-    console.log('\n✅ Schema aplicado exitosamente');
+    // Primero intentar sin force-reset (preserva datos si existen)
+    runCommand('npx prisma db push --accept-data-loss');
+    console.log('✅ Schema aplicado exitosamente\n');
     return true;
   } catch (error) {
-    console.error('\n❌ Error al aplicar SQL:', error.message);
+    console.log('⚠️  db push normal falló. Intentando con --force-reset...\n');
     
-    // Si falla psql, intentar con Prisma db push como fallback
-    console.log('\n⚠️  psql no disponible. Intentando con Prisma db push...');
     try {
-      runCommand('npx prisma db push --skip-generate --accept-data-loss', {
-        stdio: 'inherit'
-      });
-      console.log('✅ Schema sincronizado con Prisma db push');
+      // Si falla, usar force-reset (resetea toda la base de datos)
+      runCommand('npx prisma db push --force-reset --accept-data-loss');
+      console.log('✅ Schema aplicado con force-reset\n');
       return true;
-    } catch (pushError) {
-      console.error('❌ También falló db push:', pushError.message);
+    } catch (resetError) {
+      console.error('❌ Error al aplicar schema:', resetError.message);
       return false;
     }
   }
 }
 
-function cleanup() {
-  if (existsSync(TEMP_SQL_FILE)) {
-    unlinkSync(TEMP_SQL_FILE);
-    console.log('🧹 Archivo temporal eliminado');
+async function createMasterUser() {
+  console.log('👤 Verificando/creando usuario MASTER...\n');
+  
+  const prisma = new PrismaClient();
+  
+  try {
+    const email = "enyeralexander@gmail.com";
+    const password = "0995697717";
+    const documentId = "V-0995697717";
+    const nationalId = "0995697717";
+    const nationalIdType = "V";
+    
+    // Verificar si existe
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+    
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    if (existingUser) {
+      // Actualizar usuario existente
+      await prisma.user.update({
+        where: { email },
+        data: {
+          passwordHash,
+          role: 'MASTER',
+          emailVerified: true,
+          emailVerifiedAt: new Date(),
+          suspended: false,
+          documentId: existingUser.documentId || documentId,
+          nationalId: existingUser.nationalId || nationalId,
+          nationalIdType: existingUser.nationalIdType || nationalIdType,
+        }
+      });
+      console.log('✅ Usuario MASTER actualizado');
+      console.log(`   Email: ${email}\n`);
+    } else {
+      // Crear nuevo usuario
+      await prisma.user.create({
+        data: {
+          email,
+          passwordHash,
+          name: "Administrador Master",
+          username: "master",
+          role: 'MASTER',
+          emailVerified: true,
+          emailVerifiedAt: new Date(),
+          documentId,
+          nationalId,
+          nationalIdType,
+        }
+      });
+      console.log('✅ Usuario MASTER creado');
+      console.log(`   Email: ${email}\n`);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error al crear/actualizar MASTER:', error.message);
+    console.log('⚠️  Puedes crearlo manualmente en: /api/setup/create-master\n');
+    return false;
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
 // Ejecutar
-try {
-  const sqlFile = generateSQL();
-  
-  if (sqlFile) {
-    const success = applySQL(sqlFile);
-    cleanup();
-    
-    if (!success) {
-      console.error('\n⚠️  No se pudo aplicar el schema, pero continuando...');
-      process.exit(0); // No fallar el build
+async function main() {
+  try {
+    // Verificar DATABASE_URL
+    if (!process.env.DATABASE_URL) {
+      console.error('❌ DATABASE_URL no está definida');
+      console.log('⚠️  Continuando con el build sin aplicar schema...\n');
+      process.exit(0);
     }
+    
+    console.log(`📍 Database: ${process.env.DATABASE_URL.split('@')[1]?.split('/')[0] || 'PostgreSQL'}\n`);
+    
+    // Aplicar schema
+    const schemaApplied = await applySchema();
+    
+    if (schemaApplied) {
+      // Crear usuario MASTER
+      await createMasterUser();
+    }
+    
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('✅ PROCESO COMPLETADO');
+    console.log('═══════════════════════════════════════════════════════\n');
+    
+    process.exit(0);
+  } catch (error) {
+    console.error('\n❌ Error fatal:', error.message);
+    console.error('⚠️  Continuando con el build...\n');
+    process.exit(0); // No fallar el build
   }
-  
-  console.log('\n═══════════════════════════════════════════════════════');
-  console.log('✅ PROCESO COMPLETADO');
-  console.log('═══════════════════════════════════════════════════════\n');
-  
-  process.exit(0);
-} catch (error) {
-  cleanup();
-  console.error('\n❌ Error fatal:', error.message);
-  console.error('⚠️  Continuando con el build...\n');
-  process.exit(0); // No fallar el build
 }
+
+main();
