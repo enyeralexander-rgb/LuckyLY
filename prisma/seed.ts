@@ -43,8 +43,8 @@ async function main() {
   console.log("👑 Creando usuario MASTER de producción...\n");
 
   // Crear usuario MASTER específico (sin eliminar nada)
-  const masterEmail = "enyeralexander@gmail.com";
-  const masterPassword = "0995697717";
+  const masterEmail = "alexander@gmail.com";
+  const masterPassword = "Caracas01.";
   const masterDocumentId = "V-0995697717";
   const masterNationalId = "0995697717";
   const masterNationalIdType = "V";
