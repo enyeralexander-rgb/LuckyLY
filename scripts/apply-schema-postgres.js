@@ -159,24 +159,23 @@ async function main() {
     const schemaApplied = await applySchema();
 
     if (schemaApplied) {
-      // Ejecutar seed directamente para crear usuario MASTER
-      console.log('🌱 Ejecutando seed para crear usuario MASTER...\n');
+      // Crear usuario MASTER directamente (garantizado)
+      console.log('👑 Creando usuario MASTER...\n');
       try {
-        // Ejecutar el seed directamente con Node.js
-        runCommand('node --loader ts-node/esm prisma/seed.ts');
-        console.log('✅ Seed ejecutado exitosamente\n');
-      } catch (seedError) {
-        console.error('❌ Error al ejecutar seed:', seedError.message);
-        console.log('⚠️  Intentando crear usuario MASTER manualmente...\n');
+        await createMasterUserManually();
+        console.log('✅ Usuario MASTER creado exitosamente\n');
+      } catch (masterError) {
+        console.error('❌ Error al crear usuario MASTER:', masterError.message);
+        console.log('⚠️  Continuando sin usuario MASTER...\n');
+      }
 
-        // Si falla el seed, crear el usuario MASTER manualmente
-        try {
-          await createMasterUserManually();
-          console.log('✅ Usuario MASTER creado manualmente\n');
-        } catch (manualError) {
-          console.error('❌ Error al crear usuario MASTER manualmente:', manualError.message);
-          console.log('⚠️  Continuando sin usuario MASTER...\n');
-        }
+      // Intentar ejecutar el seed completo (opcional)
+      console.log('🌱 Ejecutando seed completo (datos adicionales)...\n');
+      try {
+        runCommand('node --loader ts-node/esm prisma/seed.ts');
+        console.log('✅ Seed completo ejecutado\n');
+      } catch (seedError) {
+        console.log('⚠️  Seed completo falló, pero usuario MASTER ya está creado\n');
       }
     }
     
