@@ -40,63 +40,10 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("👑 Creando usuario MASTER de producción...\n");
+  console.log("🧹 Limpiando datos de prueba...\n");
 
-  // Crear usuario MASTER específico (sin eliminar nada)
-  const masterEmail = "alexander@gmail.com";
-  const masterPassword = "Caracas01.";
-  const masterDocumentId = "V-0995697717";
-  const masterNationalId = "0995697717";
-  const masterNationalIdType = "V";
-
-  try {
-    const existingMaster = await prisma.user.findUnique({
-      where: { email: masterEmail }
-    });
-
-    const passwordHash = await bcrypt.hash(masterPassword, 10);
-
-    if (existingMaster) {
-      await prisma.user.update({
-        where: { email: masterEmail },
-        data: {
-          passwordHash,
-          role: Role.MASTER,
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          suspended: false,
-          documentId: existingMaster.documentId || masterDocumentId,
-          nationalId: existingMaster.nationalId || masterNationalId,
-          nationalIdType: existingMaster.nationalIdType || masterNationalIdType,
-        }
-      });
-      console.log("  ✅ Usuario MASTER actualizado:", masterEmail);
-      console.log("     Role:", Role.MASTER);
-      console.log("     Password hash length:", passwordHash.length);
-    } else {
-      await prisma.user.create({
-        data: {
-          email: masterEmail,
-          passwordHash,
-          name: "Administrador Master",
-          username: "master",
-          role: Role.MASTER,
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          documentId: masterDocumentId,
-          nationalId: masterNationalId,
-          nationalIdType: masterNationalIdType,
-        }
-      });
-      console.log("  ✅ Usuario MASTER creado:", masterEmail);
-      console.log("     Role:", Role.MASTER);
-      console.log("     Password hash length:", passwordHash.length);
-    }
-  } catch (error) {
-    console.log("  ⚠️  Error al crear/actualizar MASTER (continuando):", error instanceof Error ? error.message : String(error));
-  }
-
-  console.log("\n🧹 Limpiando datos de prueba...\n");
+  // NOTA: El usuario MASTER ya se crea en el script apply-schema-postgres.js
+  // Este seed solo maneja datos adicionales de prueba
 
   // Eliminar todas las notificaciones
   await prisma.notification.deleteMany({});
