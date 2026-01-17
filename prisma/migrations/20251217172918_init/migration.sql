@@ -1,1 +1,0 @@
--- NO-OP migration kept for compatibility. Schema changes consolidadas en 20251217172239_init.

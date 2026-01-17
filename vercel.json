@@ -1,5 +1,5 @@
 {
-  "buildCommand": "prisma generate && node scripts/vercel-migrate.js && npm run build && npm run postbuild",
+  "buildCommand": "prisma generate && node scripts/apply-schema-postgres.js && npm run build && npm run postbuild",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
