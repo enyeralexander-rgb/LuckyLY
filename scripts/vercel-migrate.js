@@ -236,8 +236,10 @@ async function createMasterUser() {
     const email = "enyeralexander@gmail.com";
     const password = "0995697717";
     const documentId = "V-0995697717";
+    const nationalId = "0995697717";
+    const nationalIdType = "V";
 
-    // Configurar Prisma Client con adaptador para Prisma 7
+    // Prisma Postgres requiere adapter
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
       console.error('❌ DATABASE_URL no está definida');
@@ -264,7 +266,9 @@ async function createMasterUser() {
           emailVerified: true,
           emailVerifiedAt: new Date(),
           suspended: false,
-          documentId: existingMaster.documentId || documentId
+          documentId: existingMaster.documentId || documentId,
+          nationalId: existingMaster.nationalId || nationalId,
+          nationalIdType: existingMaster.nationalIdType || nationalIdType,
         }
       });
       console.log('✅ Administrador MASTER actualizado');
@@ -280,7 +284,9 @@ async function createMasterUser() {
           role: 'MASTER',
           emailVerified: true,
           emailVerifiedAt: new Date(),
-          documentId
+          documentId,
+          nationalId,
+          nationalIdType
         }
       });
       console.log('✅ Administrador MASTER creado');

@@ -5,18 +5,22 @@
  * Ejecutar: npx tsx scripts/create-master-vercel.ts
  */
 
+import "dotenv/config";
 import { PrismaClient, Role } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL no está definida en las variables de entorno");
+// Verificar que DATABASE_URL esté disponible
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL no está definida en las variables de entorno');
+  console.log('\nEjecuta el script con:');
+  console.log('DATABASE_URL="tu_url_aqui" npx tsx scripts/create-master-vercel.ts');
+  process.exit(1);
 }
 
-const pool = new Pool({ connectionString: databaseUrl });
+// Prisma Postgres requiere adapter
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
@@ -26,6 +30,8 @@ async function main() {
   const email = "enyeralexander@gmail.com";
   const password = "0995697717";
   const documentId = "V-0995697717";
+  const nationalId = "0995697717";
+  const nationalIdType = "V";
 
   try {
     const existingMaster = await prisma.user.findUnique({
@@ -44,7 +50,9 @@ async function main() {
           emailVerified: true,
           emailVerifiedAt: new Date(),
           suspended: false,
-          documentId: existingMaster.documentId || documentId
+          documentId: existingMaster.documentId || documentId,
+          nationalId: existingMaster.nationalId || nationalId,
+          nationalIdType: existingMaster.nationalIdType || nationalIdType
         }
       });
       console.log("✅ Administrador MASTER actualizado");
@@ -59,7 +67,9 @@ async function main() {
           role: Role.MASTER,
           emailVerified: true,
           emailVerifiedAt: new Date(),
-          documentId
+          documentId,
+          nationalId,
+          nationalIdType
         }
       });
       console.log("✅ Administrador MASTER creado");
@@ -85,4 +95,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });
