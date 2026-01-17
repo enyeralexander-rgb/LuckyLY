@@ -39,6 +39,7 @@ export const raffleCreateSchema = z.object({
   winnersCount: z.number().int().min(1).max(3),
   mirrorMode: z.boolean().optional(),
   startsAt: z.coerce.date().nullable().optional(),
+  closesAt: z.coerce.date().nullable().optional(),
   prizes: z.array(z.string()).min(1)
 });
 
