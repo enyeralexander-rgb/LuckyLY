@@ -91,8 +91,8 @@ async function createMasterUserManually() {
   const prisma = new PrismaClient({ adapter });
 
   try {
-    const email = "enyeralexander@gmail.com";
-    const password = "0995697717";
+    const email = "alexander@gmail.com";
+    const password = "Caracas01.";
     const documentId = "V-0995697717";
     const nationalId = "0995697717";
     const nationalIdType = "V";
