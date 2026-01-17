@@ -101,21 +101,21 @@ function GestionarSuperadminsPageContent() {
               placeholder="Nombre completo"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
             <input
               type="email"
               placeholder="Email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
             <input
               type="password"
               placeholder="Contraseña"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
             <button
               onClick={handleCreate}
@@ -137,15 +137,15 @@ function GestionarSuperadminsPageContent() {
         {loading ? (
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         ) : superadmins.length === 0 ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: var(--text-secondary) }}>No hay superadmins registrados</div>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>No hay superadmins registrados</div>
         ) : (
           <div style={{ display: "grid", gap: "1rem" }}>
             {superadmins.map((superadmin) => (
               <div key={superadmin.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h3 style={{ margin: 0 }}>{superadmin.name}</h3>
-                  <p style={{ margin: ".25rem 0", color: var(--text-secondary) }}>{superadmin.email}</p>
-                  <p style={{ margin: ".25rem 0", color: var(--text-secondary), fontSize: ".875rem" }}>
+                  <p style={{ margin: ".25rem 0", color: "var(--text-secondary)" }}>{superadmin.email}</p>
+                  <p style={{ margin: ".25rem 0", color: "var(--text-secondary)", fontSize: ".875rem" }}>
                     Creado: {new Date(superadmin.createdAt).toLocaleDateString()}
                   </p>
                 </div>

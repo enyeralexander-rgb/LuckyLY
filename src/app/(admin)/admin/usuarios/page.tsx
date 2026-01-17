@@ -140,7 +140,7 @@ function DatosUsuariosPageContent() {
         {pages.map((page, index) => {
           if (page === "...") {
             return (
-              <span key={`ellipsis-${index}`} style={{ padding: ".5rem", color: var(--text-secondary) }}>
+              <span key={`ellipsis-${index}`} style={{ padding: ".5rem", color: "var(--text-secondary)" }}>
                 ...
               </span>
             );
@@ -154,7 +154,7 @@ function DatosUsuariosPageContent() {
               style={{
                 padding: ".5rem .75rem",
                 borderRadius: "8px",
-                border: 1px solid var(--border-color),
+                border: "1px solid var(--border-color)",
                 background: isActive ? "#85BB65" : "#F5F5E6",
                 color: isActive ? "#fff" : "#3E3E3C",
                 cursor: "pointer",
@@ -172,9 +172,9 @@ function DatosUsuariosPageContent() {
             style={{
               padding: ".5rem .75rem",
               borderRadius: "8px",
-              border: 1px solid var(--border-color),
-              background: var(--input-bg),
-              color: var(--text-primary),
+              border: "1px solid var(--border-color)",
+              background: "var(--input-bg)",
+              color: "var(--text-primary)",
               cursor: "pointer",
               fontWeight: 600
             }}
@@ -193,7 +193,7 @@ function DatosUsuariosPageContent() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
           <h1 style={{ margin: 0 }}>Datos de Usuarios</h1>
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <Link href="/admin" style={{ color: var(--color-primary), textDecoration: "none", fontWeight: 600 }}>← Volver</Link>
+            <Link href="/admin" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: 600 }}>← Volver</Link>
           </div>
         </div>
 
@@ -202,7 +202,7 @@ function DatosUsuariosPageContent() {
           <h3 style={{ margin: 0, fontSize: "1.125rem" }}>Filtros de Búsqueda</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
+              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "var(--text-primary)" }}>
                 Nombre:
               </label>
               <input
@@ -214,14 +214,14 @@ function DatosUsuariosPageContent() {
                   width: "100%",
                   padding: ".5rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary)
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)"
                 }}
               />
             </div>
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
+              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "var(--text-primary)" }}>
                 Email:
               </label>
               <input
@@ -233,14 +233,14 @@ function DatosUsuariosPageContent() {
                   width: "100%",
                   padding: ".5rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary)
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)"
                 }}
               />
             </div>
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
+              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "var(--text-primary)" }}>
                 Cédula:
               </label>
               <input
@@ -252,14 +252,14 @@ function DatosUsuariosPageContent() {
                   width: "100%",
                   padding: ".5rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary)
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)"
                 }}
               />
             </div>
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
+              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "var(--text-primary)" }}>
                 Teléfono:
               </label>
               <input
@@ -271,14 +271,14 @@ function DatosUsuariosPageContent() {
                   width: "100%",
                   padding: ".5rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary)
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)"
                 }}
               />
             </div>
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
+              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "var(--text-primary)" }}>
                 Banco:
               </label>
               <select
@@ -288,9 +288,9 @@ function DatosUsuariosPageContent() {
                   width: "100%",
                   padding: ".5rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary)
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)"
                 }}
               >
                 <option value="">Todos los bancos</option>
@@ -302,7 +302,7 @@ function DatosUsuariosPageContent() {
               </select>
             </div>
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
+              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "var(--text-primary)" }}>
                 Fecha de Registro:
               </label>
               <input
@@ -313,9 +313,9 @@ function DatosUsuariosPageContent() {
                   width: "100%",
                   padding: ".5rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary)
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)"
                 }}
               />
             </div>
@@ -340,9 +340,9 @@ function DatosUsuariosPageContent() {
               style={{
                 padding: ".5rem 1rem",
                 borderRadius: "8px",
-                border: 1px solid var(--border-color),
-                background: var(--input-bg),
-                color: var(--text-primary),
+                border: "1px solid var(--border-color)",
+                background: "var(--input-bg)",
+                color: "var(--text-primary)",
                 cursor: "pointer"
               }}
             >
@@ -355,18 +355,18 @@ function DatosUsuariosPageContent() {
         {loading ? (
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         ) : users.length === 0 ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: var(--text-secondary) }}>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>
             No se encontraron usuarios
           </div>
         ) : (
           <>
             <div className="card" style={{ overflowX: "auto" }}>
-              <div style={{ padding: ".75rem", background: var(--input-bg), borderBottom: "1px solid #d4d4c4", fontSize: ".875rem", color: var(--text-primary) }}>
+              <div style={{ padding: ".75rem", background: "var(--input-bg)", borderBottom: "1px solid #d4d4c4", fontSize: ".875rem", color: "var(--text-primary)" }}>
                 Mostrando {users.length} de {pagination.total} usuarios (Página {pagination.page} de {pagination.totalPages})
               </div>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ borderBottom: "2px solid #d4d4c4", background: var(--input-bg) }}>
+                  <tr style={{ borderBottom: "2px solid #d4d4c4", background: "var(--input-bg)" }}>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>Nombre</th>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>Email</th>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>ID</th>

@@ -104,7 +104,7 @@ function RedesSocialesPageContent() {
         <div className="card" style={{ padding: "1.5rem", display: "grid", gap: "1.5rem" }}>
           <div style={{ display: "grid", gap: "1rem" }}>
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: var(--text-primary), fontWeight: 600 }}>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Facebook URL
               </label>
               <input
@@ -116,16 +116,16 @@ function RedesSocialesPageContent() {
                   width: "100%",
                   padding: ".75rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary),
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)",
                   fontSize: "1rem"
                 }}
               />
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: var(--text-primary), fontWeight: 600 }}>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Instagram URL
               </label>
               <input
@@ -137,16 +137,16 @@ function RedesSocialesPageContent() {
                   width: "100%",
                   padding: ".75rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary),
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)",
                   fontSize: "1rem"
                 }}
               />
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: var(--text-primary), fontWeight: 600 }}>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Twitter URL
               </label>
               <input
@@ -158,16 +158,16 @@ function RedesSocialesPageContent() {
                   width: "100%",
                   padding: ".75rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary),
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)",
                   fontSize: "1rem"
                 }}
               />
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: var(--text-primary), fontWeight: 600 }}>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 YouTube URL
               </label>
               <input
@@ -179,16 +179,16 @@ function RedesSocialesPageContent() {
                   width: "100%",
                   padding: ".75rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary),
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)",
                   fontSize: "1rem"
                 }}
               />
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: var(--text-primary), fontWeight: 600 }}>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 TikTok URL
               </label>
               <input
@@ -200,16 +200,16 @@ function RedesSocialesPageContent() {
                   width: "100%",
                   padding: ".75rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary),
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)",
                   fontSize: "1rem"
                 }}
               />
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: var(--text-primary), fontWeight: 600 }}>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 WhatsApp URL
               </label>
               <input
@@ -221,9 +221,9 @@ function RedesSocialesPageContent() {
                   width: "100%",
                   padding: ".75rem",
                   borderRadius: "8px",
-                  border: 1px solid var(--border-color),
-                  background: var(--input-bg),
-                  color: var(--text-primary),
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)",
                   fontSize: "1rem"
                 }}
               />
@@ -236,7 +236,7 @@ function RedesSocialesPageContent() {
             style={{
               padding: ".75rem 1.5rem",
               background: saving ? "#6b7280" : "#85BB65",
-              color: var(--text-primary),
+              color: "var(--text-primary)",
               border: "none",
               borderRadius: "8px",
               fontWeight: 700,

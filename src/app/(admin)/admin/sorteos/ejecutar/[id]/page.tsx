@@ -415,25 +415,25 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
         {/* Panel de Control - Centrado y dividido por secciones */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
             <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                <h3 style={{ margin: 0, color: var(--text-secondary), fontSize: ".875rem" }}>Ganadores Seleccionados</h3>
-                <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: var(--color-primary) }}>
+                <h3 style={{ margin: 0, color: "var(--text-secondary)", fontSize: ".875rem" }}>Ganadores Seleccionados</h3>
+                <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "var(--color-primary)" }}>
                     {winners.length}/{raffle.winnersCount}
                 </p>
             </div>
             <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                <h3 style={{ margin: 0, color: var(--text-secondary), fontSize: ".875rem" }}>Giros Restantes</h3>
-                <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>
+                <h3 style={{ margin: 0, color: "var(--text-secondary)", fontSize: ".875rem" }}>Giros Restantes</h3>
+                <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>
                     {remainingSpins}
                 </p>
             </div>
             <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                <h3 style={{ margin: 0, color: var(--text-secondary), fontSize: ".875rem" }}>Estado</h3>
+                <h3 style={{ margin: 0, color: "var(--text-secondary)", fontSize: ".875rem" }}>Estado</h3>
                 <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700 }}>
                     {raffle.status}
                 </p>
             </div>
             <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                <h3 style={{ margin: 0, color: var(--text-secondary), fontSize: ".875rem" }}>Cupos Comprados</h3>
+                <h3 style={{ margin: 0, color: "var(--text-secondary)", fontSize: ".875rem" }}>Cupos Comprados</h3>
                 <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700 }}>
                     {raffle.ticketItems.filter((t: { status?: string }) => t.status === "CONFIRMED" || !t.status).length}/{raffle.slots}
                 </p>
@@ -548,7 +548,7 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
                         boxShadow: "0 8px 24px rgba(0, 0, 0, 0.4)",
                         minWidth: "300px"
                     }}>
-                        <h3 style={{ margin: "0 0 1rem", fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>
+                        <h3 style={{ margin: "0 0 1rem", fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>
                             {winners.length === 1 ? "🎉 ¡Ganador!" : `🎉 ¡Ganadores (${winners.length}/${raffle.winnersCount})!`}
                         </h3>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: ".5rem", justifyContent: "center" }}>
@@ -566,7 +566,7 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
                             ))}
                         </div>
                         {winners.length < raffle.winnersCount && (
-                            <div style={{ marginTop: "1rem", fontSize: ".875rem", color: var(--text-primary), opacity: 0.8 }}>
+                            <div style={{ marginTop: "1rem", fontSize: ".875rem", color: "var(--text-primary)", opacity: 0.8 }}>
                                 Faltan {remainingSpins} giro(s) restante(s)
                             </div>
                         )}
@@ -584,7 +584,7 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
                         borderRadius: "8px",
                         border: "none",
                         background: canExecute && remainingSpins > 0 ? "#85BB65" : "#6b7280",
-                        color: var(--text-primary),
+                        color: "var(--text-primary)",
                         fontWeight: 700,
                         fontSize: "1.125rem",
                         cursor: (spinning || executing || !canExecute || winners.length >= raffle.winnersCount) ? "not-allowed" : "pointer",
