@@ -56,31 +56,31 @@ function AdminHomePageContent() {
     <>
       <AdminNavBar />
       <main className="container" style={{ paddingTop: "2rem", display: "grid", gap: "1.5rem" }}>
-        <h1 style={{ color: "#3E3E3C" }}>Dashboard</h1>
+        <h1 style={{ color: var(--text-primary) }}>Dashboard</h1>
 
         {loading ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#3E3E3C" }}>Cargando métricas...</div>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: var(--text-primary) }}>Cargando métricas...</div>
         ) : data ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
             {/* Ingresos Hoy - Solo SUPERADMIN/MASTER */}
             {(isSuper || isMaster) && (
               <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                <h3 style={{ margin: 0, color: "#3E3E3C", fontSize: ".875rem", fontWeight: 600 }}>Ingresos Hoy</h3>
-                <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "#85BB65" }}>
+                <h3 style={{ margin: 0, color: var(--text-primary), fontSize: ".875rem", fontWeight: 600 }}>Ingresos Hoy</h3>
+                <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: var(--color-primary) }}>
                   {(data.todayIncome ?? 0).toFixed(2)} Bs.
                 </p>
               </div>
             )}
             <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-              <h3 style={{ margin: 0, color: "#3E3E3C", fontSize: ".875rem", fontWeight: 600 }}>Sorteos Activos</h3>
-              <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>{data.activeRaffles ?? 0}</p>
+              <h3 style={{ margin: 0, color: var(--text-primary), fontSize: ".875rem", fontWeight: 600 }}>Sorteos Activos</h3>
+              <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>{data.activeRaffles ?? 0}</p>
             </div>
             <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-              <h3 style={{ margin: 0, color: "#3E3E3C", fontSize: ".875rem", fontWeight: 600 }}>Sorteos Finalizados</h3>
-              <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>{data.finishedRaffles ?? 0}</p>
+              <h3 style={{ margin: 0, color: var(--text-primary), fontSize: ".875rem", fontWeight: 600 }}>Sorteos Finalizados</h3>
+              <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>{data.finishedRaffles ?? 0}</p>
             </div>
             <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-              <h3 style={{ margin: 0, color: "#3E3E3C", fontSize: ".875rem", fontWeight: 600 }}>Reclamos Pendientes</h3>
+              <h3 style={{ margin: 0, color: var(--text-primary), fontSize: ".875rem", fontWeight: 600 }}>Reclamos Pendientes</h3>
               <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "#f59e0b" }}>
                 {data.pendingClaims ?? 0}
               </p>
@@ -88,74 +88,74 @@ function AdminHomePageContent() {
             {/* Total Usuarios - Solo SUPERADMIN/MASTER */}
             {(isSuper || isMaster) && (
               <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                <h3 style={{ margin: 0, color: "#3E3E3C", fontSize: ".875rem", fontWeight: 600 }}>Total Usuarios</h3>
-                <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>{data.totalUsers ?? 0}</p>
+                <h3 style={{ margin: 0, color: var(--text-primary), fontSize: ".875rem", fontWeight: 600 }}>Total Usuarios</h3>
+                <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>{data.totalUsers ?? 0}</p>
               </div>
             )}
           </div>
         ) : null}
 
         <section style={{ display: "grid", gap: "1.5rem" }}>
-          <h2 style={{ margin: 0, color: "#3E3E3C" }}>Módulos de Administración</h2>
+          <h2 style={{ margin: 0, color: var(--text-primary) }}>Módulos de Administración</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem" }}>
             {/* Módulos Operativos - Todos los roles excepto CONTABLE */}
             {!isContable && (
               <>
                 <Link href="/admin/sorteos/crear" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Crear Sorteos</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Configura y abre nuevos sorteos con diferentes tipos de ruletas, precios, premios y fechas de ejecución.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Crear Sorteos</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Configura y abre nuevos sorteos con diferentes tipos de ruletas, precios, premios y fechas de ejecución.</p>
                 </Link>
 
                 <Link href="/admin/sorteos/ejecutar" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Ejecutar Sorteos</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Gira la ruleta animada para determinar los ganadores de sorteos con todos los cupos comprados.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Ejecutar Sorteos</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Gira la ruleta animada para determinar los ganadores de sorteos con todos los cupos comprados.</p>
                 </Link>
               </>
             )}
 
             {/* Módulos Operativos - Confirmar Cupos y Pagar Premios (todos los roles incluyendo CONTABLE) */}
             <Link href="/admin/sorteos/cupos" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-              <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Confirmar Cupos</h3>
-              <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Revisa y confirma o rechaza cupos pendientes de pago móvil de forma individual.</p>
+              <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Confirmar Cupos</h3>
+              <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Revisa y confirma o rechaza cupos pendientes de pago móvil de forma individual.</p>
             </Link>
 
             <Link href="/admin/pagos" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-              <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Pagar Premios</h3>
-              <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Procesa reclamos de premios, revisa datos bancarios y confirma pagos realizados.</p>
+              <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Pagar Premios</h3>
+              <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Procesa reclamos de premios, revisa datos bancarios y confirma pagos realizados.</p>
             </Link>
 
             {/* Módulos SUPERADMIN/MASTER */}
             {(isSuper || isMaster) && (
               <>
                 <Link href="/admin/usuarios" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Datos de Usuarios</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Consulta información de usuarios registrados, datos bancarios y datos de contacto.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Datos de Usuarios</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Consulta información de usuarios registrados, datos bancarios y datos de contacto.</p>
                 </Link>
 
                 <Link href="/admin/historial" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Historial de Dinámicas</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Consulta el historial completo de sorteos ejecutados con filtros por fecha y tipo.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Historial de Dinámicas</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Consulta el historial completo de sorteos ejecutados con filtros por fecha y tipo.</p>
                 </Link>
 
                 <Link href="/admin/referidos" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Referidos</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Genera links de referidos para atraer clientes y rastrea ingresos por cada link generado.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Referidos</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Genera links de referidos para atraer clientes y rastrea ingresos por cada link generado.</p>
                 </Link>
 
                 <Link href="/admin/roles/agentes" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Gestionar Agentes</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Crea nuevas cuentas de agentes y suspende o reactiva cuentas existentes.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Gestionar Agentes</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Crea nuevas cuentas de agentes y suspende o reactiva cuentas existentes.</p>
                 </Link>
 
                 <Link href="/admin/templates" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Plantillas de Sorteos</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Crea y gestiona plantillas para crear sorteos más rápido y eficientemente.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Plantillas de Sorteos</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Crea y gestiona plantillas para crear sorteos más rápido y eficientemente.</p>
                 </Link>
 
 
                 <Link href="/admin/pagina-principal" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Página Principal</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Configura el carrusel de imágenes y videos de la portada principal con opciones gráficas avanzadas.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Página Principal</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Configura el carrusel de imágenes y videos de la portada principal con opciones gráficas avanzadas.</p>
                 </Link>
               </>
             )}
@@ -164,23 +164,23 @@ function AdminHomePageContent() {
             {isMaster && (
               <>
                 <Link href="/admin/terminos" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Términos y Condiciones</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Edita el contenido de términos y condiciones que se muestra a los usuarios.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Términos y Condiciones</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Edita el contenido de términos y condiciones que se muestra a los usuarios.</p>
                 </Link>
 
                 <Link href="/admin/reglas" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Reglas</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Gestiona las reglas de los sorteos que se muestran en la interfaz de usuarios.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Reglas</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Gestiona las reglas de los sorteos que se muestran en la interfaz de usuarios.</p>
                 </Link>
 
                 <Link href="/admin/pago-movil" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Pago Móvil</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Configura la imagen y datos (Cédula, Teléfono, Destino) de pago móvil para mostrar a los usuarios.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Pago Móvil</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Configura la imagen y datos (Cédula, Teléfono, Destino) de pago móvil para mostrar a los usuarios.</p>
                 </Link>
 
                 <Link href="/admin/redes-sociales" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Redes Sociales</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Gestiona los enlaces de redes sociales que se muestran en el pie de página.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Redes Sociales</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Gestiona los enlaces de redes sociales que se muestran en el pie de página.</p>
                 </Link>
               </>
             )}
@@ -188,8 +188,8 @@ function AdminHomePageContent() {
             {/* Módulos CONTABLE */}
             {isContable && (
               <Link href="/admin/estadisticas" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Estadísticas</h3>
-                <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Visualiza estadísticas de ingresos, referencias y usuarios con gráficos interactivos.</p>
+                <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Estadísticas</h3>
+                <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Visualiza estadísticas de ingresos, referencias y usuarios con gráficos interactivos.</p>
               </Link>
             )}
 
@@ -197,26 +197,26 @@ function AdminHomePageContent() {
             {isMaster && (
               <>
                 <Link href="/admin/logs-admins" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Logs de Administradores</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Consulta el registro global de todas las acciones realizadas por administradores de todos los roles.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Logs de Administradores</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Consulta el registro global de todas las acciones realizadas por administradores de todos los roles.</p>
                 </Link>
 
                 <Link href="/admin/roles/admins" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Gestionar Administradores</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Crea, modifica roles/permisos o elimina usuarios administradores de todos los roles (AGENT, SUPERADMIN, CONTABLE).</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Gestionar Administradores</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Crea, modifica roles/permisos o elimina usuarios administradores de todos los roles (AGENT, SUPERADMIN, CONTABLE).</p>
                 </Link>
 
                 <Link href="/admin/estadisticas" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Estadísticas</h3>
-                  <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Visualiza estadísticas de ingresos, referencias y usuarios con gráficos interactivos.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Estadísticas</h3>
+                  <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Visualiza estadísticas de ingresos, referencias y usuarios con gráficos interactivos.</p>
                 </Link>
               </>
             )}
 
             {/* Módulos para todos los administradores */}
             <Link href="/admin/2fa" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-              <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#3E3E3C" }}>Autenticación de Dos Factores (2FA)</h3>
-              <p style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Configura autenticación de dos factores para mayor seguridad en tu cuenta.</p>
+              <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: var(--text-primary) }}>Autenticación de Dos Factores (2FA)</h3>
+              <p style={{ margin: 0, color: var(--text-primary), fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Configura autenticación de dos factores para mayor seguridad en tu cuenta.</p>
             </Link>
           </div>
         </section>

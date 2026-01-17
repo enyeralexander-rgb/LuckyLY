@@ -140,7 +140,7 @@ function ConfirmarCuposPageContent() {
         {loading ? (
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         ) : pendingItems.length === 0 ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: var(--text-secondary) }}>
             No hay cupos pendientes de confirmación
           </div>
         ) : (
@@ -151,7 +151,7 @@ function ConfirmarCuposPageContent() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                     <div>
                       <h3 style={{ margin: "0 0 .5rem" }}>{item.raffle.title}</h3>
-                      <div style={{ display: "grid", gap: ".25rem", fontSize: ".875rem", color: "#94a3b8" }}>
+                      <div style={{ display: "grid", gap: ".25rem", fontSize: ".875rem", color: var(--text-secondary) }}>
                         <div><strong>Tipo:</strong> {getTypeLabel(item.raffle.type)}</div>
                         <div><strong>Cupo:</strong> <span style={{ color: "#f59e0b", fontWeight: 700 }}>{item.value}</span></div>
                         <div><strong>Usuario:</strong> {item.ticket.user.name} ({item.ticket.user.email})</div>
@@ -159,8 +159,8 @@ function ConfirmarCuposPageContent() {
                         <div><strong>Fecha:</strong> {new Date(item.ticket.purchasedAt).toLocaleString()}</div>
                         {item.ticket.paymentMobileRef && (
                           <div style={{ marginTop: ".5rem", padding: ".75rem", background: "rgba(133, 187, 101, 0.1)", borderRadius: "8px", border: "2px solid #85BB65" }}>
-                            <div style={{ fontSize: ".75rem", color: "#94a3b8", marginBottom: ".25rem", fontWeight: 600 }}>REFERENCIA DE PAGO MÓVIL:</div>
-                            <div style={{ fontSize: "1rem", color: "#85BB65", fontWeight: 700, letterSpacing: "0.5px" }}>
+                            <div style={{ fontSize: ".75rem", color: var(--text-secondary), marginBottom: ".25rem", fontWeight: 600 }}>REFERENCIA DE PAGO MÓVIL:</div>
+                            <div style={{ fontSize: "1rem", color: var(--color-primary), fontWeight: 700, letterSpacing: "0.5px" }}>
                               {item.ticket.paymentMobileRef}
                             </div>
                           </div>
@@ -172,7 +172,7 @@ function ConfirmarCuposPageContent() {
                       background: "#f59e0b", 
                       borderRadius: "6px", 
                       fontSize: ".75rem", 
-                      color: "#3E3E3C", 
+                      color: var(--text-primary), 
                       fontWeight: 700 
                     }}>
                       PENDIENTE
@@ -188,7 +188,7 @@ function ConfirmarCuposPageContent() {
                       flex: 1,
                       padding: ".75rem 1.5rem",
                       background: processing === item.id ? "#6b7280" : "#85BB65",
-                      color: "#3E3E3C",
+                      color: var(--text-primary),
                       border: "none",
                       borderRadius: "8px",
                       fontWeight: 700,
@@ -204,7 +204,7 @@ function ConfirmarCuposPageContent() {
                       flex: 1,
                       padding: ".75rem 1.5rem",
                       background: processing === item.id ? "#6b7280" : "#ef4444",
-                      color: "#3E3E3C",
+                      color: var(--text-primary),
                       border: "none",
                       borderRadius: "8px",
                       fontWeight: 700,

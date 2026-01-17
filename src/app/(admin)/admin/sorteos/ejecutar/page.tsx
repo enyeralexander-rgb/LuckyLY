@@ -109,7 +109,7 @@ function EjecutarSorteosPageContent() {
         {loading ? (
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando sorteos...</div>
         ) : raffles.length === 0 ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: var(--text-secondary) }}>
             No hay sorteos activos disponibles para ejecutar
           </div>
         ) : (
@@ -124,7 +124,7 @@ function EjecutarSorteosPageContent() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                     <div style={{ flex: 1 }}>
                       <h3 style={{ margin: "0 0 .5rem" }}>{raffle.title}</h3>
-                      <div style={{ display: "grid", gap: ".5rem", fontSize: ".875rem", color: "#94a3b8" }}>
+                      <div style={{ display: "grid", gap: ".5rem", fontSize: ".875rem", color: var(--text-secondary) }}>
                         <div>
                           <strong>Tipo:</strong> {raffle.type} | <strong>Precio:</strong> Bs. {Number(raffle.pricePerSlot).toFixed(2)} | <strong>Creado por:</strong> {raffle.createdBy?.name || "N/A"}
                         </div>
@@ -142,7 +142,7 @@ function EjecutarSorteosPageContent() {
                         style={{ 
                           padding: ".75rem 1.5rem", 
                           background: "#85BB65", 
-                          color: "#3E3E3C", 
+                          color: var(--text-primary), 
                           borderRadius: "8px", 
                           fontWeight: 700,
                           textDecoration: "none",
@@ -166,7 +166,7 @@ function EjecutarSorteosPageContent() {
                       <span style={{ 
                         padding: ".75rem 1.5rem", 
                         background: "#f59e0b", 
-                        color: "#3E3E3C", 
+                        color: var(--text-primary), 
                         borderRadius: "8px", 
                         fontWeight: 700,
                         whiteSpace: "nowrap"
@@ -176,19 +176,19 @@ function EjecutarSorteosPageContent() {
                     ) : null}
                   </div>
                   <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
-                    <span style={{ padding: ".5rem .75rem", background: "#85BB65", borderRadius: "6px", fontSize: ".875rem", fontWeight: 600, color: "#3E3E3C" }}>
-                      Disponibles: <strong style={{ color: "#3E3E3C" }}>{availableSlots}</strong>
+                    <span style={{ padding: ".5rem .75rem", background: "#85BB65", borderRadius: "6px", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
+                      Disponibles: <strong style={{ color: var(--text-primary) }}>{availableSlots}</strong>
                     </span>
-                    <span style={{ padding: ".5rem .75rem", background: "#85BB65", borderRadius: "6px", fontSize: ".875rem", fontWeight: 600, color: "#3E3E3C" }}>
-                      Confirmados: <strong style={{ color: "#3E3E3C" }}>{confirmedItems.length}</strong>
+                    <span style={{ padding: ".5rem .75rem", background: "#85BB65", borderRadius: "6px", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
+                      Confirmados: <strong style={{ color: var(--text-primary) }}>{confirmedItems.length}</strong>
                     </span>
                     {canExecute(raffle) && (
-                      <span style={{ padding: ".5rem .75rem", background: "#85BB65", borderRadius: "6px", fontSize: ".875rem", fontWeight: 600, color: "#3E3E3C" }}>
+                      <span style={{ padding: ".5rem .75rem", background: "#85BB65", borderRadius: "6px", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
                         ✅ Listo para ejecutar
                       </span>
                     )}
                     {!canExecute(raffle) && availableSlots === 0 && raffle.status === "ACTIVE" && (
-                      <span style={{ padding: ".5rem .75rem", background: "#f59e0b", borderRadius: "6px", fontSize: ".875rem", fontWeight: 600, color: "#3E3E3C" }}>
+                      <span style={{ padding: ".5rem .75rem", background: "#f59e0b", borderRadius: "6px", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
                         ⏳ Esperando fecha de inicio
                       </span>
                     )}

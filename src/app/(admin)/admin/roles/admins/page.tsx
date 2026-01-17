@@ -232,9 +232,9 @@ function GestionarAdminsPageContent() {
               style={{
                 padding: ".5rem 1rem",
                 borderRadius: "8px",
-                border: "1px solid #d4d4c4",
-                background: "#F5F5E6",
-                color: "#3E3E3C",
+                border: 1px solid var(--border-color),
+                background: var(--input-bg),
+                color: var(--text-primary),
                 cursor: "pointer"
               }}
             >
@@ -272,26 +272,26 @@ function GestionarAdminsPageContent() {
               placeholder="Nombre completo *"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
             />
             <input
               type="email"
               placeholder="Email *"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
             />
             <input
               type="text"
               placeholder="Nombre de usuario (opcional)"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
             />
             <select
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value as "AGENT" | "SUPERADMIN" | "CONTABLE" | "MASTER" })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C", cursor: "pointer" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary), cursor: "pointer" }}
             >
               <option value="AGENT">Agente</option>
               <option value="SUPERADMIN">Super Administrador</option>
@@ -303,7 +303,7 @@ function GestionarAdminsPageContent() {
               placeholder={editingId ? "Nueva contraseña (dejar vacío para no cambiar)" : "Contraseña *"}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
             />
             <div style={{ display: "flex", gap: "1rem" }}>
               <button
@@ -340,7 +340,7 @@ function GestionarAdminsPageContent() {
         {loading ? (
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         ) : admins.length === 0 ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: var(--text-secondary) }}>
             No hay administradores registrados{roleFilter !== "ALL" ? ` con el rol ${getRoleLabel(roleFilter)}` : ""}
           </div>
         ) : (
@@ -377,13 +377,13 @@ function GestionarAdminsPageContent() {
                       </span>
                     )}
                   </div>
-                  <p style={{ margin: ".25rem 0", color: "#94a3b8" }}>{admin.email}</p>
+                  <p style={{ margin: ".25rem 0", color: var(--text-secondary) }}>{admin.email}</p>
                   {admin.username && (
-                    <p style={{ margin: ".25rem 0", color: "#94a3b8", fontSize: ".875rem" }}>
+                    <p style={{ margin: ".25rem 0", color: var(--text-secondary), fontSize: ".875rem" }}>
                       Usuario: {admin.username}
                     </p>
                   )}
-                  <p style={{ margin: ".25rem 0", color: "#94a3b8", fontSize: ".875rem" }}>
+                  <p style={{ margin: ".25rem 0", color: var(--text-secondary), fontSize: ".875rem" }}>
                     Creado: {new Date(admin.createdAt).toLocaleDateString()}
                     {admin.createdBy && ` por ${admin.createdBy.name}`}
                   </p>
