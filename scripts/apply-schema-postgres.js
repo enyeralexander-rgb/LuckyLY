@@ -58,15 +58,34 @@ async function applySchema() {
 
 
 async function createMasterUserManually() {
-  const databaseUrl = process.env.DATABASE_URL;
+  let databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error('DATABASE_URL no definida');
   }
 
+  // Limpiar parámetros SSL obsoletos que causan warnings en pg-connection-string
+  const cleanDatabaseUrl = (url) => {
+    try {
+      const urlObj = new URL(url);
+      // Remover parámetros SSL obsoletos
+      const obsoleteParams = ['sslmode', 'sslcert', 'sslkey', 'sslrootcert'];
+      obsoleteParams.forEach(param => {
+        if (urlObj.searchParams.has(param)) {
+          urlObj.searchParams.delete(param);
+        }
+      });
+      return urlObj.toString();
+    } catch (error) {
+      return url;
+    }
+  };
+
+  databaseUrl = cleanDatabaseUrl(databaseUrl);
+
   // Crear pool y adapter para Prisma 7
   const pool = new Pool({
     connectionString: databaseUrl,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: true }
   });
   const adapter = new PrismaPg(pool);
   const prisma = new PrismaClient({ adapter });

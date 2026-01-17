@@ -6,14 +6,35 @@ import pg from "pg";
 const { Pool } = pg;
 
 // Prisma 7 con adapter para seeds
-const databaseUrl = process.env.DATABASE_URL;
+let databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   throw new Error("DATABASE_URL no está definida");
 }
 
+// Limpiar parámetros SSL obsoletos que causan warnings en pg-connection-string
+// Remover sslmode=require, sslmode=prefer, sslmode=verify-ca que son tratados como aliases
+const cleanDatabaseUrl = (url: string): string => {
+  try {
+    const urlObj = new URL(url);
+    // Remover parámetros SSL obsoletos
+    const obsoleteParams = ['sslmode', 'sslcert', 'sslkey', 'sslrootcert'];
+    obsoleteParams.forEach(param => {
+      if (urlObj.searchParams.has(param)) {
+        urlObj.searchParams.delete(param);
+      }
+    });
+    return urlObj.toString();
+  } catch (error) {
+    // Si no es una URL válida, devolver como está
+    return url;
+  }
+};
+
+databaseUrl = cleanDatabaseUrl(databaseUrl);
+
 const pool = new Pool({
   connectionString: databaseUrl,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false
 });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
