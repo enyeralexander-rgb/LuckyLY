@@ -220,7 +220,7 @@ function tryForceReset() {
     console.log('⚠️  El usuario MASTER se recreará automáticamente');
     console.log('═══════════════════════════════════════════════════════\n');
     
-    execSync('npx prisma db push --force-reset --accept-data-loss --skip-generate', {
+    execSync('npx prisma db push --force-reset --accept-data-loss', {
       stdio: 'inherit',
       env: process.env
     });
