@@ -63,12 +63,19 @@ function tryMigrateDeploy() {
 
 function tryResolveAndRetry() {
   try {
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('🔧 ESTRATEGIA: Intentando resolver migraciones fallidas');
+    console.log('═══════════════════════════════════════════════════════');
+    
     // Obtener el nombre de la migración fallida
     const migrations = getAllMigrations();
     if (migrations.length === 0) {
       console.log('❌ No se encontraron migraciones');
+      console.log('⚠️  Pasando a estrategia alternativa (db push)...\n');
       return tryDbPush();
     }
+    
+    console.log(`📋 Encontradas ${migrations.length} migraciones`);
     
     // Intentar marcar todas las migraciones como aplicadas (resolve)
     console.log('🔄 Marcando migraciones como resueltas...');
@@ -78,10 +85,10 @@ function tryResolveAndRetry() {
           stdio: 'pipe',
           env: process.env
         });
-        console.log(`✅ Migración "${migration}" marcada como aplicada`);
+        console.log(`   ✅ Migración "${migration}" marcada como aplicada`);
       } catch (e) {
         // Continuar aunque falle
-        console.log(`⚠️  No se pudo resolver "${migration}"`);
+        console.log(`   ⚠️  No se pudo resolver "${migration}"`);
       }
     }
     
@@ -91,11 +98,11 @@ function tryResolveAndRetry() {
       stdio: 'inherit',
       env: process.env
     });
-    console.log('✅ Migraciones aplicadas exitosamente');
+    console.log('✅ Migraciones aplicadas exitosamente\n');
     return true;
   } catch (error) {
-    console.log('❌ No se pudo resolver automáticamente');
-    console.log('⚠️  Intentando con prisma db push...');
+    console.log('\n❌ No se pudo resolver automáticamente con migrate resolve');
+    console.log('⚠️  Pasando a estrategia alternativa (db push)...\n');
     return tryDbPush();
   }
 }
@@ -111,30 +118,87 @@ function tryBaseline() {
   }
 }
 
+function tryAddProblematicColumns() {
+  if (!process.env.DATABASE_URL) {
+    console.log('⚠️  DATABASE_URL no disponible, saltando pre-fix de columnas');
+    return;
+  }
+
+  try {
+    console.log('\n🔧 Intentando agregar columnas problemáticas con defaults...');
+    
+    // Agregar columna `type` a RaffleTemplate si no existe
+    console.log('   • Agregando columna "type" a RaffleTemplate...');
+    execSync(
+      `psql "${process.env.DATABASE_URL}" -c "ALTER TABLE \\"RaffleTemplate\\" ADD COLUMN IF NOT EXISTS type \\"DrawType\\" DEFAULT 'NUMBERS';"`,
+      { stdio: 'pipe', env: process.env }
+    );
+    console.log('   ✅ Columna "type" agregada o ya existe');
+
+    // Agregar columna `updatedAt` a Notification si no existe
+    console.log('   • Agregando columna "updatedAt" a Notification...');
+    execSync(
+      `psql "${process.env.DATABASE_URL}" -c "ALTER TABLE \\"Notification\\" ADD COLUMN IF NOT EXISTS \\"updatedAt\\" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP;"`,
+      { stdio: 'pipe', env: process.env }
+    );
+    console.log('   ✅ Columna "updatedAt" agregada o ya existe');
+    
+    console.log('✅ Pre-fix de columnas completado\n');
+  } catch (error) {
+    console.log('⚠️  No se pudieron agregar columnas con defaults (esto es normal si las tablas no existen)');
+    console.log('   Continuando con el flujo normal...\n');
+  }
+}
+
 function tryDbPush() {
+  // Intentar agregar columnas problemáticas con defaults ANTES de db push
+  tryAddProblematicColumns();
+  
   try {
     console.log('🔄 Sincronizando esquema con prisma db push...');
     console.log('ℹ️  Esto actualizará el esquema de la base de datos para que coincida con Prisma.');
-    execSync('npx prisma db push --accept-data-loss', {
-      stdio: 'inherit',
-      env: process.env
+    
+    // Capturar stdout y stderr para poder analizar el error completo
+    const result = execSync('npx prisma db push --accept-data-loss', {
+      stdio: 'pipe', // Cambiar a 'pipe' para capturar salida
+      env: process.env,
+      encoding: 'utf8'
     });
+    
+    console.log(result); // Mostrar la salida
     console.log('✅ Esquema sincronizado exitosamente');
     return true;
   } catch (error) {
-    const errorMsg = error.message || error.toString();
+    // Capturar TANTO el mensaje de error como stdout/stderr
+    const errorMsg = error.message || '';
+    const stdout = error.stdout || '';
+    const stderr = error.stderr || '';
+    const fullOutput = `${errorMsg}\n${stdout}\n${stderr}`.toLowerCase();
+    
+    console.log('📋 Salida del comando db push:');
+    if (stdout) console.log(stdout);
+    if (stderr) console.log(stderr);
     
     // Si el error es que no hay cambios, está bien
-    if (errorMsg.includes('already in sync') || errorMsg.includes('No schema changes') || errorMsg.includes('already up to date')) {
+    if (fullOutput.includes('already in sync') || 
+        fullOutput.includes('no schema changes') || 
+        fullOutput.includes('already up to date')) {
       console.log('ℹ️  El esquema ya está sincronizado. Continuando...');
       return true;
     }
     
     // Si el error es por cambios que no se pueden ejecutar (columnas requeridas sin default)
-    if (errorMsg.includes('cannot be executed') || errorMsg.includes('Added the required column') || errorMsg.includes('without a default value')) {
+    // O si contiene el error de RaffleTemplate o Notification
+    if (fullOutput.includes('cannot be executed') || 
+        fullOutput.includes('added the required column') || 
+        fullOutput.includes('without a default value') ||
+        fullOutput.includes('raffletemplate') ||
+        fullOutput.includes('notification') ||
+        fullOutput.includes('it is not possible to execute this step')) {
       console.log('⚠️  Cambios que no se pueden ejecutar detectados');
-      console.log('⚠️  Intentando con --force-reset para recrear la base de datos...');
-      console.log('⚠️  ADVERTENCIA: Esto eliminará todos los datos existentes');
+      console.log('⚠️  Columnas requeridas sin default value encontradas');
+      console.log('⚠️  Ejecutando --force-reset para recrear la base de datos...');
+      console.log('⚠️  ADVERTENCIA: Esto eliminará TODOS los datos existentes');
       return tryForceReset();
     }
     
@@ -148,19 +212,36 @@ function tryDbPush() {
 
 function tryForceReset() {
   try {
-    console.log('🔄 Reseteando base de datos con prisma db push --force-reset...');
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('🚨 RESETEANDO BASE DE DATOS COMPLETA');
+    console.log('═══════════════════════════════════════════════════════');
     console.log('⚠️  ADVERTENCIA: Todos los datos serán eliminados');
+    console.log('⚠️  Se recreará el esquema completo desde cero');
+    console.log('⚠️  El usuario MASTER se recreará automáticamente');
+    console.log('═══════════════════════════════════════════════════════\n');
+    
     execSync('npx prisma db push --force-reset --accept-data-loss --skip-generate', {
       stdio: 'inherit',
       env: process.env
     });
-    console.log('✅ Base de datos reseteada y esquema aplicado exitosamente');
+    
+    console.log('\n✅✅✅ Base de datos reseteada y esquema aplicado exitosamente ✅✅✅');
+    console.log('✅ Todas las tablas fueron recreadas');
+    console.log('✅ Esquema está sincronizado con prisma/schema.prisma');
+    console.log('✅ Listo para crear el usuario MASTER\n');
     return true;
   } catch (error) {
     const errorMsg = error.message || error.toString();
-    console.error('❌ Error en force reset:', errorMsg.substring(0, 300));
+    const stdout = error.stdout || '';
+    const stderr = error.stderr || '';
+    
+    console.error('\n❌❌❌ ERROR EN FORCE RESET ❌❌❌');
+    console.error('Mensaje:', errorMsg.substring(0, 500));
+    if (stdout) console.error('Stdout:', stdout.substring(0, 500));
+    if (stderr) console.error('Stderr:', stderr.substring(0, 500));
     console.error('⚠️  Continuando con el build...');
     console.error('⚠️  Asegúrate de resetear la base de datos manualmente.');
+    console.error('⚠️  Comando sugerido: npx prisma db push --force-reset\n');
     return false;
   }
 }
