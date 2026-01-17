@@ -90,7 +90,7 @@ function HistorialPageContent() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
           <h1 style={{ margin: 0 }}>Historial de Dinámicas</h1>
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <Link href="/admin" style={{ color: "#85BB65", textDecoration: "none", fontWeight: 600 }}>← Volver</Link>
+            <Link href="/admin" style={{ color: var(--color-primary), textDecoration: "none", fontWeight: 600 }}>← Volver</Link>
           </div>
         </div>
         <div className="card" style={{ display: "grid", gap: "1rem", marginBottom: "1rem" }}>
@@ -103,7 +103,7 @@ function HistorialPageContent() {
               max="31"
               value={filters.day}
               onChange={(e) => setFilters({ ...filters, day: e.target.value })}
-              style={{ padding: ".5rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".5rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
             />
             <input
               type="number"
@@ -112,7 +112,7 @@ function HistorialPageContent() {
               max="12"
               value={filters.month}
               onChange={(e) => setFilters({ ...filters, month: e.target.value })}
-              style={{ padding: ".5rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".5rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
             />
             <input
               type="number"
@@ -121,12 +121,12 @@ function HistorialPageContent() {
               max="2100"
               value={filters.year}
               onChange={(e) => setFilters({ ...filters, year: e.target.value })}
-              style={{ padding: ".5rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".5rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
             />
             <select
               value={filters.type}
               onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-              style={{ padding: ".5rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".5rem", borderRadius: "8px", border: 1px solid var(--border-color), background: var(--input-bg), color: var(--text-primary) }}
             >
               <option value="">Todos los tipos</option>
               <option value="NUMBERS">NÚMEROS</option>
@@ -140,7 +140,7 @@ function HistorialPageContent() {
         {loading ? (
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         ) : raffles.length === 0 ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>No hay sorteos ejecutados en el historial.</div>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: var(--text-secondary) }}>No hay sorteos ejecutados en el historial.</div>
         ) : (
           <div style={{ display: "grid", gap: "1rem" }}>
             {raffles.map((raffle) => (
@@ -148,10 +148,10 @@ function HistorialPageContent() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", flexWrap: "wrap", gap: "1rem" }}>
                   <div style={{ flex: 1 }}>
                     <h3 style={{ margin: "0 0 .5rem", fontSize: "1.25rem" }}>{raffle.title}</h3>
-                    <div style={{ display: "grid", gap: ".5rem", color: "#94a3b8", fontSize: ".875rem" }}>
+                    <div style={{ display: "grid", gap: ".5rem", color: var(--text-secondary), fontSize: ".875rem" }}>
                       <div><strong>Tipo:</strong> {raffle.type}</div>
                       <div><strong>Ejecutado:</strong> {raffle.executedAt ? new Date(raffle.executedAt).toLocaleString("es-VE", { dateStyle: "long", timeStyle: "short" }) : "N/A"}</div>
-                      <div><strong>Ganador(es):</strong> <span style={{ color: "#85BB65", fontWeight: 700 }}>{raffle.winningItem || "N/A"}</span></div>
+                      <div><strong>Ganador(es):</strong> <span style={{ color: var(--color-primary), fontWeight: 700 }}>{raffle.winningItem || "N/A"}</span></div>
                       {raffle.prizes && Array.isArray(raffle.prizes) && raffle.prizes.length > 0 && (
                         <div>
                           <strong>Premios:</strong>

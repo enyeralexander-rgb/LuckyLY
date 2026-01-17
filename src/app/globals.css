@@ -343,6 +343,101 @@ body[data-theme="dark"] {
   border-color: var(--color-primary);
 }
 
+/* ===== ADMIN SPECIFIC STYLES ===== */
+.admin-container {
+  padding-top: 2rem;
+  max-width: 1400px;
+}
+
+.admin-title {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.admin-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.admin-card-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.admin-card-text {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+.admin-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: opacity 0.3s ease;
+}
+
+.admin-link:hover {
+  opacity: 0.8;
+}
+
+.admin-metric-value {
+  margin: 0.5rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.admin-metric-label {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.admin-button-primary {
+  padding: 0.5rem 1rem;
+  background: var(--color-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.admin-button-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.admin-button-secondary {
+  padding: 0.5rem 1rem;
+  background: var(--button-secondary-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.admin-button-secondary:hover {
+  background: var(--button-secondary-hover);
+}
+
+.admin-text-secondary {
+  color: var(--text-secondary);
+}
+
+.admin-text-tertiary {
+  color: var(--text-tertiary);
+}
+
 /* ===== MOBILE MENU AUTH BUTTONS ===== */
 .header-mobile-divider {
   border-top: 2px solid var(--header-border);

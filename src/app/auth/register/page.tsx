@@ -226,22 +226,42 @@ function RegisterPageContent() {
           console.error("Error al parsear respuesta de login:", parseError);
           setMessage("Registro exitoso. Por favor inicia sesión manualmente.");
           setLoading(false);
+          setTimeout(() => router.push("/auth/login"), 2000);
           return;
         }
         
-        if (loginRes.ok) {
+        if (loginRes.ok && loginData.token && loginData.user) {
+          // Guardar autenticación
           setStoredAuth({ token: loginData.token, user: loginData.user });
+          
+          // Limpiar código de referido
           if (referralCode) {
             localStorage.removeItem("referralCode");
           }
+          
+          // Mostrar mensaje de éxito
+          setMessage("✅ Registro exitoso. Redirigiendo...");
+          
+          // Redirigir según el rol
           const role = loginData.user.role;
-          router.push(role === "AGENT" || role === "CONTABLE" || role === "SUPERADMIN" || role === "MASTER" ? "/admin" : "/");
+          const redirectUrl = (role === "AGENT" || role === "CONTABLE" || role === "SUPERADMIN" || role === "MASTER") 
+            ? "/admin" 
+            : "/";
+          
+          // Usar window.location.href para asegurar la redirección completa
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 1000);
         } else {
           setMessage("Registro exitoso. Inicia sesión para continuar.");
+          setLoading(false);
+          setTimeout(() => router.push("/auth/login"), 2000);
         }
       } catch (loginErr) {
         console.error("Error en autologin:", loginErr);
         setMessage("Registro exitoso. Por favor inicia sesión manualmente.");
+        setLoading(false);
+        setTimeout(() => router.push("/auth/login"), 2000);
       }
     } catch (err) {
       console.error("Error al registrarse:", err);

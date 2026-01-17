@@ -124,7 +124,7 @@ function UserStatsPageContent() {
           ← Volver a Estadísticas
         </button>
 
-        <h1 style={{ color: "#3E3E3C", marginBottom: "2rem" }}>Estadísticas de Usuario</h1>
+        <h1 style={{ color: var(--text-primary), marginBottom: "2rem" }}>Estadísticas de Usuario</h1>
 
         {/* User Info */}
         <div className="card" style={{ marginBottom: "2rem", padding: "1.5rem" }}>
@@ -165,14 +165,14 @@ function UserStatsPageContent() {
         {/* Stats Summary */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
           <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-            <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#6b7280", marginBottom: "0.5rem" }}>Total Gastado</h3>
-            <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#85BB65" }}>
+            <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: var(--text-tertiary), marginBottom: "0.5rem" }}>Total Gastado</h3>
+            <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: var(--color-primary) }}>
               {stats.totalSpent.toFixed(2)} Bs.
             </p>
           </div>
           <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-            <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#6b7280", marginBottom: "0.5rem" }}>Total de Compras</h3>
-            <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#3E3E3C" }}>{stats.purchaseCount}</p>
+            <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: var(--text-tertiary), marginBottom: "0.5rem" }}>Total de Compras</h3>
+            <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: var(--text-primary) }}>{stats.purchaseCount}</p>
           </div>
         </div>
 
@@ -236,7 +236,7 @@ function UserStatsPageContent() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <p style={{ textAlign: "center", color: "#6b7280", padding: "2rem" }}>No hay datos para mostrar en el período seleccionado</p>
+            <p style={{ textAlign: "center", color: var(--text-tertiary), padding: "2rem" }}>No hay datos para mostrar en el período seleccionado</p>
           )}
         </div>
 
@@ -260,7 +260,7 @@ function UserStatsPageContent() {
                       <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{formatDate(ticket.purchasedAt)}</td>
                       <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{ticket.raffleTitle}</td>
                       <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{ticket.raffleType}</td>
-                      <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "right", fontWeight: 600, color: "#85BB65" }}>
+                      <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "right", fontWeight: 600, color: var(--color-primary) }}>
                         {ticket.totalPaid.toFixed(2)} Bs.
                       </td>
                     </tr>
@@ -269,7 +269,7 @@ function UserStatsPageContent() {
               </table>
             </div>
           ) : (
-            <p style={{ textAlign: "center", color: "#6b7280", padding: "2rem" }}>No hay compras en el período seleccionado</p>
+            <p style={{ textAlign: "center", color: var(--text-tertiary), padding: "2rem" }}>No hay compras en el período seleccionado</p>
           )}
         </div>
       </main>

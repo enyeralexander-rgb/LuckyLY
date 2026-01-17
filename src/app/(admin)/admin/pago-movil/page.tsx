@@ -191,17 +191,17 @@ function PagoMovilPageContent() {
                 />
               </div>
             ) : (
-              <div style={{ padding: "2rem", textAlign: "center", color: "#3E3E3C", background: "#f5f5e6", borderRadius: "8px", border: "1px dashed #d4d4c4" }}>
+              <div style={{ padding: "2rem", textAlign: "center", color: var(--text-primary), background: var(--input-bg), borderRadius: "8px", border: "1px dashed #d4d4c4" }}>
                 No hay imagen configurada
               </div>
             )}
           </div>
 
           <div>
-            <h3 style={{ margin: "0 0 1rem", color: "#3E3E3C" }}>Subir Nueva Imagen</h3>
+            <h3 style={{ margin: "0 0 1rem", color: var(--text-primary) }}>Subir Nueva Imagen</h3>
             <div style={{ display: "grid", gap: "1rem" }}>
               <div>
-                <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontSize: ".875rem" }}>
+                <label style={{ display: "block", marginBottom: ".5rem", color: var(--text-primary), fontSize: ".875rem" }}>
                   Seleccionar imagen (Formato 9:16, máximo 1080x1920px)
                 </label>
                 <input
@@ -213,16 +213,16 @@ function PagoMovilPageContent() {
                     width: "100%",
                     padding: ".75rem",
                     borderRadius: "8px",
-                    border: "1px solid #d4d4c4",
-                    background: "#F5F5E6",
-                    color: "#3E3E3C"
+                    border: 1px solid var(--border-color),
+                    background: var(--input-bg),
+                    color: var(--text-primary)
                   }}
                 />
               </div>
 
               {preview && (
                 <div>
-                  <div style={{ marginBottom: ".5rem", color: "#94a3b8", fontSize: ".875rem" }}>Vista previa:</div>
+                  <div style={{ marginBottom: ".5rem", color: var(--text-secondary), fontSize: ".875rem" }}>Vista previa:</div>
                   <img 
                     src={preview} 
                     alt="Preview" 
@@ -259,13 +259,13 @@ function PagoMovilPageContent() {
 
         <div className="card" style={{ padding: "1.5rem", display: "grid", gap: "1.5rem" }}>
           <div>
-            <h3 style={{ margin: "0 0 1rem", color: "#3E3E3C" }}>Datos para Copiar y Pegar</h3>
-            <p style={{ margin: "0 0 1rem", color: "#94a3b8", fontSize: ".875rem" }}>
+            <h3 style={{ margin: "0 0 1rem", color: var(--text-primary) }}>Datos para Copiar y Pegar</h3>
+            <p style={{ margin: "0 0 1rem", color: var(--text-secondary), fontSize: ".875rem" }}>
               Estos datos se mostrarán a los usuarios cuando seleccionen la opción de pago móvil para que puedan copiarlos fácilmente.
             </p>
             <div style={{ display: "grid", gap: "1rem" }}>
               <div>
-                <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontSize: ".875rem", fontWeight: 600 }}>
+                <label style={{ display: "block", marginBottom: ".5rem", color: var(--text-primary), fontSize: ".875rem", fontWeight: 600 }}>
                   CÉDULA:
                 </label>
                 <input
@@ -277,14 +277,14 @@ function PagoMovilPageContent() {
                     width: "100%",
                     padding: ".75rem",
                     borderRadius: "8px",
-                    border: "1px solid #d4d4c4",
-                    background: "#F5F5E6",
-                    color: "#3E3E3C"
+                    border: 1px solid var(--border-color),
+                    background: var(--input-bg),
+                    color: var(--text-primary)
                   }}
                 />
               </div>
               <div>
-                <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontSize: ".875rem", fontWeight: 600 }}>
+                <label style={{ display: "block", marginBottom: ".5rem", color: var(--text-primary), fontSize: ".875rem", fontWeight: 600 }}>
                   TELÉFONO:
                 </label>
                 <input
@@ -296,14 +296,14 @@ function PagoMovilPageContent() {
                     width: "100%",
                     padding: ".75rem",
                     borderRadius: "8px",
-                    border: "1px solid #d4d4c4",
-                    background: "#F5F5E6",
-                    color: "#3E3E3C"
+                    border: 1px solid var(--border-color),
+                    background: var(--input-bg),
+                    color: var(--text-primary)
                   }}
                 />
               </div>
               <div>
-                <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontSize: ".875rem", fontWeight: 600 }}>
+                <label style={{ display: "block", marginBottom: ".5rem", color: var(--text-primary), fontSize: ".875rem", fontWeight: 600 }}>
                   DESTINO:
                 </label>
                 <input
@@ -315,9 +315,9 @@ function PagoMovilPageContent() {
                     width: "100%",
                     padding: ".75rem",
                     borderRadius: "8px",
-                    border: "1px solid #d4d4c4",
-                    background: "#F5F5E6",
-                    color: "#3E3E3C"
+                    border: 1px solid var(--border-color),
+                    background: var(--input-bg),
+                    color: var(--text-primary)
                   }}
                 />
               </div>

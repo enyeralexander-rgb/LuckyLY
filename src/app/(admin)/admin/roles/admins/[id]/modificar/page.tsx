@@ -211,10 +211,10 @@ function ModificarAdminPageContent() {
           <h2 style={{ margin: "0 0 1rem" }}>Información de la Cuenta</h2>
           <div style={{ display: "grid", gap: ".75rem" }}>
             <div>
-              <strong style={{ color: "#3E3E3C" }}>ID:</strong> {admin.id}
+              <strong style={{ color: var(--text-primary) }}>ID:</strong> {admin.id}
             </div>
             <div>
-              <strong style={{ color: "#3E3E3C" }}>Estado:</strong>{" "}
+              <strong style={{ color: var(--text-primary) }}>Estado:</strong>{" "}
               <span
                 style={{
                   padding: ".25rem .5rem",
@@ -229,7 +229,7 @@ function ModificarAdminPageContent() {
               </span>
             </div>
             <div>
-              <strong style={{ color: "#3E3E3C" }}>Rol Actual:</strong>{" "}
+              <strong style={{ color: var(--text-primary) }}>Rol Actual:</strong>{" "}
               <span
                 style={{
                   padding: ".25rem .5rem",
@@ -244,15 +244,15 @@ function ModificarAdminPageContent() {
               </span>
             </div>
             <div>
-              <strong style={{ color: "#3E3E3C" }}>Fecha de Creación:</strong> {formatDate(admin.createdAt)}
+              <strong style={{ color: var(--text-primary) }}>Fecha de Creación:</strong> {formatDate(admin.createdAt)}
             </div>
             {admin.createdBy && (
               <div>
-                <strong style={{ color: "#3E3E3C" }}>Creado por:</strong> {admin.createdBy.name} ({admin.createdBy.email})
+                <strong style={{ color: var(--text-primary) }}>Creado por:</strong> {admin.createdBy.name} ({admin.createdBy.email})
               </div>
             )}
             <div>
-              <strong style={{ color: "#3E3E3C" }}>Última Actualización:</strong> {formatDate(admin.updatedAt)}
+              <strong style={{ color: var(--text-primary) }}>Última Actualización:</strong> {formatDate(admin.updatedAt)}
             </div>
           </div>
         </div>
@@ -261,7 +261,7 @@ function ModificarAdminPageContent() {
         <div className="card" style={{ padding: "1.5rem", display: "grid", gap: "1rem" }}>
           <h2 style={{ margin: 0 }}>Modificar Datos</h2>
           <div>
-            <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "#3E3E3C" }}>
+            <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
               Nombre completo *
             </label>
             <input
@@ -272,14 +272,14 @@ function ModificarAdminPageContent() {
                 width: "100%",
                 padding: ".75rem",
                 borderRadius: "8px",
-                border: "1px solid #d4d4c4",
-                background: "#F5F5E6",
-                color: "#3E3E3C"
+                border: 1px solid var(--border-color),
+                background: var(--input-bg),
+                color: var(--text-primary)
               }}
             />
           </div>
           <div>
-            <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "#3E3E3C" }}>
+            <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
               Email *
             </label>
             <input
@@ -290,14 +290,14 @@ function ModificarAdminPageContent() {
                 width: "100%",
                 padding: ".75rem",
                 borderRadius: "8px",
-                border: "1px solid #d4d4c4",
-                background: "#F5F5E6",
-                color: "#3E3E3C"
+                border: 1px solid var(--border-color),
+                background: var(--input-bg),
+                color: var(--text-primary)
               }}
             />
           </div>
           <div>
-            <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "#3E3E3C" }}>
+            <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
               Nombre de usuario (opcional)
             </label>
             <input
@@ -308,14 +308,14 @@ function ModificarAdminPageContent() {
                 width: "100%",
                 padding: ".75rem",
                 borderRadius: "8px",
-                border: "1px solid #d4d4c4",
-                background: "#F5F5E6",
-                color: "#3E3E3C"
+                border: 1px solid var(--border-color),
+                background: var(--input-bg),
+                color: var(--text-primary)
               }}
             />
           </div>
           <div>
-            <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "#3E3E3C" }}>
+            <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
               Rol *
             </label>
             <select
@@ -325,9 +325,9 @@ function ModificarAdminPageContent() {
                 width: "100%",
                 padding: ".75rem",
                 borderRadius: "8px",
-                border: "1px solid #d4d4c4",
-                background: "#F5F5E6",
-                color: "#3E3E3C",
+                border: 1px solid var(--border-color),
+                background: var(--input-bg),
+                color: var(--text-primary),
                 cursor: "pointer"
               }}
             >
@@ -338,7 +338,7 @@ function ModificarAdminPageContent() {
             </select>
           </div>
           <div>
-            <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "#3E3E3C" }}>
+            <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: var(--text-primary) }}>
               Nueva contraseña (dejar vacío para no cambiar)
             </label>
             <input
@@ -350,9 +350,9 @@ function ModificarAdminPageContent() {
                 width: "100%",
                 padding: ".75rem",
                 borderRadius: "8px",
-                border: "1px solid #d4d4c4",
-                background: "#F5F5E6",
-                color: "#3E3E3C"
+                border: 1px solid var(--border-color),
+                background: var(--input-bg),
+                color: var(--text-primary)
               }}
             />
           </div>
