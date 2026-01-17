@@ -25,9 +25,6 @@
     "prisma:update": "node scripts/update-prisma.js",
     "postbuild": "node scripts/copy-prisma-binary.js"
   },
-  "prisma": {
-    "seed": "node --loader ts-node/esm prisma/seed.ts"
-  },
   "ts-node": {
     "esm": true,
     "compilerOptions": {
