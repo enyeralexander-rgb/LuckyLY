@@ -7,6 +7,12 @@
  */
 
 import { execSync } from 'child_process';
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
+import bcrypt from 'bcryptjs';
+
+const { Pool } = pg;
 
 console.log('\n═══════════════════════════════════════════════════════');
 console.log('🐘 APLICAR SCHEMA DE PRISMA A POSTGRESQL');
@@ -51,6 +57,72 @@ async function applySchema() {
 }
 
 
+async function createMasterUserManually() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL no definida');
+  }
+
+  // Crear pool y adapter para Prisma 7
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: { rejectUnauthorized: true }
+  });
+  const adapter = new PrismaPg(pool);
+  const prisma = new PrismaClient({ adapter });
+
+  try {
+    const email = "enyeralexander@gmail.com";
+    const password = "0995697717";
+    const documentId = "V-0995697717";
+    const nationalId = "0995697717";
+    const nationalIdType = "V";
+
+    // Verificar si existe
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    if (existingUser) {
+      await prisma.user.update({
+        where: { email },
+        data: {
+          passwordHash,
+          role: 'MASTER',
+          emailVerified: true,
+          emailVerifiedAt: new Date(),
+          suspended: false,
+          documentId: existingUser.documentId || documentId,
+          nationalId: existingUser.nationalId || nationalId,
+          nationalIdType: existingUser.nationalIdType || nationalIdType,
+        }
+      });
+      console.log('  ✅ Usuario MASTER actualizado:', email);
+    } else {
+      await prisma.user.create({
+        data: {
+          email,
+          passwordHash,
+          name: "Administrador Master",
+          username: "master",
+          role: 'MASTER',
+          emailVerified: true,
+          emailVerifiedAt: new Date(),
+          documentId,
+          nationalId,
+          nationalIdType,
+        }
+      });
+      console.log('  ✅ Usuario MASTER creado:', email);
+    }
+  } finally {
+    await prisma.$disconnect();
+    await pool.end();
+  }
+}
+
 // Ejecutar
 async function main() {
   try {
@@ -68,10 +140,25 @@ async function main() {
     const schemaApplied = await applySchema();
 
     if (schemaApplied) {
-      // Ejecutar seed para crear datos iniciales (incluyendo MASTER)
-      console.log('🌱 Ejecutando seed...\n');
-      runCommand('npx prisma db seed');
-      console.log('✅ Seed ejecutado\n');
+      // Ejecutar seed directamente para crear usuario MASTER
+      console.log('🌱 Ejecutando seed para crear usuario MASTER...\n');
+      try {
+        // Ejecutar el seed directamente con Node.js
+        runCommand('node --loader ts-node/esm prisma/seed.ts');
+        console.log('✅ Seed ejecutado exitosamente\n');
+      } catch (seedError) {
+        console.error('❌ Error al ejecutar seed:', seedError.message);
+        console.log('⚠️  Intentando crear usuario MASTER manualmente...\n');
+
+        // Si falla el seed, crear el usuario MASTER manualmente
+        try {
+          await createMasterUserManually();
+          console.log('✅ Usuario MASTER creado manualmente\n');
+        } catch (manualError) {
+          console.error('❌ Error al crear usuario MASTER manualmente:', manualError.message);
+          console.log('⚠️  Continuando sin usuario MASTER...\n');
+        }
+      }
     }
     
     console.log('═══════════════════════════════════════════════════════');

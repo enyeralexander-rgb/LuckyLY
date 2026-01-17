@@ -25,15 +25,23 @@ export async function POST(request: Request) {
     }
 
     const { email, password } = parsed.data;
+    console.log("🔐 Intentando login con email:", email);
+
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
+      console.log("❌ Usuario no encontrado:", email);
       return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
     }
 
+    console.log("✅ Usuario encontrado:", { id: user.id, email: user.email, role: user.role });
+
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
+      console.log("❌ Password incorrecto para usuario:", email);
       return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
     }
+
+    console.log("✅ Login exitoso para:", email, "Role:", user.role);
 
     const token = jwt.sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: "12h" });
     

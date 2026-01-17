@@ -50,6 +50,8 @@ async function main() {
         }
       });
       console.log("  ✅ Usuario MASTER actualizado:", masterEmail);
+      console.log("     Role:", Role.MASTER);
+      console.log("     Password hash length:", passwordHash.length);
     } else {
       await prisma.user.create({
         data: {
@@ -66,6 +68,8 @@ async function main() {
         }
       });
       console.log("  ✅ Usuario MASTER creado:", masterEmail);
+      console.log("     Role:", Role.MASTER);
+      console.log("     Password hash length:", passwordHash.length);
     }
   } catch (error) {
     console.log("  ⚠️  Error al crear/actualizar MASTER (continuando):", error instanceof Error ? error.message : String(error));
