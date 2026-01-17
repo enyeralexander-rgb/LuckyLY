@@ -21,11 +21,9 @@
     "verify:types": "npx tsc --noEmit && echo '✓ Verificación de tipos completada sin errores'",
     "fix:webpack": "npm run stop && npm run clean:webpack && npm run clean:deep && echo '✅ Caché de webpack limpiada. Ejecuta: npm run dev'",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
     "prisma:update": "node scripts/update-prisma.js",
-    "postbuild": "node scripts/copy-prisma-binary.js",
-    "fix:webpack-error": "bash scripts/fix-webpack-error.sh"
+    "postbuild": "node scripts/copy-prisma-binary.js"
   },
   "prisma": {
     "seed": "node --loader ts-node/esm prisma/seed.ts"
