@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../../lib/prisma";
-import { verifyAuth } from "../../../../../../lib/auth";
+import { requireAuth, AuthError } from "../../../../../../lib/auth";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const auth = await verifyAuth(req);
-    if (!auth || !["SUPERADMIN", "MASTER"].includes(auth.role)) {
+    // Usar requireAuth que es la función exportada en lib/auth
+    let auth;
+    try {
+      auth = requireAuth(req, ["SUPERADMIN", "MASTER"]);
+    } catch (err) {
+      if (err instanceof AuthError) {
+        return NextResponse.json({ error: err.message }, { status: err.status });
+      }
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
@@ -40,6 +46,7 @@ export async function PUT(
     const roleHierarchy: Record<string, number> = {
       USER: 1,
       AGENT: 2,
+      CONTABLE: 2,
       SUPERADMIN: 3,
       MASTER: 4
     };
@@ -52,7 +59,7 @@ export async function PUT(
     }
 
     // No permitir suspenderse a sí mismo
-    if (user.id === auth.id) {
+    if (user.id === auth.userId) {
       return NextResponse.json(
         { error: "No puedes suspenderte a ti mismo" },
         { status: 400 }
@@ -86,10 +93,9 @@ export async function PUT(
         details: {
           targetUser: user.email,
           targetName: user.name,
-          reason: suspended ? (reason || "Sin motivo especificado") : "Usuario reactivado",
-          performedBy: auth.email
+          reason: suspended ? (reason || "Sin motivo especificado") : "Usuario reactivado"
         },
-        userId: auth.id
+        userId: auth.userId
       }
     });
 

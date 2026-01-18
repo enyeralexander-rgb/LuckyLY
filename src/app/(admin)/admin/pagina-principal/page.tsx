@@ -984,7 +984,7 @@ function PaginaPrincipalContent() {
                       if (res.ok) {
                         const data = await res.json();
                         setConfig({ ...config, instagramVideoUrl: data.url });
-                        loadImages();
+                        loadAvailableImages();
                         alert("Archivo subido exitosamente");
                       } else {
                         const error = await res.json();

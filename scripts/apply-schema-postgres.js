@@ -13,6 +13,12 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+
+// Función para generar UUID v4
+function generateUUID() {
+  return crypto.randomUUID();
+}
 
 const { Pool } = pg;
 
@@ -135,15 +141,19 @@ async function createMasterUserManually() {
     const now = new Date().toISOString();
 
     try {
-      // Insertar todos los campos obligatorios incluyendo documentId
+      // Insertar todos los campos obligatorios incluyendo documentId y UUID
       console.log('  📝 Insertando/actualizando usuario MASTER...');
+      
+      // Generar UUID para el campo id (requerido por Prisma Postgres)
+      const masterId = generateUUID();
       
       await prisma.$executeRaw`
         INSERT INTO "User" (
-          "email", "passwordHash", "name", "username", "documentId", 
+          "id", "email", "passwordHash", "name", "username", "documentId", 
           "nationalId", "nationalIdType", "role", "emailVerified", 
           "emailVerifiedAt", "suspended", "createdAt", "updatedAt"
         ) VALUES (
+          ${masterId}::text,
           ${email}::text,
           ${passwordHash}::text,
           ${name}::text,
@@ -177,9 +187,10 @@ async function createMasterUserManually() {
       console.log('⚠️  Intentando con documentId alternativo...');
       try {
         const altDocumentId = `V-MASTER-${Date.now()}`;
+        const altMasterId = generateUUID();
         await prisma.$executeRaw`
-          INSERT INTO "User" ("email", "passwordHash", "name", "documentId", "role", "emailVerified", "createdAt", "updatedAt")
-          VALUES (${email}::text, ${passwordHash}::text, ${name}::text, ${altDocumentId}::text, ${"MASTER"}::"Role", ${true}::boolean, ${now}::timestamp, ${now}::timestamp)
+          INSERT INTO "User" ("id", "email", "passwordHash", "name", "documentId", "role", "emailVerified", "createdAt", "updatedAt")
+          VALUES (${altMasterId}::text, ${email}::text, ${passwordHash}::text, ${name}::text, ${altDocumentId}::text, ${"MASTER"}::"Role", ${true}::boolean, ${now}::timestamp, ${now}::timestamp)
           ON CONFLICT ("email")
           DO UPDATE SET
             "passwordHash" = EXCLUDED."passwordHash",
@@ -231,13 +242,19 @@ async function main() {
         console.log('⚠️  Continuando sin usuario MASTER...\n');
       }
 
-      // Intentar ejecutar el seed completo (opcional)
-      console.log('🌱 Ejecutando seed completo (datos adicionales)...\n');
-      try {
-        runCommand('node --loader ts-node/esm prisma/seed.ts');
-        console.log('✅ Seed completo ejecutado\n');
-      } catch (seedError) {
-        console.log('⚠️  Seed completo falló, pero usuario MASTER ya está creado\n');
+      // NOTA: El seed NO se ejecuta automáticamente en producción
+      // Para ejecutar el seed manualmente, usar: npm run prisma:seed
+      // El seed borra todos los datos y crea usuarios de prueba
+      if (process.env.RUN_SEED === 'true') {
+        console.log('🌱 Ejecutando seed (datos de prueba)...\n');
+        try {
+          runCommand('node --loader ts-node/esm prisma/seed.ts');
+          console.log('✅ Seed ejecutado\n');
+        } catch (seedError) {
+          console.log('⚠️  Seed falló, pero usuario MASTER ya está creado\n');
+        }
+      } else {
+        console.log('ℹ️  Seed omitido (set RUN_SEED=true para ejecutar)\n');
       }
     }
     
