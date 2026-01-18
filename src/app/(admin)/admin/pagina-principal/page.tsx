@@ -448,7 +448,7 @@ function PaginaPrincipalContent() {
                       onClick={() => setShowImageSelector(!showImageSelector)}
                       style={{ padding: "0.75rem 1.5rem", background: "#2a8c4a", color: "#ffffff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}
                     >
-                      {showImageSelector ? "✖ Cerrar Selector" : "📁 Seleccionar Imágenes"}
+                      {showImageSelector ? "✖ Cerrar Selector" : "📁 SELECCIONAR ARCHIVO"}
                     </button>
                     
                     <label
@@ -464,12 +464,12 @@ function PaginaPrincipalContent() {
                         display: "inline-block"
                       }}
                     >
-                      {uploading ? "⏳ Subiendo..." : "📤 Subir Archivo"}
+                      {uploading ? "⏳ Subiendo..." : "📤 SUBIR ARCHIVO"}
                     </label>
                     <input
                       id="file-upload"
                       type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,video/mp4,video/webm,video/ogg"
                       onChange={handleFileUpload}
                       disabled={uploading}
                       style={{ display: "none" }}
@@ -895,21 +895,55 @@ function PaginaPrincipalContent() {
           </div>
         </div>
 
-        {/* Video de Instagram */}
+        {/* Link a Instagram y Media */}
         <div className="card" style={{ padding: "2rem", marginBottom: "1.5rem" }}>
-          <h2 style={{ margin: "0 0 1.5rem", color: "var(--text-primary)" }}>🎥 Video de Instagram</h2>
+          <h2 style={{ margin: "0 0 1.5rem", color: "var(--text-primary)" }}>📸 LINK A INSTAGRAM</h2>
+          
+          {/* Campo para URL de Instagram */}
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
+              Enlace a Instagram (URL)
+            </label>
+            <input
+              type="url"
+              value={config.instagramVideoUrl || ""}
+              onChange={(e) => setConfig({ ...config, instagramVideoUrl: e.target.value })}
+              placeholder="https://www.instagram.com/tu_cuenta"
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                borderRadius: "8px",
+                border: "1px solid var(--border-color)",
+                background: "var(--input-bg)",
+                color: "var(--text-primary)",
+                fontSize: "1rem"
+              }}
+            />
+            <small style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>
+              Ingresa el enlace a tu perfil o publicación de Instagram, o selecciona/sube un archivo de imagen o video
+            </small>
+          </div>
+
           <div>
             <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
-              Video Seleccionado
+              Archivo Seleccionado (Opcional)
             </label>
-            {config.instagramVideoUrl && (
+            {config.instagramVideoUrl && !config.instagramVideoUrl.startsWith("http") && (
               <div style={{ marginBottom: "0.75rem", display: "flex", gap: "0.5rem", alignItems: "center", padding: "0.75rem", background: "var(--card-bg)", borderRadius: "8px" }}>
-                <video
-                  src={config.instagramVideoUrl}
-                  style={{ width: "150px", height: "100px", objectFit: "cover", borderRadius: "4px", border: "1px solid var(--border-color)" }}
-                  muted
-                  loop
-                />
+                {config.instagramVideoUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+                  <video
+                    src={config.instagramVideoUrl}
+                    style={{ width: "150px", height: "100px", objectFit: "cover", borderRadius: "4px", border: "1px solid var(--border-color)" }}
+                    muted
+                    loop
+                  />
+                ) : (
+                  <img
+                    src={config.instagramVideoUrl}
+                    alt="Archivo seleccionado"
+                    style={{ width: "150px", height: "100px", objectFit: "cover", borderRadius: "4px", border: "1px solid var(--border-color)" }}
+                  />
+                )}
                 <div style={{ flex: 1, fontSize: "0.875rem", color: "var(--text-primary)", wordBreak: "break-all" }}>{config.instagramVideoUrl}</div>
                 <button
                   onClick={() => setConfig({ ...config, instagramVideoUrl: "" })}
@@ -919,18 +953,57 @@ function PaginaPrincipalContent() {
                 </button>
               </div>
             )}
-            <button
-              onClick={() => setShowVideoSelector(!showVideoSelector)}
-              style={{ padding: "0.75rem 1.5rem", background: "#2a8c4a", color: "#ffffff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}
-            >
-              {showVideoSelector ? "✖ Cerrar Selector" : "📁 Seleccionar Video"}
-            </button>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <button
+                onClick={() => setShowVideoSelector(!showVideoSelector)}
+                style={{ padding: "0.75rem 1.5rem", background: "#2a8c4a", color: "#ffffff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}
+              >
+                {showVideoSelector ? "✖ Cerrar Selector" : "📁 SELECCIONAR ARCHIVO"}
+              </button>
+              <label style={{ padding: "0.75rem 1.5rem", background: "#3b82f6", color: "#ffffff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                📤 SUBIR ARCHIVO
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  style={{ display: "none" }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !auth?.token) return;
+                    if (file.size > 50 * 1024 * 1024) {
+                      alert("El archivo debe ser menor a 50MB");
+                      return;
+                    }
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    try {
+                      const res = await fetch("/api/admin/homepage/images/upload", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${auth.token}` },
+                        body: formData
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        setConfig({ ...config, instagramVideoUrl: data.url });
+                        loadImages();
+                        alert("Archivo subido exitosamente");
+                      } else {
+                        const error = await res.json();
+                        alert(error.error || "Error al subir archivo");
+                      }
+                    } catch (error) {
+                      console.error("Error:", error);
+                      alert("Error al subir archivo");
+                    }
+                  }}
+                />
+              </label>
+            </div>
 
             {showVideoSelector && (
               <div style={{ marginTop: "1rem", padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
-                <h4 style={{ margin: "0 0 1rem", color: "var(--text-primary)" }}>Videos Disponibles en /public/images/</h4>
+                <h4 style={{ margin: "0 0 1rem", color: "var(--text-primary)" }}>Archivos Disponibles en /public/images/</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem", maxHeight: "400px", overflowY: "auto" }}>
-                  {availableImages.filter(img => img.type === "video").map((video) => (
+                  {availableImages.map((video) => (
                     <div
                       key={video.url}
                       onClick={() => {
@@ -958,12 +1031,20 @@ function PaginaPrincipalContent() {
                         }
                       }}
                     >
-                      <video
-                        src={video.url}
-                        style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "4px" }}
-                        muted
-                        loop
-                      />
+                      {video.type === "video" ? (
+                        <video
+                          src={video.url}
+                          style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "4px" }}
+                          muted
+                          loop
+                        />
+                      ) : (
+                        <img
+                          src={video.url}
+                          alt={video.name}
+                          style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "4px" }}
+                        />
+                      )}
                       <div style={{ fontSize: "0.75rem", color: "var(--text-primary)", marginTop: "0.25rem", textAlign: "center", wordBreak: "break-all" }}>
                         {video.name}
                       </div>
@@ -972,9 +1053,9 @@ function PaginaPrincipalContent() {
                       )}
                     </div>
                   ))}
-                  {availableImages.filter(img => img.type === "video").length === 0 && (
+                  {availableImages.length === 0 && (
                     <div style={{ gridColumn: "1/-1", textAlign: "center", color: "var(--text-tertiary)", padding: "2rem" }}>
-                      No hay videos disponibles en /public/images/
+                      No hay archivos disponibles en /public/images/
                     </div>
                   )}
                 </div>

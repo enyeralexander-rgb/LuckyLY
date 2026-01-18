@@ -72,7 +72,7 @@ export default function FavoritosPage() {
     <AuthGuard requiredRole={["USER"]}>
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "1200px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-          <h1 style={{ margin: 0 }}>⭐ Mis Favoritos</h1>
+          <h1 style={{ margin: 0, color: "var(--text-primary)" }}>⭐ Mis Favoritos</h1>
           <Link href="/cuenta" style={{ color: "#85BB65", textDecoration: "none", fontWeight: 600 }}>
             ← Volver a MI CUENTA
           </Link>
@@ -82,7 +82,7 @@ export default function FavoritosPage() {
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando favoritos...</div>
         ) : favorites.length === 0 ? (
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
-            <p style={{ margin: 0, color: "#6b7280" }}>No tienes sorteos favoritos aún.</p>
+            <p style={{ margin: 0, color: "var(--text-secondary)" }}>No tienes sorteos favoritos aún.</p>
             <Link href="/" style={{ color: "#85BB65", textDecoration: "none", marginTop: "1rem", display: "inline-block" }}>
               Explorar Sorteos →
             </Link>
@@ -96,7 +96,7 @@ export default function FavoritosPage() {
               return (
                 <div key={fav.id} className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                    <h3 style={{ margin: 0, color: "#3E3E3C" }}>{raffle.title}</h3>
+                    <h3 style={{ margin: 0, color: "var(--text-primary)" }}>{raffle.title}</h3>
                     <button
                       onClick={() => toggleFavorite(raffle.id)}
                       style={{
@@ -113,10 +113,10 @@ export default function FavoritosPage() {
                   </div>
 
                   {raffle.description && (
-                    <p style={{ margin: 0, color: "#6b7280", fontSize: "0.875rem" }}>{raffle.description}</p>
+                    <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.875rem" }}>{raffle.description}</p>
                   )}
 
-                  <div style={{ display: "flex", gap: "1rem", fontSize: "0.875rem", color: "#3E3E3C" }}>
+                  <div style={{ display: "flex", gap: "1rem", fontSize: "0.875rem", color: "var(--text-primary)" }}>
                     <span>💰 Bs. {Number(raffle.pricePerSlot).toFixed(2)}</span>
                     <span>🎯 {raffle.slots} cupos</span>
                   </div>
@@ -128,7 +128,7 @@ export default function FavoritosPage() {
                         display: "block",
                         padding: "0.75rem",
                         background: "#85BB65",
-                        color: "#3E3E3C",
+                        color: "var(--text-primary)",
                         textAlign: "center",
                         textDecoration: "none",
                         borderRadius: "8px",

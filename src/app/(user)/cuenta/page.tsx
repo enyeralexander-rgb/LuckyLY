@@ -71,7 +71,7 @@ export default function CuentaPage() {
     <AuthGuard requiredRole={["USER"]}>
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "1000px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-          <h1 style={{ margin: 0 }}>MI CUENTA</h1>
+          <h1 style={{ margin: 0, color: "var(--text-primary)" }}>MI CUENTA</h1>
           <Link href="/" style={{ color: "#85BB65", textDecoration: "none", fontWeight: 600 }}>← Volver al inicio</Link>
         </div>
 
@@ -95,7 +95,7 @@ export default function CuentaPage() {
                 justifyContent: "center",
                 fontSize: "2rem",
                 fontWeight: 700,
-                color: "#3E3E3C",
+                color: "var(--text-primary)",
                 cursor: "pointer",
                 transition: "opacity 0.2s",
                 opacity: avatarHover ? 0.8 : 1
@@ -182,7 +182,7 @@ export default function CuentaPage() {
           </div>
           <div style={{ flex: 1 }}>
             <h2 style={{ margin: "0 0 0.5rem", color: "#3E3E3C" }}>{displayName}</h2>
-            <p style={{ margin: 0, color: "#6b7280", fontSize: "0.875rem" }}>{userData?.email}</p>
+            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.875rem" }}>{userData?.email}</p>
           </div>
         </div>
 
@@ -213,7 +213,7 @@ export default function CuentaPage() {
               <div style={{ fontSize: "2rem" }}>⚙️</div>
               <div>
                 <h3 style={{ margin: 0, color: "#3E3E3C" }}>CONFIGURACIÓN DE LA CUENTA</h3>
-                <p style={{ margin: "0.25rem 0 0", color: "#6b7280", fontSize: "0.875rem" }}>
+                <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                   Cambiar correo, nombre de usuario, contraseña o eliminar cuenta
                 </p>
               </div>
@@ -246,7 +246,7 @@ export default function CuentaPage() {
               <div style={{ fontSize: "2rem" }}>🎲</div>
               <div>
                 <h3 style={{ margin: 0, color: "#3E3E3C" }}>TICKETS Y NOTIFICACIONES</h3>
-                <p style={{ margin: "0.25rem 0 0", color: "#6b7280", fontSize: "0.875rem" }}>
+                <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                   Ver notificaciones y tickets de compra
                 </p>
               </div>
@@ -279,7 +279,7 @@ export default function CuentaPage() {
               <div style={{ fontSize: "2rem" }}>⭐</div>
               <div>
                 <h3 style={{ margin: 0, color: "#3E3E3C" }}>MIS FAVORITOS</h3>
-                <p style={{ margin: "0.25rem 0 0", color: "#6b7280", fontSize: "0.875rem" }}>
+                <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                   Ver sorteos guardados como favoritos
                 </p>
               </div>
@@ -312,7 +312,7 @@ export default function CuentaPage() {
               <div style={{ fontSize: "2rem" }}>💳</div>
               <div>
                 <h3 style={{ margin: 0, color: "#3E3E3C" }}>HISTORIAL DE PAGOS</h3>
-                <p style={{ margin: "0.25rem 0 0", color: "#6b7280", fontSize: "0.875rem" }}>
+                <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                   Ver historial completo de pagos y compras
                 </p>
               </div>
@@ -345,7 +345,7 @@ export default function CuentaPage() {
               <div style={{ fontSize: "2rem" }}>📜</div>
               <div>
                 <h3 style={{ margin: 0, color: "#3E3E3C" }}>HISTORIAL</h3>
-                <p style={{ margin: "0.25rem 0 0", color: "#6b7280", fontSize: "0.875rem" }}>
+                <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                   Ver historial completo de todas tus compras
                 </p>
               </div>
@@ -378,7 +378,7 @@ export default function CuentaPage() {
               <div style={{ fontSize: "2rem" }}>🏦</div>
               <div>
                 <h3 style={{ margin: 0, color: "#3E3E3C" }}>DATOS BANCARIOS</h3>
-                <p style={{ margin: "0.25rem 0 0", color: "#6b7280", fontSize: "0.875rem" }}>
+                <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                   Modificar datos bancarios para compras y pagos
                 </p>
               </div>

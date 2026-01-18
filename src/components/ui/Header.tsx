@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { getStoredAuth, clearStoredAuth } from "../../lib/clientAuth";
 import { useRouter, usePathname } from "next/navigation";
 import NotificationBell from "./NotificationBell";
+import { useTheme } from "../../hooks/useTheme";
 
 type UserRole = "USER" | "AGENT" | "CONTABLE" | "SUPERADMIN" | "MASTER";
 
@@ -18,6 +19,7 @@ interface UserMenu {
 export function Header() {
   const router = useRouter();
   const pathname = usePathname();
+  const { isDark, toggleTheme } = useTheme();
   const [auth, setAuth] = useState<any>(null);
   const [userData, setUserData] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
@@ -130,7 +132,8 @@ export function Header() {
     ...navigationRoutes,
     { label: "MI CUENTA", href: "/cuenta", icon: "👤", divider: true },
     ...userAccountRoutes,
-    { label: "Cerrar sesión", href: "#", icon: "🚪", divider: true },
+    { label: isDark ? "Modo Claro" : "Modo Oscuro", href: "#theme", icon: isDark ? "☀️" : "🌙", divider: true },
+    { label: "Cerrar sesión", href: "#", icon: "🚪" },
   ];
 
   // Menú para administradores
@@ -181,6 +184,7 @@ export function Header() {
   // Menú público para usuarios no logueados
   const publicMenu: UserMenu[] = [
     ...navigationRoutes,
+    { label: isDark ? "Modo Claro" : "Modo Oscuro", href: "#theme", icon: isDark ? "☀️" : "🌙", divider: true },
   ];
 
   // Menú principal según estado de autenticación
@@ -202,12 +206,29 @@ export function Header() {
             {userMenuOpen && (
               <div className="header-menu-dropdown">
                 {mainMenu.map((item, index) => {
+                  // Botón de cerrar sesión
                   if (item.href === "#") {
                     return (
                       <button
                         key={index}
                         onClick={logout}
                         className="header-dropdown-item header-dropdown-button"
+                      >
+                        {item.icon && <span>{item.icon}</span>}
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  }
+                  // Botón de cambio de tema
+                  if (item.href === "#theme") {
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          toggleTheme();
+                          // No cerrar el menú para que el usuario vea el cambio
+                        }}
+                        className={`header-dropdown-item header-dropdown-theme ${item.divider ? "header-dropdown-divider" : ""}`}
                       >
                         {item.icon && <span>{item.icon}</span>}
                         <span>{item.label}</span>
@@ -280,12 +301,26 @@ export function Header() {
           {mobileMenuOpen && (
             <nav className="header-nav-mobile" ref={mobileMenuRef}>
               {mainMenu.map((item, index) => {
+                // Botón de cerrar sesión
                 if (item.href === "#") {
                   return (
                     <button
                       key={index}
                       onClick={logout}
                       className="header-mobile-item header-mobile-button"
+                    >
+                      {item.icon && <span>{item.icon}</span>}
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                }
+                // Botón de cambio de tema
+                if (item.href === "#theme") {
+                  return (
+                    <button
+                      key={index}
+                      onClick={toggleTheme}
+                      className="header-mobile-item header-mobile-theme"
                     >
                       {item.icon && <span>{item.icon}</span>}
                       <span>{item.label}</span>
@@ -327,6 +362,16 @@ export function Header() {
                   </Link>
                 </>
               )}
+              
+              {/* Botón de tema para usuarios no autenticados en móvil */}
+              <div className="header-mobile-divider" />
+              <button
+                onClick={toggleTheme}
+                className="header-mobile-item header-mobile-theme"
+              >
+                <span>{isDark ? "☀️" : "🌙"}</span>
+                <span>{isDark ? "Modo Claro" : "Modo Oscuro"}</span>
+              </button>
             </nav>
           )}
         </div>

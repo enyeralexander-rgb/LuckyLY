@@ -3,31 +3,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clearStoredAuth, getStoredAuth } from "../lib/clientAuth";
 import { useEffect, useState } from "react";
+import { useTheme } from "../hooks/useTheme";
 
 export function AdminNavBar() {
   const router = useRouter();
+  const { isDark, toggleTheme } = useTheme();
   const [role, setRole] = useState<string | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     const auth = getStoredAuth();
     setRole(auth?.user.role ?? null);
-    
-    // Cargar preferencia de dark mode
-    const savedTheme = localStorage.getItem("theme");
-    const isDark = savedTheme === "dark" || 
-                   (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    setDarkMode(isDark);
-    document.body.setAttribute("data-theme", isDark ? "dark" : "light");
   }, []);
-
-  function toggleDarkMode() {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    const theme = newMode ? "dark" : "light";
-    localStorage.setItem("theme", theme);
-    document.body.setAttribute("data-theme", theme);
-  }
 
   async function logout() {
     try {
@@ -65,11 +51,11 @@ export function AdminNavBar() {
           </nav>
           <div className="navbar-actions">
             <button
-              onClick={toggleDarkMode}
+              onClick={toggleTheme}
               className="theme-toggle-button"
-              title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+              title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
             >
-              {darkMode ? "☀️" : "🌙"}
+              {isDark ? "☀️" : "🌙"}
             </button>
             <button
               onClick={logout}

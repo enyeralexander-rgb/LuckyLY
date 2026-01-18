@@ -365,9 +365,10 @@ function TemplatesPageContent() {
                 padding: ".75rem", 
                 borderRadius: "8px", 
                 border: "1px solid var(--border-color)", 
-                background: (formData.type === "STATES" || formData.type === "ZODIAC") ? "#e5e7eb" : "#F5F5E6", 
+                background: (formData.type === "STATES" || formData.type === "ZODIAC") ? "var(--input-disabled-bg)" : "var(--input-bg)", 
                 color: "var(--text-primary)",
-                cursor: (formData.type === "STATES" || formData.type === "ZODIAC") ? "not-allowed" : "text"
+                cursor: (formData.type === "STATES" || formData.type === "ZODIAC") ? "not-allowed" : "text",
+                opacity: (formData.type === "STATES" || formData.type === "ZODIAC") ? 0.7 : 1
               }}
             />
             <small style={{ color: "var(--text-primary)", opacity: 0.7 }}>

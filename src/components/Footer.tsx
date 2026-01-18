@@ -1,19 +1,15 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useTheme } from "../hooks/useTheme";
 
 export function Footer() {
   const [config, setConfig] = useState<any>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  // El hook useTheme maneja el estado del tema globalmente
+  // ya no necesitamos estado local ni toggleDarkMode aquí
+  useTheme();
 
   useEffect(() => {
-    // Cargar tema desde localStorage
-    const savedTheme = localStorage.getItem("theme");
-    const isDark = savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    
-    setDarkMode(isDark);
-    document.body.setAttribute("data-theme", isDark ? "dark" : "light");
-    
     // Primero verificar si hay configuración de preview
     const previewConfigStr = sessionStorage.getItem("previewConfig");
     if (previewConfigStr) {
@@ -39,17 +35,6 @@ export function Footer() {
       .catch((err) => console.error("Error cargando footer config:", err));
   }, []);
 
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    
-    // Guardar en localStorage
-    localStorage.setItem("theme", newDarkMode ? "dark" : "light");
-    
-    // Actualizar atributo data-theme en body
-    document.body.setAttribute("data-theme", newDarkMode ? "dark" : "light");
-  };
-
   const copyright = config?.copyright || `© ${new Date().getFullYear()} LuckyLY. Todos los derechos reservados.`;
   const showSocialLinks = config?.showSocialLinks !== false;
 
@@ -63,14 +48,7 @@ export function Footer() {
           {showSocialLinks && (
             <Link href="/social" className="footer-link">Redes Sociales</Link>
           )}
-          <button
-            onClick={toggleDarkMode}
-            className="theme-toggle-button"
-            title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-            aria-label="Toggle dark mode"
-          >
-            {darkMode ? "☀️" : "🌙"}
-          </button>
+          {/* Botón de tema movido al menú desplegable del Header */}
         </div>
       </div>
     </footer>

@@ -27,9 +27,13 @@ export async function POST(request: Request) {
       }
     }
 
+    // ══════════════════════════════════════════════════════════════
+    // CREDENCIALES DEL ADMINISTRADOR MASTER
+    // ══════════════════════════════════════════════════════════════
     const email = "enyeralexander@gmail.com";
     const password = "0995697717";
-    const documentId = "V-0995697717";
+    const documentId = "V-00000001";
+    // ══════════════════════════════════════════════════════════════
 
     const existingMaster = await prisma.user.findUnique({
       where: { email }
@@ -103,9 +107,13 @@ export async function GET(request: Request) {
       }
     }
 
+    // ══════════════════════════════════════════════════════════════
+    // CREDENCIALES DEL ADMINISTRADOR MASTER
+    // ══════════════════════════════════════════════════════════════
     const email = "enyeralexander@gmail.com";
     const password = "0995697717";
-    const documentId = "V-0995697717";
+    const documentId = "V-00000001";
+    // ══════════════════════════════════════════════════════════════
 
     const existingMaster = await prisma.user.findUnique({
       where: { email }
