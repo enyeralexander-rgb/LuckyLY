@@ -97,38 +97,106 @@ export async function sendPasswordResetEmail(email: string, resetToken: string) 
 
 export async function sendEmailVerificationEmail(email: string, verificationToken: string) {
   const verificationUrl = `${getAppUrl()}/auth/verify-email?token=${verificationToken}`;
+  const appUrl = getAppUrl();
   
+  // Plantilla mejorada para evitar filtros de spam
   const html = `
     <!DOCTYPE html>
-    <html>
+    <html lang="es">
     <head>
       <meta charset="utf-8">
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .button { display: inline-block; padding: 12px 24px; background-color: #85BB65; color: #fff; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-        .footer { margin-top: 30px; font-size: 12px; color: #666; }
-      </style>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Verificación de Correo - LuckyLY</title>
     </head>
-    <body>
-      <div class="container">
-        <h1>Verifica tu Email</h1>
-        <p>Gracias por registrarte en LuckyLY.</p>
-        <p>Para completar tu registro, por favor verifica tu dirección de correo electrónico haciendo clic en el siguiente botón:</p>
-        <a href="${verificationUrl}" class="button">Verificar Email</a>
-        <p>O copia y pega este enlace en tu navegador:</p>
-        <p style="word-break: break-all;">${verificationUrl}</p>
-        <p><strong>Este enlace expirará en 24 horas.</strong></p>
-        <p>Si no creaste esta cuenta, ignora este mensaje.</p>
-        <div class="footer">
-          <p>© ${new Date().getFullYear()} LuckyLY. Todos los derechos reservados.</p>
-        </div>
-      </div>
+    <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f4f4;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f4f4f4;">
+        <tr>
+          <td align="center" style="padding: 40px 20px;">
+            <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <!-- Header -->
+              <tr>
+                <td style="padding: 30px 40px; text-align: center; background-color: #228D57; border-radius: 8px 8px 0 0;">
+                  <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">LuckyLY</h1>
+                  <p style="margin: 10px 0 0; color: #d0fdd7; font-size: 14px;">Sorteos en línea</p>
+                </td>
+              </tr>
+              <!-- Content -->
+              <tr>
+                <td style="padding: 40px;">
+                  <h2 style="margin: 0 0 20px; color: #333333; font-size: 22px;">Confirma tu dirección de correo</h2>
+                  <p style="margin: 0 0 20px; color: #555555; font-size: 16px; line-height: 1.6;">
+                    Hola,
+                  </p>
+                  <p style="margin: 0 0 20px; color: #555555; font-size: 16px; line-height: 1.6;">
+                    Para completar tu registro en LuckyLY y comenzar a participar en nuestros sorteos, 
+                    necesitamos verificar que esta dirección de correo electrónico te pertenece.
+                  </p>
+                  <p style="margin: 0 0 30px; color: #555555; font-size: 16px; line-height: 1.6;">
+                    Haz clic en el siguiente botón para verificar tu cuenta:
+                  </p>
+                  <!-- Button -->
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td align="center">
+                        <a href="${verificationUrl}" style="display: inline-block; padding: 14px 32px; background-color: #85BB65; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: bold;">
+                          Verificar mi correo
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin: 30px 0 10px; color: #777777; font-size: 14px; line-height: 1.5;">
+                    Si el botón no funciona, copia y pega este enlace en tu navegador:
+                  </p>
+                  <p style="margin: 0 0 20px; color: #228D57; font-size: 13px; word-break: break-all;">
+                    ${verificationUrl}
+                  </p>
+                  <p style="margin: 20px 0 0; padding: 15px; background-color: #fff3cd; border-radius: 4px; color: #856404; font-size: 14px;">
+                    <strong>Nota:</strong> Este enlace expirará en 24 horas por seguridad.
+                  </p>
+                  <p style="margin: 20px 0 0; color: #999999; font-size: 13px;">
+                    Si no creaste una cuenta en LuckyLY, puedes ignorar este mensaje de forma segura.
+                  </p>
+                </td>
+              </tr>
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 20px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
+                  <p style="margin: 0 0 10px; color: #666666; font-size: 12px;">
+                    Este correo fue enviado desde ${appUrl}
+                  </p>
+                  <p style="margin: 0; color: #999999; font-size: 12px;">
+                    © ${new Date().getFullYear()} LuckyLY. Todos los derechos reservados.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
     </body>
     </html>
   `;
 
-  return sendEmail(email, "Verifica tu Email - LuckyLY", html);
+  const text = `
+Confirma tu dirección de correo - LuckyLY
+
+Hola,
+
+Para completar tu registro en LuckyLY y comenzar a participar en nuestros sorteos, 
+necesitamos verificar que esta dirección de correo electrónico te pertenece.
+
+Haz clic en el siguiente enlace para verificar tu cuenta:
+${verificationUrl}
+
+Nota: Este enlace expirará en 24 horas por seguridad.
+
+Si no creaste una cuenta en LuckyLY, puedes ignorar este mensaje de forma segura.
+
+© ${new Date().getFullYear()} LuckyLY. Todos los derechos reservados.
+  `;
+
+  return sendEmail(email, "Confirma tu correo electrónico - LuckyLY", html, text);
 }
 
 export async function sendPrizePaymentEmail(email: string, userName: string, raffleTitle: string, proofPath?: string) {

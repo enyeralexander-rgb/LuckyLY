@@ -27,6 +27,7 @@ model User {
   emailVerifiedAt         DateTime?
   emailUpdatedAt          DateTime?
   usernameUpdatedAt       DateTime?
+  bankDataUpdatedAt       DateTime?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   role                    Role                     @default(USER)

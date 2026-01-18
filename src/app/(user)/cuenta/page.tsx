@@ -255,39 +255,6 @@ export default function CuentaPage() {
           </Link>
 
           <Link
-            href="/cuenta/favoritos"
-            className="card"
-            style={{
-              padding: "1.5rem",
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              transition: "transform 0.2s, box-shadow 0.2s",
-              cursor: "pointer"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 10px 25px rgba(0,0,0,0.15)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "";
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <div style={{ fontSize: "2rem" }}>⭐</div>
-              <div>
-                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>MIS FAVORITOS</h3>
-                <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-                  Ver sorteos guardados como favoritos
-                </p>
-              </div>
-            </div>
-            <div style={{ fontSize: "1.5rem", color: "#85BB65" }}>→</div>
-          </Link>
-
-          <Link
             href="/cuenta/pagos"
             className="card"
             style={{

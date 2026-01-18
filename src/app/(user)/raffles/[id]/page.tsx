@@ -39,7 +39,6 @@ export default function RaffleDetailPage({ params }: Props) {
   const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set());
   const [buying, setBuying] = useState(false);
   const [userPurchasedSlots, setUserPurchasedSlots] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
@@ -93,42 +92,8 @@ export default function RaffleDetailPage({ params }: Props) {
         })
         .catch(() => {});
 
-      // Verificar si es favorito
-      fetch("/api/user/favorites", {
-        headers: { Authorization: `Bearer ${auth.token}` }
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          if (!data.error && Array.isArray(data)) {
-            const favorite = data.find((f: any) => f.raffleId === raffle.id);
-            setIsFavorite(!!favorite);
-          }
-        })
-        .catch(() => {});
     }
   }, [auth, raffle]);
-
-  async function toggleFavorite() {
-    if (!auth?.token || !raffle) return;
-
-    try {
-      const res = await fetch("/api/user/favorites", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.token}`,
-        },
-        body: JSON.stringify({ raffleId: raffle.id }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setIsFavorite(data.isFavorite);
-      }
-    } catch (err) {
-      console.error("Error:", err);
-    }
-  }
 
   function getTypeLabel(type: string): string {
     const labels: Record<string, string> = {
@@ -366,26 +331,7 @@ export default function RaffleDetailPage({ params }: Props) {
     <AuthGuard requiredRole={["USER"]}>
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "1200px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            <h1 style={{ margin: 0 }}>{raffle.title}</h1>
-            {auth?.token && (
-              <button
-                onClick={toggleFavorite}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "2rem",
-                  cursor: "pointer",
-                  padding: "0.5rem",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                title={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
-              >
-                {isFavorite ? "⭐" : "☆"}
-              </button>
-            )}
-          </div>
+          <h1 style={{ margin: 0 }}>{raffle.title}</h1>
           <Link href="/" style={{ color: "#85BB65", textDecoration: "none" }}>← Volver</Link>
         </div>
 

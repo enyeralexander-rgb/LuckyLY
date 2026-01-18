@@ -119,7 +119,6 @@ export function Header() {
   // Las rutas deben estar bajo /cuenta/* y solo serán accesibles para usuarios con rol USER
   const userAccountRoutes: UserMenu[] = [
     { label: "Configuración", href: "/cuenta/configuracion", icon: "⚙️" },
-    { label: "Mis Favoritos", href: "/cuenta/favoritos", icon: "⭐" },
     { label: "Tickets y Notificaciones", href: "/cuenta/mis-jugadas", icon: "🎲" },
     { label: "Historial", href: "/cuenta/historial", icon: "📜" },
     { label: "Datos Bancarios", href: "/cuenta/datos-bancarios", icon: "🏦" },

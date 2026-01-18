@@ -133,9 +133,6 @@ export function NavBar() {
                     <Link href="/cuenta/configuracion" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem" }} onClick={() => setMenuOpen(false)}>
                       ⚙️ Configuración
                     </Link>
-                    <Link href="/cuenta/favoritos" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem" }} onClick={() => setMenuOpen(false)}>
-                      ⭐ Mis Favoritos
-                    </Link>
                     <Link href="/cuenta/mis-jugadas" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem" }} onClick={() => setMenuOpen(false)}>
                       🎲 Tickets y Notificaciones
                     </Link>

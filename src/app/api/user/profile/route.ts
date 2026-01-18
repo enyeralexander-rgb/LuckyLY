@@ -25,7 +25,8 @@ export async function GET(request: Request) {
         bankPhone: true,
         emailVerified: true,
         emailUpdatedAt: true,
-        usernameUpdatedAt: true
+        usernameUpdatedAt: true,
+        bankDataUpdatedAt: true
       }
     });
 
@@ -59,8 +60,22 @@ export async function PUT(request: Request) {
     // Obtener el usuario actual para extraer nationalId y nationalIdType del documentId
     const currentUser = await prisma.user.findUnique({
       where: { id: auth.userId },
-      select: { documentId: true, nationalId: true, nationalIdType: true }
+      select: { documentId: true, nationalId: true, nationalIdType: true, bank: true, phoneNumber: true, bankDataUpdatedAt: true }
     });
+
+    // Si ya tiene datos bancarios, verificar restricción de 1 semana
+    if (currentUser?.bank && currentUser?.phoneNumber && currentUser?.bankDataUpdatedAt) {
+      const lastUpdate = new Date(currentUser.bankDataUpdatedAt);
+      const now = new Date();
+      const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysSinceUpdate < 7) {
+        const daysRemaining = 7 - daysSinceUpdate;
+        return NextResponse.json({ 
+          error: `Solo puedes modificar tus datos bancarios una vez por semana. Faltan ${daysRemaining} día(s).` 
+        }, { status: 400 });
+      }
+    }
 
     if (!currentUser) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
@@ -100,7 +115,8 @@ export async function PUT(request: Request) {
         nationalIdType: nationalIdType || null,
         bank: bankEnum as Bank,
         phoneNumber: phoneNumber.trim(),
-        bankPhone: phoneNumber.trim() // Usar el mismo teléfono para bankPhone
+        bankPhone: phoneNumber.trim(), // Usar el mismo teléfono para bankPhone
+        bankDataUpdatedAt: new Date() // Registrar fecha de actualización
       },
       select: {
         id: true,
@@ -111,7 +127,8 @@ export async function PUT(request: Request) {
         nationalIdType: true,
         phoneNumber: true,
         bank: true,
-        bankPhone: true
+        bankPhone: true,
+        bankDataUpdatedAt: true
       }
     });
 

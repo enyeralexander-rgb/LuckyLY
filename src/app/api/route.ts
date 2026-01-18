@@ -30,7 +30,6 @@ export async function GET() {
         profile: "GET /api/user/profile",
         notifications: "GET /api/user/notifications",
         payments: "GET /api/user/payments",
-        favorites: "GET /api/user/favorites",
         avatar: "POST /api/user/avatar"
       },
       public: {
