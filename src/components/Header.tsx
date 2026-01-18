@@ -74,7 +74,6 @@ export function Header() {
   const clientMenu: UserMenu[] = [
     { label: "MI CUENTA", href: "/cuenta", icon: "👤", divider: true },
     { label: "Configuración", href: "/cuenta/configuracion", icon: "⚙️" },
-    { label: "Mis Favoritos", href: "/cuenta/favoritos", icon: "⭐" },
     { label: "Tickets y Notificaciones", href: "/cuenta/mis-jugadas", icon: "🎲" },
     { label: "Historial", href: "/cuenta/historial", icon: "📜" },
     { label: "Datos Bancarios", href: "/cuenta/datos-bancarios", icon: "🏦", divider: true },

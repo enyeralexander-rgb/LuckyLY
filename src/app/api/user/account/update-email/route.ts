@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { Role } from "@prisma/client";
+import { sendEmailVerificationEmail } from "../../../../../lib/email";
+import crypto from "crypto";
 
 export async function PUT(request: Request) {
   try {
@@ -16,7 +18,7 @@ export async function PUT(request: Request) {
     // Obtener el usuario actual
     const currentUser = await prisma.user.findUnique({
       where: { id: auth.userId },
-      select: { emailUpdatedAt: true }
+      select: { emailUpdatedAt: true, email: true }
     });
 
     // Verificar restricción de 30 días
@@ -43,7 +45,7 @@ export async function PUT(request: Request) {
     }
 
     // Actualizar correo y registrar timestamp
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: auth.userId },
       data: { 
         email,
@@ -53,7 +55,31 @@ export async function PUT(request: Request) {
       }
     });
 
-    return NextResponse.json({ success: true, message: "Correo actualizado exitosamente" });
+    // Enviar correo de verificación al nuevo email
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    
+    // Invalidar tokens anteriores
+    await prisma.emailVerificationToken.updateMany({
+      where: { userId: auth.userId, used: false },
+      data: { used: true }
+    });
+
+    // Crear nuevo token
+    await prisma.emailVerificationToken.create({
+      data: {
+        userId: auth.userId,
+        token: verificationToken,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 horas
+      }
+    });
+
+    // Enviar email de verificación
+    await sendEmailVerificationEmail(email, verificationToken);
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "Correo actualizado exitosamente. Te hemos enviado un correo de verificación a tu nueva dirección." 
+    });
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

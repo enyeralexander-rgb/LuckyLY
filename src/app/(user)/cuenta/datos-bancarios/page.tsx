@@ -16,6 +16,7 @@ type UserData = {
   phoneNumber: string | null;
   bank: string | null;
   bankPhone: string | null;
+  bankDataUpdatedAt: string | null;
 };
 
 export default function DatosBancariosPage() {
@@ -113,6 +114,20 @@ export default function DatosBancariosPage() {
     return !!(formData.bank && formData.phoneNumber && formData.phoneNumber.trim().length >= 11);
   }
 
+  // Calcular restricción de 1 semana para datos bancarios
+  function getBankDataRestriction(): { canChange: boolean; daysRemaining: number } | null {
+    if (!userData?.bank || !userData?.phoneNumber || !userData?.bankDataUpdatedAt) {
+      return null; // Nunca ha guardado datos, puede guardar
+    }
+    const lastUpdate = new Date(userData.bankDataUpdatedAt);
+    const now = new Date();
+    const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.max(0, 7 - daysSinceUpdate);
+    return { canChange: daysSinceUpdate >= 7, daysRemaining };
+  }
+
+  const bankRestriction = getBankDataRestriction();
+
   if (loading) {
     return (
       <AuthGuard requiredRole={["USER"]}>
@@ -139,6 +154,22 @@ export default function DatosBancariosPage() {
             <div style={{ color: "#ef4444", fontWeight: 700, fontSize: "0.875rem", textTransform: "uppercase" }}>
               LOS MISMOS DATOS BANCARIOS INGRESADOS SE UTILIZARÁN PARA REALIZAR EL PAGO EN CASO DE SER GANADORES DE ALGUNO DE LOS SORTEOS.
             </div>
+          </div>
+
+          {/* Aviso de restricción semanal */}
+          <div style={{ padding: "1rem", background: "rgba(245, 158, 11, 0.1)", border: "2px solid #f59e0b", borderRadius: "8px" }}>
+            <div style={{ color: "#d97706", fontWeight: 700, fontSize: "0.875rem", marginBottom: "0.5rem" }}>
+              📅 RESTRICCIÓN DE MODIFICACIÓN
+            </div>
+            <div style={{ color: "#d97706", fontSize: "0.875rem" }}>
+              Una vez que guardes tus datos bancarios, solo podrás modificarlos <strong>1 vez por semana</strong>. 
+              Asegúrate de ingresar la información correcta antes de guardar.
+            </div>
+            {bankRestriction && !bankRestriction.canChange && (
+              <div style={{ marginTop: "0.5rem", padding: "0.5rem", background: "rgba(245, 158, 11, 0.2)", borderRadius: "4px" }}>
+                <strong>⏳ Próxima modificación disponible en: {bankRestriction.daysRemaining} día(s)</strong>
+              </div>
+            )}
           </div>
 
           <div>
@@ -230,19 +261,19 @@ export default function DatosBancariosPage() {
 
           <button
             onClick={handleSave}
-            disabled={!hasCompleteData() || saving}
+            disabled={!hasCompleteData() || saving || (bankRestriction !== null && !bankRestriction.canChange)}
             style={{
               padding: ".75rem 1.5rem",
-              background: hasCompleteData() && !saving ? "#85BB65" : "#6b7280",
+              background: hasCompleteData() && !saving && (bankRestriction === null || bankRestriction.canChange) ? "#85BB65" : "#6b7280",
               color: "var(--text-primary)",
               border: "none",
               borderRadius: "8px",
               fontWeight: 700,
               fontSize: "1rem",
-              cursor: hasCompleteData() && !saving ? "pointer" : "not-allowed"
+              cursor: hasCompleteData() && !saving && (bankRestriction === null || bankRestriction.canChange) ? "pointer" : "not-allowed"
             }}
           >
-            {saving ? "Guardando..." : "Guardar Datos"}
+            {saving ? "Guardando..." : bankRestriction !== null && !bankRestriction.canChange ? `Disponible en ${bankRestriction.daysRemaining} día(s)` : "Guardar Datos"}
           </button>
         </div>
       </main>
