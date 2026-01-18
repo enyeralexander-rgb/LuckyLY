@@ -25,6 +25,12 @@ type Raffle = {
   closesAt: string | null;
 };
 
+type UserProfile = {
+  emailVerified: boolean;
+  bank: string | null;
+  phoneNumber: string | null;
+};
+
 export default function RaffleDetailPage({ params }: Props) {
   const router = useRouter();
   const [auth, setAuth] = useState<any>(null);
@@ -34,10 +40,31 @@ export default function RaffleDetailPage({ params }: Props) {
   const [buying, setBuying] = useState(false);
   const [userPurchasedSlots, setUserPurchasedSlots] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     setAuth(getStoredAuth());
   }, []);
+
+  // Obtener perfil del usuario para verificar correo y datos bancarios
+  useEffect(() => {
+    if (auth?.token) {
+      fetch("/api/user/profile", {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (!data.error) {
+            setUserProfile({
+              emailVerified: data.emailVerified || false,
+              bank: data.bank || null,
+              phoneNumber: data.phoneNumber || null
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [auth]);
 
   useEffect(() => {
     fetch(`/api/raffles`)
@@ -241,9 +268,9 @@ export default function RaffleDetailPage({ params }: Props) {
   function toggleSlot(value: string) {
     if (isSlotPurchased(value) || buying) return;
     
-    // Verificar si ya alcanzó el límite de 3 cupos
-    if (userPurchasedSlots >= 3) {
-      alert("Ya has alcanzado el límite de 3 cupos por sorteo. No puedes comprar más cupos en este sorteo.");
+    // Verificar si ya alcanzó el límite de 2 cupos
+    if (userPurchasedSlots >= 2) {
+      alert("Ya has alcanzado el límite de 2 cupos por sorteo. No puedes comprar más cupos en este sorteo.");
       return;
     }
     
@@ -251,8 +278,8 @@ export default function RaffleDetailPage({ params }: Props) {
     if (newSelected.has(value)) {
       newSelected.delete(value);
     } else {
-      // Limitar considerando los cupos ya comprados
-      const maxSelectable = 3 - userPurchasedSlots;
+      // Limitar considerando los cupos ya comprados (máximo 2 por sorteo)
+      const maxSelectable = 2 - userPurchasedSlots;
       if (newSelected.size >= maxSelectable) {
         alert(`Solo puedes seleccionar un máximo de ${maxSelectable} cupo(s) más. Ya tienes ${userPurchasedSlots} cupo(s) comprado(s).`);
         return;
@@ -264,6 +291,40 @@ export default function RaffleDetailPage({ params }: Props) {
 
   function handleBuy() {
     if (!auth?.token || !raffle || selectedSlots.size === 0 || buying) return;
+    
+    // Verificar si el usuario tiene correo verificado
+    if (!userProfile?.emailVerified) {
+      const confirmVerify = confirm(
+        "⚠️ Debes verificar tu correo electrónico antes de realizar una compra.\n\n¿Deseas ir a verificar tu correo ahora?"
+      );
+      if (confirmVerify) {
+        // Guardar la URL de retorno para después de verificar
+        sessionStorage.setItem("pendingPurchase", JSON.stringify({
+          raffleId: raffle.id,
+          items: Array.from(selectedSlots),
+          total: Number(raffle.pricePerSlot) * selectedSlots.size
+        }));
+        router.push("/cuenta/configuracion?action=verify-email");
+      }
+      return;
+    }
+    
+    // Verificar si el usuario tiene datos bancarios completos
+    if (!userProfile?.bank || !userProfile?.phoneNumber || userProfile.phoneNumber.length < 11) {
+      const confirmBank = confirm(
+        "⚠️ Debes completar tus datos bancarios antes de realizar una compra.\n\n¿Deseas ir a completar tus datos bancarios ahora?"
+      );
+      if (confirmBank) {
+        // Guardar la URL de retorno para después de completar datos
+        sessionStorage.setItem("pendingPurchase", JSON.stringify({
+          raffleId: raffle.id,
+          items: Array.from(selectedSlots),
+          total: Number(raffle.pricePerSlot) * selectedSlots.size
+        }));
+        router.push("/cuenta/datos-bancarios");
+      }
+      return;
+    }
     
     // Redirigir a la página de pagos con los datos
     const items = Array.from(selectedSlots);
@@ -395,7 +456,7 @@ export default function RaffleDetailPage({ params }: Props) {
             <>
               {userPurchasedSlots >= 3 && (
                 <div style={{ padding: "1rem", background: "rgba(239, 68, 68, 0.1)", borderRadius: "8px", border: "1px solid #ef4444", color: "#fca5a5", marginBottom: "1rem" }}>
-                  <strong>⚠️ Límite alcanzado:</strong> Ya has comprado {userPurchasedSlots} cupo(s) en este sorteo. El máximo permitido es 3 cupos por sorteo.
+                  <strong>⚠️ Límite alcanzado:</strong> Ya has comprado {userPurchasedSlots} cupo(s) en este sorteo. El máximo permitido es 2 cupos por sorteo.
                 </div>
               )}
               <div style={{ display: "grid", gap: ".75rem", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))" }}>

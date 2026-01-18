@@ -181,7 +181,7 @@ export default function CuentaPage() {
             />
           </div>
           <div style={{ flex: 1 }}>
-            <h2 style={{ margin: "0 0 0.5rem", color: "#3E3E3C" }}>{displayName}</h2>
+            <h2 style={{ margin: "0 0 0.5rem", color: "var(--text-primary)" }}>{displayName}</h2>
             <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.875rem" }}>{userData?.email}</p>
           </div>
         </div>
@@ -212,7 +212,7 @@ export default function CuentaPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               <div style={{ fontSize: "2rem" }}>⚙️</div>
               <div>
-                <h3 style={{ margin: 0, color: "#3E3E3C" }}>CONFIGURACIÓN DE LA CUENTA</h3>
+                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>CONFIGURACIÓN DE LA CUENTA</h3>
                 <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                   Cambiar correo, nombre de usuario, contraseña o eliminar cuenta
                 </p>
@@ -245,7 +245,7 @@ export default function CuentaPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               <div style={{ fontSize: "2rem" }}>🎲</div>
               <div>
-                <h3 style={{ margin: 0, color: "#3E3E3C" }}>TICKETS Y NOTIFICACIONES</h3>
+                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>TICKETS Y NOTIFICACIONES</h3>
                 <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                   Ver notificaciones y tickets de compra
                 </p>
@@ -278,7 +278,7 @@ export default function CuentaPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               <div style={{ fontSize: "2rem" }}>⭐</div>
               <div>
-                <h3 style={{ margin: 0, color: "#3E3E3C" }}>MIS FAVORITOS</h3>
+                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>MIS FAVORITOS</h3>
                 <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                   Ver sorteos guardados como favoritos
                 </p>
@@ -311,7 +311,7 @@ export default function CuentaPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               <div style={{ fontSize: "2rem" }}>💳</div>
               <div>
-                <h3 style={{ margin: 0, color: "#3E3E3C" }}>HISTORIAL DE PAGOS</h3>
+                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>HISTORIAL DE PAGOS</h3>
                 <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                   Ver historial completo de pagos y compras
                 </p>
@@ -344,7 +344,7 @@ export default function CuentaPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               <div style={{ fontSize: "2rem" }}>📜</div>
               <div>
-                <h3 style={{ margin: 0, color: "#3E3E3C" }}>HISTORIAL</h3>
+                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>HISTORIAL</h3>
                 <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                   Ver historial completo de todas tus compras
                 </p>
@@ -377,7 +377,7 @@ export default function CuentaPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               <div style={{ fontSize: "2rem" }}>🏦</div>
               <div>
-                <h3 style={{ margin: 0, color: "#3E3E3C" }}>DATOS BANCARIOS</h3>
+                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>DATOS BANCARIOS</h3>
                 <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                   Modificar datos bancarios para compras y pagos
                 </p>
