@@ -35,9 +35,9 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F5F5E6", padding: "1rem" }}>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-primary)", padding: "1rem" }}>
       <div className="card" style={{ maxWidth: "400px", width: "100%", padding: "2rem" }}>
-        <h1 style={{ margin: "0 0 1.5rem", color: "#3E3E3C" }}>Recuperar Contraseña</h1>
+        <h1 style={{ margin: "0 0 1.5rem", color: "var(--text-primary)" }}>Recuperar Contraseña</h1>
         
         {success ? (
           <div style={{ padding: "1rem", background: "rgba(133, 187, 101, 0.1)", borderRadius: "8px", color: "#85BB65", marginBottom: "1rem" }}>
@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
           </div>
         ) : (
           <>
-            <p style={{ margin: "0 0 1.5rem", color: "#6b7280", fontSize: "0.875rem" }}>
+            <p style={{ margin: "0 0 1.5rem", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
               Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.
             </p>
 
@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
 
             <form onSubmit={handleSubmit} style={{ display: "grid", gap: "1rem" }}>
               <div>
-                <label style={{ display: "block", marginBottom: "0.5rem", color: "#3E3E3C", fontWeight: 600 }}>
+                <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                   Email
                 </label>
                 <input
@@ -69,9 +69,9 @@ export default function ForgotPasswordPage() {
                     width: "100%",
                     padding: "0.75rem",
                     borderRadius: "8px",
-                    border: "1px solid #d4d4c4",
-                    background: "#F5F5E6",
-                    color: "#3E3E3C",
+                    border: "1px solid var(--border-color)",
+                    background: "var(--input-bg)",
+                    color: "var(--text-primary)",
                     fontSize: "1rem"
                   }}
                 />
@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
                   width: "100%",
                   padding: "0.75rem 1.5rem",
                   background: loading ? "#6b7280" : "#85BB65",
-                  color: "#3E3E3C",
+                  color: "var(--text-primary)",
                   border: "none",
                   borderRadius: "8px",
                   fontWeight: 700,
@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
         )}
 
         <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
-          <Link href="/auth/login" style={{ color: "#85BB65", textDecoration: "none", fontSize: "0.875rem" }}>
+          <Link href="/auth/login" style={{ color: "var(--color-primary)", textDecoration: "none", fontSize: "0.875rem" }}>
             ← Volver al Login
           </Link>
         </div>

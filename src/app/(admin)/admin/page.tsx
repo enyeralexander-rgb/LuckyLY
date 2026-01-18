@@ -1,22 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { AdminNavBar } from "../../../components/AdminNavBar";
+import { AdminFooter } from "../../../components/AdminFooter";
 import { AuthGuard } from "../../../components/AuthGuard";
 import { getStoredAuth } from "../../../lib/clientAuth";
 import Link from "next/link";
 
-type DashboardData = {
-  todayIncome: number;
-  activeRaffles: number;
-  finishedRaffles: number;
-  pendingClaims: number;
-  totalUsers: number;
-};
-
 function AdminHomePageContent() {
   const [role, setRole] = useState<string | null>(null);
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const auth = getStoredAuth();
@@ -24,27 +15,7 @@ function AdminHomePageContent() {
       window.location.href = "/auth/login";
       return;
     }
-
     setRole(auth.user.role ?? null);
-
-    if (auth.token) {
-      fetch("/api/admin/dashboard", { headers: { Authorization: `Bearer ${auth.token}` } })
-        .then((r) => {
-          if (!r.ok) {
-            if (r.status === 401 || r.status === 403) {
-              window.location.href = "/auth/login";
-              return;
-            }
-            throw new Error("Error al cargar datos");
-          }
-          return r.json();
-        })
-        .then(setData)
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
   }, []);
 
   const isAgent = role === "AGENT";
@@ -55,45 +26,8 @@ function AdminHomePageContent() {
   return (
     <>
       <AdminNavBar />
-      <main className="container" style={{ paddingTop: "2rem", display: "grid", gap: "1.5rem" }}>
+      <main className="container admin-main-with-footer" style={{ paddingTop: "2rem", display: "grid", gap: "1.5rem" }}>
         <h1 style={{ color: "var(--text-primary)" }}>Dashboard</h1>
-
-        {loading ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-primary)" }}>Cargando métricas...</div>
-        ) : data ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-            {/* Ingresos Hoy - Solo SUPERADMIN/MASTER */}
-            {(isSuper || isMaster) && (
-              <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: ".875rem", fontWeight: 600 }}>Ingresos Hoy</h3>
-                <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "var(--color-primary)" }}>
-                  {(data.todayIncome ?? 0).toFixed(2)} Bs.
-                </p>
-              </div>
-            )}
-            <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-              <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: ".875rem", fontWeight: 600 }}>Sorteos Activos</h3>
-              <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>{data.activeRaffles ?? 0}</p>
-            </div>
-            <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-              <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: ".875rem", fontWeight: 600 }}>Sorteos Finalizados</h3>
-              <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>{data.finishedRaffles ?? 0}</p>
-            </div>
-            <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-              <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: ".875rem", fontWeight: 600 }}>Reclamos Pendientes</h3>
-              <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "#f59e0b" }}>
-                {data.pendingClaims ?? 0}
-              </p>
-            </div>
-            {/* Total Usuarios - Solo SUPERADMIN/MASTER */}
-            {(isSuper || isMaster) && (
-              <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: ".875rem", fontWeight: 600 }}>Total Usuarios</h3>
-                <p style={{ margin: ".5rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>{data.totalUsers ?? 0}</p>
-              </div>
-            )}
-          </div>
-        ) : null}
 
         <section style={{ display: "grid", gap: "1.5rem" }}>
           <h2 style={{ margin: 0, color: "var(--text-primary)" }}>Módulos de Administración</h2>
@@ -221,6 +155,7 @@ function AdminHomePageContent() {
           </div>
         </section>
       </main>
+      <AdminFooter />
     </>
   );
 }

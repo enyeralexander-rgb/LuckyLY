@@ -79,13 +79,64 @@ function CrearSorteosPageContent() {
       return { error: "El 2° ganador no puede ganar un monto mayor que el 1° ganador", invalidIndex: 1 };
     }
     
+    // Validar que la suma de premios no exceda el 50% de las ganancias totales
+    const pricePerSlot = parseFloat(formData.pricePerSlot) || 0;
+    const slots = parseInt(formData.slots) || 0;
+    const totalIncome = pricePerSlot * slots;
+    const maxPrizeTotal = totalIncome * 0.5; // 50% máximo
+    const totalPrizes = prizes.reduce((sum, p) => sum + p, 0);
+    
+    if (totalPrizes > maxPrizeTotal && totalIncome > 0) {
+      return { 
+        error: `La suma de premios (Bs. ${totalPrizes.toFixed(2)}) excede el 50% de las ganancias totales (Bs. ${maxPrizeTotal.toFixed(2)})`, 
+        invalidIndex: 0 
+      };
+    }
+    
     return { error: null, invalidIndex: null };
+  }
+
+  // Validar cantidad de cupos (mínimo 10, máximo 100)
+  function validateSlots(): string | null {
+    const slots = parseInt(formData.slots);
+    if (formData.type === "STATES" || formData.type === "ZODIAC") {
+      return null; // Los fijos no se validan aquí
+    }
+    if (isNaN(slots) || slots < 10) {
+      return "La cantidad mínima de cupos es 10";
+    }
+    if (slots > 100) {
+      return "La cantidad máxima de cupos es 100";
+    }
+    return null;
+  }
+
+  // Prevenir entrada de caracteres no numéricos en campos de precio
+  function handlePriceKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    // Prevenir la letra 'e', 'E', '+', '-' que son válidos en inputs type="number"
+    if (['e', 'E', '+', '-'].includes(e.key)) {
+      e.preventDefault();
+    }
+  }
+
+  function handleSlotsKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    // Prevenir cualquier caracter que no sea número o teclas de control
+    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) {
+      e.preventDefault();
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!auth?.token) {
       alert("No autenticado");
+      return;
+    }
+
+    // Validar cantidad de cupos
+    const slotsError = validateSlots();
+    if (slotsError) {
+      alert(slotsError);
       return;
     }
 
@@ -187,6 +238,7 @@ function CrearSorteosPageContent() {
               required
               value={formData.pricePerSlot}
               onChange={(e) => setFormData({ ...formData, pricePerSlot: e.target.value })}
+              onKeyDown={handlePriceKeyDown}
               style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
           </div>
@@ -195,13 +247,24 @@ function CrearSorteosPageContent() {
             <label style={{ color: "var(--text-primary)" }}>Cantidad de cupos</label>
             <input
               type="number"
-              min={formData.type === "STATES" || formData.type === "ZODIAC" ? (formData.type === "STATES" ? 24 : 12) : formData.type === "NUMBERS" || formData.type === "FLAGS" ? 10 : 10}
-              max={formData.type === "STATES" || formData.type === "ZODIAC" ? (formData.type === "STATES" ? 24 : 12) : formData.type === "NUMBERS" || formData.type === "FLAGS" ? 100 : 50}
+              min={10}
+              max={100}
               required
               value={formData.slots}
               onChange={(e) => {
                 if (formData.type !== "STATES" && formData.type !== "ZODIAC") {
-                  setFormData({ ...formData, slots: e.target.value });
+                  // Solo permitir valores entre 10 y 100
+                  const value = e.target.value;
+                  setFormData({ ...formData, slots: value });
+                }
+              }}
+              onKeyDown={handleSlotsKeyDown}
+              onBlur={() => {
+                // Validar al salir del campo
+                const slots = parseInt(formData.slots);
+                if (!isNaN(slots)) {
+                  if (slots < 10) setFormData({ ...formData, slots: "10" });
+                  else if (slots > 100) setFormData({ ...formData, slots: "100" });
                 }
               }}
               disabled={formData.type === "STATES" || formData.type === "ZODIAC"}
@@ -216,7 +279,7 @@ function CrearSorteosPageContent() {
               }}
             />
             <small style={{ color: "var(--text-primary)", opacity: 0.7 }}>
-              {formData.type === "STATES" ? "24 estados fijos (automático)" : formData.type === "ZODIAC" ? "12 signos zodiacales fijos (automático)" : formData.type === "NUMBERS" || formData.type === "FLAGS" ? "Entre 10 y 100" : "Entre 10 y 50"}
+              {formData.type === "STATES" ? "24 estados fijos (automático)" : formData.type === "ZODIAC" ? "12 signos zodiacales fijos (automático)" : "Entre 10 y 100 cupos (mínimo 10, máximo 100)"}
             </small>
           </div>
 
@@ -274,6 +337,7 @@ function CrearSorteosPageContent() {
                     required
                     value={prize}
                     onChange={(e) => updatePrize(idx, e.target.value)}
+                    onKeyDown={handlePriceKeyDown}
                     placeholder="0.00"
                     style={{ 
                       padding: ".75rem", 
@@ -290,7 +354,15 @@ function CrearSorteosPageContent() {
               );
             })}
             <small style={{ color: "var(--text-primary)", opacity: 0.7 }}>
-              Los premios deben estar ordenados de mayor a menor (1° ganador ≥ 2° ganador ≥ 3° ganador)
+              Los premios deben estar ordenados de mayor a menor (1° ganador ≥ 2° ganador ≥ 3° ganador).
+              <br />
+              <strong style={{ color: "#f59e0b" }}>⚠️ Regla: La suma total de premios no puede exceder el 50% de las ganancias del sorteo.</strong>
+              {formData.pricePerSlot && formData.slots && (
+                <span style={{ display: "block", marginTop: "0.25rem" }}>
+                  Ganancias totales: Bs. {(parseFloat(formData.pricePerSlot) * parseInt(formData.slots || "0")).toFixed(2)} | 
+                  Máximo premios: Bs. {((parseFloat(formData.pricePerSlot) * parseInt(formData.slots || "0")) * 0.5).toFixed(2)}
+                </span>
+              )}
             </small>
           </div>
 

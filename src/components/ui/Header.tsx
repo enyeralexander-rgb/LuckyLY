@@ -275,14 +275,16 @@ export function Header() {
                 {isClient && <NotificationBell />}
                 
                 <button
-                  className="header-user-icon-button"
+                  className="header-user-button"
                   onClick={() => router.push(isAdmin ? "/admin" : "/cuenta")}
                   aria-label={isAdmin ? "Panel de administración" : "Mi cuenta"}
                   title={displayName}
                 >
-                  <span className="header-user-icon">
-                    {isAdmin ? "👑" : "👤"}
-                  </span>
+                  {isAdmin ? (
+                    <span className="header-user-icon">👑</span>
+                  ) : (
+                    <span className="header-username">{displayName}</span>
+                  )}
                 </button>
               </div>
             )}
