@@ -58,6 +58,9 @@ function PaginaPrincipalContent() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<"mobile" | "tablet" | "desktop">("desktop");
+  const [uploading, setUploading] = useState(false);
+  const [selectedImageForDeletion, setSelectedImageForDeletion] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [config, setConfig] = useState<HomePageConfig>({
     heroImages: ["/images/ruleta-fortuna-hero.jpg"],
     heroAutoSlide: false,
@@ -254,6 +257,100 @@ function PaginaPrincipalContent() {
     setDraggedIndex(null);
   }
 
+  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file || !auth?.token) return;
+
+    // Validar tipo de archivo
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      alert("Tipo de archivo no permitido. Solo se permiten: JPG, PNG, GIF, WEBP");
+      return;
+    }
+
+    // Validar tamaño (máximo 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("El archivo es muy grande. Tamaño máximo: 5MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/admin/homepage/images/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${auth.token}`
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(`✅ Imagen subida exitosamente: ${data.name}`);
+        // Recargar imágenes disponibles
+        await loadAvailableImages();
+        // Limpiar input
+        event.target.value = "";
+      } else {
+        alert(`❌ Error: ${data.error || "No se pudo subir la imagen"}`);
+      }
+    } catch (err) {
+      console.error("Error al subir imagen:", err);
+      alert(`Error al subir la imagen: ${err instanceof Error ? err.message : "Error desconocido"}`);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleDeleteImage(imageUrl: string) {
+    if (!auth?.token) return;
+
+    // Verificar que la imagen no esté en uso en el carrusel
+    if (config.heroImages.includes(imageUrl)) {
+      alert("⚠️ No puedes eliminar una imagen que está en uso en el carrusel. Primero remuévela del carrusel.");
+      return;
+    }
+
+    const imageName = imageUrl.replace("/images/", "");
+    const confirmed = window.confirm(`¿Estás seguro de que quieres eliminar la imagen "${imageName}"?\n\nEsta acción no se puede deshacer.`);
+    
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setSelectedImageForDeletion(imageUrl);
+    try {
+      const res = await fetch("/api/admin/homepage/images/delete", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`
+        },
+        body: JSON.stringify({ imageUrl })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("✅ Imagen eliminada exitosamente");
+        // Recargar imágenes disponibles
+        await loadAvailableImages();
+      } else {
+        alert(`❌ Error: ${data.error || "No se pudo eliminar la imagen"}`);
+      }
+    } catch (err) {
+      console.error("Error al eliminar imagen:", err);
+      alert(`Error al eliminar la imagen: ${err instanceof Error ? err.message : "Error desconocido"}`);
+    } finally {
+      setDeleting(false);
+      setSelectedImageForDeletion(null);
+    }
+  }
+
   if (loading) {
     return (
       <AuthGuard requiredRole={["AGENT", "SUPERADMIN", "MASTER"]}>
@@ -270,22 +367,22 @@ function PaginaPrincipalContent() {
       <AdminNavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "1400px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <h1 style={{ margin: 0, color: "#1a5c2e" }}>Configurar Carrusel de Portada</h1>
-          <Link href="/admin" style={{ color: "#2a8c4a", textDecoration: "none", fontWeight: 600 }}>← Volver</Link>
+          <h1 style={{ margin: 0, color: "var(--text-primary)" }}>Configurar Carrusel de Portada</h1>
+          <Link href="/admin" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: 600 }}>← Volver</Link>
         </div>
 
         {/* Sección Carrusel de Imágenes */}
         <div className="card" style={{ padding: "2rem", marginBottom: "1.5rem" }}>
-          <h2 style={{ margin: "0 0 1.5rem", color: "#1a5c2e" }}>🖼️ Carrusel de Imágenes de Portada</h2>
+          <h2 style={{ margin: "0 0 1.5rem", color: "var(--text-primary)" }}>🖼️ Carrusel de Imágenes de Portada</h2>
           
           <div style={{ display: "grid", gap: "1.5rem" }}>
             {/* Selector de Imágenes */}
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                <label style={{ color: "#1a5c2e", fontWeight: 600 }}>
+                <label style={{ color: "var(--text-primary)", fontWeight: 600 }}>
                   Imágenes del Carrusel (Máximo 5)
                 </label>
-                <span style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+                <span style={{ fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
                   {config.heroImages.length}/5
                 </span>
               </div>
@@ -327,10 +424,10 @@ function PaginaPrincipalContent() {
                           ↓
                         </button>
                       </div>
-                      <div style={{ width: "120px", height: "80px", backgroundImage: `url(${img})`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: "4px", border: "1px solid #d0fdd7" }} />
-                      <div style={{ flex: 1, fontSize: "0.875rem", color: "#1a5c2e", wordBreak: "break-all" }}>
+                      <div style={{ width: "120px", height: "80px", backgroundImage: `url(${img})`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: "4px", border: "1px solid var(--border-color)" }} />
+                      <div style={{ flex: 1, fontSize: "0.875rem", color: "var(--text-primary)", wordBreak: "break-all" }}>
                         <div style={{ fontWeight: 600, marginBottom: "0.25rem" }}>Imagen {index + 1}</div>
-                        <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>{img}</div>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>{img}</div>
                       </div>
                       <button
                         onClick={() => removeHeroImage(index)}
@@ -346,54 +443,110 @@ function PaginaPrincipalContent() {
 
               {config.heroImages.length < 5 && (
                 <>
-                  <button
-                    onClick={() => setShowImageSelector(!showImageSelector)}
-                    style={{ padding: "0.75rem 1.5rem", background: "#2a8c4a", color: "#ffffff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}
-                  >
-                    {showImageSelector ? "✖ Cerrar Selector" : "📁 Seleccionar Imágenes"}
-                  </button>
+                  <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                    <button
+                      onClick={() => setShowImageSelector(!showImageSelector)}
+                      style={{ padding: "0.75rem 1.5rem", background: "#2a8c4a", color: "#ffffff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}
+                    >
+                      {showImageSelector ? "✖ Cerrar Selector" : "📁 SELECCIONAR ARCHIVO"}
+                    </button>
+                    
+                    <label
+                      htmlFor="file-upload"
+                      style={{ 
+                        padding: "0.75rem 1.5rem", 
+                        background: uploading ? "#6b7280" : "#3b82f6", 
+                        color: "#ffffff", 
+                        border: "none", 
+                        borderRadius: "8px", 
+                        cursor: uploading ? "not-allowed" : "pointer", 
+                        fontWeight: 600,
+                        display: "inline-block"
+                      }}
+                    >
+                      {uploading ? "⏳ Subiendo..." : "📤 SUBIR ARCHIVO"}
+                    </label>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,video/mp4,video/webm,video/ogg"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                      style={{ display: "none" }}
+                    />
+                  </div>
 
                   {showImageSelector && (
-                    <div style={{ marginTop: "1rem", padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-                      <h4 style={{ margin: "0 0 1rem", color: "#1a5c2e" }}>Imágenes Disponibles en /public/images/</h4>
+                    <div style={{ marginTop: "1rem", padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                      <h4 style={{ margin: "0 0 1rem", color: "var(--text-primary)" }}>Imágenes Disponibles en /public/images/</h4>
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "1rem", maxHeight: "400px", overflowY: "auto" }}>
                         {availableImages.filter(img => img.type === "image").map((img) => (
                           <div
                             key={img.url}
-                            onClick={() => selectImage(img.url)}
                             style={{
-                              cursor: config.heroImages.includes(img.url) ? "not-allowed" : "pointer",
-                              opacity: config.heroImages.includes(img.url) ? 0.5 : 1,
+                              position: "relative",
                               padding: "0.5rem",
                               background: config.heroImages.includes(img.url) ? "#9ca3af" : "#fff",
                               borderRadius: "8px",
                               border: config.heroImages.includes(img.url) ? "2px solid #9ca3af" : "2px solid #d4d4c4",
                               transition: "all 0.2s"
                             }}
-                            onMouseEnter={(e) => {
-                              if (!config.heroImages.includes(img.url)) {
-                                e.currentTarget.style.borderColor = "#2a8c4a";
-                                e.currentTarget.style.transform = "scale(1.05)";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!config.heroImages.includes(img.url)) {
-                                e.currentTarget.style.borderColor = "#d4d4c4";
-                                e.currentTarget.style.transform = "scale(1)";
-                              }
-                            }}
                           >
-                            <div style={{ width: "100%", height: "100px", backgroundImage: `url(${img.url})`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: "4px" }} />
-                            <div style={{ fontSize: "0.75rem", color: "#1a5c2e", marginTop: "0.25rem", textAlign: "center", wordBreak: "break-all" }}>
-                              {img.name}
+                            <div 
+                              onClick={() => selectImage(img.url)}
+                              style={{
+                                cursor: config.heroImages.includes(img.url) ? "not-allowed" : "pointer",
+                                opacity: config.heroImages.includes(img.url) ? 0.5 : 1,
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!config.heroImages.includes(img.url)) {
+                                  e.currentTarget.parentElement!.style.borderColor = "#2a8c4a";
+                                  e.currentTarget.style.transform = "scale(1.05)";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!config.heroImages.includes(img.url)) {
+                                  e.currentTarget.parentElement!.style.borderColor = "#d4d4c4";
+                                  e.currentTarget.style.transform = "scale(1)";
+                                }
+                              }}
+                            >
+                              <div style={{ width: "100%", height: "100px", backgroundImage: `url(${img.url})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat", borderRadius: "4px", maxWidth: "100%" }} />
+                              <div style={{ fontSize: "0.75rem", color: "var(--text-primary)", marginTop: "0.25rem", textAlign: "center", wordBreak: "break-all" }}>
+                                {img.name}
+                              </div>
+                              {config.heroImages.includes(img.url) && (
+                                <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textAlign: "center", marginTop: "0.25rem" }}>✓ Seleccionada</div>
+                              )}
                             </div>
-                            {config.heroImages.includes(img.url) && (
-                              <div style={{ fontSize: "0.75rem", color: "#6b7280", textAlign: "center", marginTop: "0.25rem" }}>✓ Seleccionada</div>
+                            
+                            {!config.heroImages.includes(img.url) && (
+                              <button
+                                onClick={() => handleDeleteImage(img.url)}
+                                disabled={deleting && selectedImageForDeletion === img.url}
+                                style={{
+                                  position: "absolute",
+                                  top: "0.5rem",
+                                  right: "0.5rem",
+                                  padding: "0.25rem 0.5rem",
+                                  background: (deleting && selectedImageForDeletion === img.url) ? "#6b7280" : "#ef4444",
+                                  color: "#fff",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  cursor: (deleting && selectedImageForDeletion === img.url) ? "not-allowed" : "pointer",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 600,
+                                  zIndex: 10
+                                }}
+                                title="Borrar imagen"
+                              >
+                                {(deleting && selectedImageForDeletion === img.url) ? "..." : "🗑️"}
+                              </button>
                             )}
                           </div>
                         ))}
                         {availableImages.filter(img => img.type === "image").length === 0 && (
-                          <div style={{ gridColumn: "1/-1", textAlign: "center", color: "#6b7280", padding: "2rem" }}>
+                          <div style={{ gridColumn: "1/-1", textAlign: "center", color: "var(--text-tertiary)", padding: "2rem" }}>
                             No hay imágenes disponibles en /public/images/
                           </div>
                         )}
@@ -405,20 +558,20 @@ function PaginaPrincipalContent() {
             </div>
 
             {/* Tamaño de Imagen */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
+            <div style={{ padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Tamaño de Imagen de Portada
               </label>
               <select
                 value={config.heroImageSize || "contain"}
                 onChange={(e) => setConfig({ ...config, heroImageSize: e.target.value })}
-                style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
+                style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-primary)" }}
               >
                 <option value="contain">Contener (Mostrar imagen completa - Recomendado)</option>
                 <option value="cover">Cubrir (Llenar todo el espacio, puede recortar)</option>
                 <option value="auto">Autoajustar (Llenar todo el espacio sin recortar, mostrando la imagen completa)</option>
               </select>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
+              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
                 {config.heroImageSize === "contain" 
                   ? "✓ La imagen se mostrará completa sin recortes" 
                   : config.heroImageSize === "cover"
@@ -428,25 +581,25 @@ function PaginaPrincipalContent() {
             </div>
 
             {/* Auto-slide */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", display: "grid", gap: "1rem" }}>
+            <div style={{ padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", display: "grid", gap: "1rem" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
                 <input
                   type="checkbox"
                   checked={config.heroAutoSlide || false}
                   onChange={(e) => setConfig({ ...config, heroAutoSlide: e.target.checked })}
                 />
-                <span style={{ color: "#1a5c2e", fontWeight: 600 }}>Deslizamiento Automático</span>
+                <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>Deslizamiento Automático</span>
               </label>
               {config.heroAutoSlide && (
                 <div style={{ display: "grid", gap: "1rem" }}>
                   <div>
-                    <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                       Modo de Deslizamiento
                     </label>
                     <select
                       value={config.heroAutoSlideMode || "linear"}
                       onChange={(e) => setConfig({ ...config, heroAutoSlideMode: e.target.value })}
-                      style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
+                      style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-primary)" }}
                     >
                       {AUTO_SLIDE_MODES.map(mode => (
                         <option key={mode.value} value={mode.value}>{mode.label}</option>
@@ -455,7 +608,7 @@ function PaginaPrincipalContent() {
                   </div>
                   <div style={{ display: "grid", gap: "0.75rem" }}>
                     <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                      <label style={{ color: "#1a5c2e", fontWeight: 600, minWidth: "120px" }}>Intervalo entre imágenes:</label>
+                      <label style={{ color: "var(--text-primary)", fontWeight: 600, minWidth: "120px" }}>Intervalo entre imágenes:</label>
                       <input
                         type="range"
                         min="2000"
@@ -472,11 +625,11 @@ function PaginaPrincipalContent() {
                         step="500"
                         value={config.heroAutoSlideInterval || 5000}
                         onChange={(e) => setConfig({ ...config, heroAutoSlideInterval: Math.max(2000, parseInt(e.target.value) || 5000) })}
-                        style={{ width: "100px", padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
+                        style={{ width: "100px", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-primary)" }}
                       />
-                      <span style={{ color: "#6b7280", fontSize: "0.875rem" }}>ms</span>
+                      <span style={{ color: "var(--text-tertiary)", fontSize: "0.875rem" }}>ms</span>
                     </div>
-                    <div style={{ fontSize: "0.875rem", color: "#6b7280", paddingLeft: "120px" }}>
+                    <div style={{ fontSize: "0.875rem", color: "var(--text-tertiary)", paddingLeft: "120px" }}>
                       ⚡ Velocidad: {config.heroAutoSlideInterval < 3000 ? "Muy Rápida" : config.heroAutoSlideInterval < 5000 ? "Rápida" : config.heroAutoSlideInterval < 8000 ? "Normal" : "Lenta"} 
                       (Recomendado: 5000-8000ms para mejor experiencia)
                     </div>
@@ -486,20 +639,20 @@ function PaginaPrincipalContent() {
             </div>
 
             {/* Efecto Visual */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
+            <div style={{ padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Efecto Visual de la Imagen
               </label>
               <select
                 value={config.heroEffect || "fade"}
                 onChange={(e) => setConfig({ ...config, heroEffect: e.target.value, heroEffectParams: {} })}
-                style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
+                style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-primary)" }}
               >
                 {HERO_EFFECTS.map(effect => (
                   <option key={effect.value} value={effect.value}>{effect.label}</option>
                 ))}
               </select>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
+              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
                 {config.heroEffect === "fade" && "✓ Transición suave entre imágenes"}
                 {config.heroEffect === "slide" && "✓ Deslizamiento horizontal entre imágenes"}
                 {config.heroEffect === "parallax" && "✓ Efecto parallax con movimiento"}
@@ -509,23 +662,23 @@ function PaginaPrincipalContent() {
             </div>
 
             {/* Desvanecimiento al hacer scroll */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
+            <div style={{ padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
                 <input
                   type="checkbox"
                   checked={config.heroScrollFade ?? true}
                   onChange={(e) => setConfig({ ...config, heroScrollFade: e.target.checked })}
                 />
-                <span style={{ color: "#1a5c2e", fontWeight: 600 }}>Desvanecimiento al hacer scroll</span>
+                <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>Desvanecimiento al hacer scroll</span>
               </label>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280", paddingLeft: "1.5rem" }}>
+              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)", paddingLeft: "1.5rem" }}>
                 {config.heroScrollFade ? "✓ El carrusel se desvanecerá al hacer scroll hacia abajo" : "✗ El carrusel permanecerá visible al hacer scroll"}
               </div>
             </div>
 
             {/* Opacidad de la Imagen */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
+            <div style={{ padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Opacidad de la Imagen de Portada
               </label>
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -535,7 +688,10 @@ function PaginaPrincipalContent() {
                   max="100"
                   step="1"
                   value={config.heroOpacity ?? 80}
-                  onChange={(e) => setConfig({ ...config, heroOpacity: parseInt(e.target.value) || 80 })}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setConfig({ ...config, heroOpacity: isNaN(val) ? 80 : val });
+                  }}
                   style={{ flex: 1 }}
                 />
                 <input
@@ -544,12 +700,15 @@ function PaginaPrincipalContent() {
                   max="100"
                   step="1"
                   value={config.heroOpacity ?? 80}
-                  onChange={(e) => setConfig({ ...config, heroOpacity: Math.max(0, Math.min(100, parseInt(e.target.value) || 80)) })}
-                  style={{ width: "80px", padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setConfig({ ...config, heroOpacity: isNaN(val) ? 80 : Math.max(0, Math.min(100, val)) });
+                  }}
+                  style={{ width: "80px", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-primary)" }}
                 />
-                <span style={{ color: "#6b7280", fontSize: "0.875rem", minWidth: "30px" }}>%</span>
+                <span style={{ color: "var(--text-tertiary)", fontSize: "0.875rem", minWidth: "30px" }}>%</span>
               </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
+              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
                 {config.heroOpacity === 0 && "Transparente (invisible)"}
                 {config.heroOpacity > 0 && config.heroOpacity < 30 && "Muy transparente"}
                 {config.heroOpacity >= 30 && config.heroOpacity < 60 && "Transparente"}
@@ -560,8 +719,8 @@ function PaginaPrincipalContent() {
             </div>
 
             {/* Desenfoque de la Imagen */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
+            <div style={{ padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Desenfoque de la Imagen de Portada
               </label>
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -571,7 +730,10 @@ function PaginaPrincipalContent() {
                   max="100"
                   step="1"
                   value={config.heroBlur ?? 0}
-                  onChange={(e) => setConfig({ ...config, heroBlur: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setConfig({ ...config, heroBlur: isNaN(val) ? 0 : val });
+                  }}
                   style={{ flex: 1 }}
                 />
                 <input
@@ -580,12 +742,15 @@ function PaginaPrincipalContent() {
                   max="100"
                   step="1"
                   value={config.heroBlur ?? 0}
-                  onChange={(e) => setConfig({ ...config, heroBlur: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
-                  style={{ width: "80px", padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setConfig({ ...config, heroBlur: isNaN(val) ? 0 : Math.max(0, Math.min(100, val)) });
+                  }}
+                  style={{ width: "80px", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-primary)" }}
                 />
-                <span style={{ color: "#6b7280", fontSize: "0.875rem", minWidth: "30px" }}>%</span>
+                <span style={{ color: "var(--text-tertiary)", fontSize: "0.875rem", minWidth: "30px" }}>%</span>
               </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
+              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
                 {config.heroBlur === 0 && "Sin desenfoque (nítido)"}
                 {config.heroBlur > 0 && config.heroBlur < 25 && "Desenfoque ligero"}
                 {config.heroBlur >= 25 && config.heroBlur < 50 && "Desenfoque moderado"}
@@ -595,8 +760,8 @@ function PaginaPrincipalContent() {
             </div>
 
             {/* Color del Texto del Título */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
+            <div style={{ padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Color del Texto del Título
               </label>
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -604,14 +769,14 @@ function PaginaPrincipalContent() {
                   type="color"
                   value={config.heroTextColor || "#e2e8f0"}
                   onChange={(e) => setConfig({ ...config, heroTextColor: e.target.value })}
-                  style={{ width: "60px", height: "40px", borderRadius: "4px", border: "1px solid #d0fdd7", cursor: "pointer" }}
+                  style={{ width: "60px", height: "40px", borderRadius: "4px", border: "1px solid var(--border-color)", cursor: "pointer" }}
                 />
                 <input
                   type="text"
                   value={config.heroTextColor || "#e2e8f0"}
                   onChange={(e) => setConfig({ ...config, heroTextColor: e.target.value || null })}
                   placeholder="#e2e8f0"
-                  style={{ flex: 1, padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
+                  style={{ flex: 1, padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-primary)" }}
                 />
                 <button
                   onClick={() => setConfig({ ...config, heroTextColor: null })}
@@ -620,14 +785,14 @@ function PaginaPrincipalContent() {
                   Reset
                 </button>
               </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
+              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
                 {config.heroTextColor ? `✓ Color personalizado: ${config.heroTextColor}` : "Usando color por defecto (#e2e8f0)"}
               </div>
             </div>
 
             {/* Color del Texto del Subtítulo */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
+            <div style={{ padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Color del Texto del Subtítulo
               </label>
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -635,14 +800,14 @@ function PaginaPrincipalContent() {
                   type="color"
                   value={config.heroSubtitleColor || "#cbd5e1"}
                   onChange={(e) => setConfig({ ...config, heroSubtitleColor: e.target.value })}
-                  style={{ width: "60px", height: "40px", borderRadius: "4px", border: "1px solid #d0fdd7", cursor: "pointer" }}
+                  style={{ width: "60px", height: "40px", borderRadius: "4px", border: "1px solid var(--border-color)", cursor: "pointer" }}
                 />
                 <input
                   type="text"
                   value={config.heroSubtitleColor || "#cbd5e1"}
                   onChange={(e) => setConfig({ ...config, heroSubtitleColor: e.target.value || null })}
                   placeholder="#cbd5e1"
-                  style={{ flex: 1, padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
+                  style={{ flex: 1, padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-primary)" }}
                 />
                 <button
                   onClick={() => setConfig({ ...config, heroSubtitleColor: null })}
@@ -651,14 +816,14 @@ function PaginaPrincipalContent() {
                   Reset
                 </button>
               </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
+              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
                 {config.heroSubtitleColor ? `✓ Color personalizado: ${config.heroSubtitleColor}` : "Usando color por defecto (#cbd5e1)"}
               </div>
             </div>
 
             {/* Color del Overlay */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
+            <div style={{ padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Color del Overlay
               </label>
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -666,14 +831,14 @@ function PaginaPrincipalContent() {
                   type="color"
                   value={config.heroOverlayColor || "#0b1221"}
                   onChange={(e) => setConfig({ ...config, heroOverlayColor: e.target.value })}
-                  style={{ width: "60px", height: "40px", borderRadius: "4px", border: "1px solid #d0fdd7", cursor: "pointer" }}
+                  style={{ width: "60px", height: "40px", borderRadius: "4px", border: "1px solid var(--border-color)", cursor: "pointer" }}
                 />
                 <input
                   type="text"
                   value={config.heroOverlayColor || "#0b1221"}
                   onChange={(e) => setConfig({ ...config, heroOverlayColor: e.target.value || null })}
                   placeholder="#0b1221"
-                  style={{ flex: 1, padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
+                  style={{ flex: 1, padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-primary)" }}
                 />
                 <button
                   onClick={() => setConfig({ ...config, heroOverlayColor: null })}
@@ -682,14 +847,14 @@ function PaginaPrincipalContent() {
                   Reset
                 </button>
               </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
+              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
                 {config.heroOverlayColor ? `✓ Color personalizado: ${config.heroOverlayColor}` : "Usando color por defecto (#0b1221)"}
               </div>
             </div>
 
             {/* Opacidad del Overlay */}
-            <div style={{ padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
+            <div style={{ padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Opacidad del Overlay
               </label>
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -699,7 +864,10 @@ function PaginaPrincipalContent() {
                   max="100"
                   step="1"
                   value={config.heroOverlayOpacity ?? 70}
-                  onChange={(e) => setConfig({ ...config, heroOverlayOpacity: parseInt(e.target.value) || 70 })}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setConfig({ ...config, heroOverlayOpacity: isNaN(val) ? 70 : val });
+                  }}
                   style={{ flex: 1 }}
                 />
                 <input
@@ -708,12 +876,15 @@ function PaginaPrincipalContent() {
                   max="100"
                   step="1"
                   value={config.heroOverlayOpacity ?? 70}
-                  onChange={(e) => setConfig({ ...config, heroOverlayOpacity: Math.max(0, Math.min(100, parseInt(e.target.value) || 70)) })}
-                  style={{ width: "80px", padding: "0.5rem", borderRadius: "4px", border: "1px solid #d0fdd7", background: "#fff", color: "#1a5c2e" }}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setConfig({ ...config, heroOverlayOpacity: isNaN(val) ? 70 : Math.max(0, Math.min(100, val)) });
+                  }}
+                  style={{ width: "80px", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-primary)" }}
                 />
-                <span style={{ color: "#6b7280", fontSize: "0.875rem", minWidth: "30px" }}>%</span>
+                <span style={{ color: "var(--text-tertiary)", fontSize: "0.875rem", minWidth: "30px" }}>%</span>
               </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b7280" }}>
+              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
                 {config.heroOverlayOpacity === 0 && "Sin overlay (transparente)"}
                 {config.heroOverlayOpacity > 0 && config.heroOverlayOpacity < 30 && "Overlay muy transparente"}
                 {config.heroOverlayOpacity >= 30 && config.heroOverlayOpacity < 60 && "Overlay semi-transparente"}
@@ -724,22 +895,56 @@ function PaginaPrincipalContent() {
           </div>
         </div>
 
-        {/* Video de Instagram */}
+        {/* Link a Instagram y Media */}
         <div className="card" style={{ padding: "2rem", marginBottom: "1.5rem" }}>
-          <h2 style={{ margin: "0 0 1.5rem", color: "#1a5c2e" }}>🎥 Video de Instagram</h2>
-          <div>
-            <label style={{ display: "block", marginBottom: "0.5rem", color: "#1a5c2e", fontWeight: 600 }}>
-              Video Seleccionado
+          <h2 style={{ margin: "0 0 1.5rem", color: "var(--text-primary)" }}>📸 LINK A INSTAGRAM</h2>
+          
+          {/* Campo para URL de Instagram */}
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
+              Enlace a Instagram (URL)
             </label>
-            {config.instagramVideoUrl && (
-              <div style={{ marginBottom: "0.75rem", display: "flex", gap: "0.5rem", alignItems: "center", padding: "0.75rem", background: "#ffffff", borderRadius: "8px" }}>
-                <video
-                  src={config.instagramVideoUrl}
-                  style={{ width: "150px", height: "100px", objectFit: "cover", borderRadius: "4px", border: "1px solid #d0fdd7" }}
-                  muted
-                  loop
-                />
-                <div style={{ flex: 1, fontSize: "0.875rem", color: "#1a5c2e", wordBreak: "break-all" }}>{config.instagramVideoUrl}</div>
+            <input
+              type="url"
+              value={config.instagramVideoUrl || ""}
+              onChange={(e) => setConfig({ ...config, instagramVideoUrl: e.target.value })}
+              placeholder="https://www.instagram.com/tu_cuenta"
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                borderRadius: "8px",
+                border: "1px solid var(--border-color)",
+                background: "var(--input-bg)",
+                color: "var(--text-primary)",
+                fontSize: "1rem"
+              }}
+            />
+            <small style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>
+              Ingresa el enlace a tu perfil o publicación de Instagram, o selecciona/sube un archivo de imagen o video
+            </small>
+          </div>
+
+          <div>
+            <label style={{ display: "block", marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 600 }}>
+              Archivo Seleccionado (Opcional)
+            </label>
+            {config.instagramVideoUrl && !config.instagramVideoUrl.startsWith("http") && (
+              <div style={{ marginBottom: "0.75rem", display: "flex", gap: "0.5rem", alignItems: "center", padding: "0.75rem", background: "var(--card-bg)", borderRadius: "8px" }}>
+                {config.instagramVideoUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+                  <video
+                    src={config.instagramVideoUrl}
+                    style={{ width: "150px", height: "100px", objectFit: "cover", borderRadius: "4px", border: "1px solid var(--border-color)" }}
+                    muted
+                    loop
+                  />
+                ) : (
+                  <img
+                    src={config.instagramVideoUrl}
+                    alt="Archivo seleccionado"
+                    style={{ width: "150px", height: "100px", objectFit: "cover", borderRadius: "4px", border: "1px solid var(--border-color)" }}
+                  />
+                )}
+                <div style={{ flex: 1, fontSize: "0.875rem", color: "var(--text-primary)", wordBreak: "break-all" }}>{config.instagramVideoUrl}</div>
                 <button
                   onClick={() => setConfig({ ...config, instagramVideoUrl: "" })}
                   style={{ padding: "0.5rem 1rem", background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}
@@ -748,18 +953,57 @@ function PaginaPrincipalContent() {
                 </button>
               </div>
             )}
-            <button
-              onClick={() => setShowVideoSelector(!showVideoSelector)}
-              style={{ padding: "0.75rem 1.5rem", background: "#2a8c4a", color: "#ffffff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}
-            >
-              {showVideoSelector ? "✖ Cerrar Selector" : "📁 Seleccionar Video"}
-            </button>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <button
+                onClick={() => setShowVideoSelector(!showVideoSelector)}
+                style={{ padding: "0.75rem 1.5rem", background: "#2a8c4a", color: "#ffffff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600 }}
+              >
+                {showVideoSelector ? "✖ Cerrar Selector" : "📁 SELECCIONAR ARCHIVO"}
+              </button>
+              <label style={{ padding: "0.75rem 1.5rem", background: "#3b82f6", color: "#ffffff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                📤 SUBIR ARCHIVO
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  style={{ display: "none" }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !auth?.token) return;
+                    if (file.size > 50 * 1024 * 1024) {
+                      alert("El archivo debe ser menor a 50MB");
+                      return;
+                    }
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    try {
+                      const res = await fetch("/api/admin/homepage/images/upload", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${auth.token}` },
+                        body: formData
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        setConfig({ ...config, instagramVideoUrl: data.url });
+                        loadAvailableImages();
+                        alert("Archivo subido exitosamente");
+                      } else {
+                        const error = await res.json();
+                        alert(error.error || "Error al subir archivo");
+                      }
+                    } catch (error) {
+                      console.error("Error:", error);
+                      alert("Error al subir archivo");
+                    }
+                  }}
+                />
+              </label>
+            </div>
 
             {showVideoSelector && (
-              <div style={{ marginTop: "1rem", padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #d0fdd7" }}>
-                <h4 style={{ margin: "0 0 1rem", color: "#1a5c2e" }}>Videos Disponibles en /public/images/</h4>
+              <div style={{ marginTop: "1rem", padding: "1rem", background: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                <h4 style={{ margin: "0 0 1rem", color: "var(--text-primary)" }}>Archivos Disponibles en /public/images/</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem", maxHeight: "400px", overflowY: "auto" }}>
-                  {availableImages.filter(img => img.type === "video").map((video) => (
+                  {availableImages.map((video) => (
                     <div
                       key={video.url}
                       onClick={() => {
@@ -787,13 +1031,21 @@ function PaginaPrincipalContent() {
                         }
                       }}
                     >
-                      <video
-                        src={video.url}
-                        style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "4px" }}
-                        muted
-                        loop
-                      />
-                      <div style={{ fontSize: "0.75rem", color: "#1a5c2e", marginTop: "0.25rem", textAlign: "center", wordBreak: "break-all" }}>
+                      {video.type === "video" ? (
+                        <video
+                          src={video.url}
+                          style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "4px" }}
+                          muted
+                          loop
+                        />
+                      ) : (
+                        <img
+                          src={video.url}
+                          alt={video.name}
+                          style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "4px" }}
+                        />
+                      )}
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-primary)", marginTop: "0.25rem", textAlign: "center", wordBreak: "break-all" }}>
                         {video.name}
                       </div>
                       {config.instagramVideoUrl === video.url && (
@@ -801,9 +1053,9 @@ function PaginaPrincipalContent() {
                       )}
                     </div>
                   ))}
-                  {availableImages.filter(img => img.type === "video").length === 0 && (
-                    <div style={{ gridColumn: "1/-1", textAlign: "center", color: "#6b7280", padding: "2rem" }}>
-                      No hay videos disponibles en /public/images/
+                  {availableImages.length === 0 && (
+                    <div style={{ gridColumn: "1/-1", textAlign: "center", color: "var(--text-tertiary)", padding: "2rem" }}>
+                      No hay archivos disponibles en /public/images/
                     </div>
                   )}
                 </div>
@@ -878,7 +1130,7 @@ function PaginaPrincipalContent() {
         {showPreview && (
           <div className="card" style={{ padding: "2rem", marginTop: "1.5rem", position: "relative" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-              <h2 style={{ margin: 0, color: "#1a5c2e" }}>👁️ Vista Previa</h2>
+              <h2 style={{ margin: 0, color: "var(--text-primary)" }}>👁️ Vista Previa</h2>
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <button
                   onClick={() => setPreviewDevice("mobile")}
@@ -936,7 +1188,7 @@ function PaginaPrincipalContent() {
               <div style={{
                 width: previewDevice === "mobile" ? "375px" : previewDevice === "tablet" ? "768px" : "100%",
                 maxWidth: "100%",
-                background: "#fff",
+                background: "var(--card-bg)",
                 border: "8px solid #1f2937",
                 borderRadius: "8px",
                 overflow: "hidden",

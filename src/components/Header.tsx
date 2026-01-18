@@ -2,14 +2,25 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getStoredAuth, clearStoredAuth } from "../lib/clientAuth";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+
+type UserRole = "USER" | "AGENT" | "CONTABLE" | "SUPERADMIN" | "MASTER";
+
+interface UserMenu {
+  label: string;
+  href: string;
+  icon?: string;
+  divider?: boolean;
+}
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const [auth, setAuth] = useState<any>(null);
   const [userData, setUserData] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -28,6 +39,12 @@ export function Header() {
         .catch(() => {});
     }
   }, []);
+
+  // Cerrar menús al cambiar de ruta
+  useEffect(() => {
+    setUserMenuOpen(false);
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   async function logout() {
     try {
@@ -49,110 +66,193 @@ export function Header() {
     return null;
   }
 
+  const role = auth?.user?.role as UserRole | undefined;
+  const isAdmin = role && ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"].includes(role);
+  const isClient = role === "USER" || !role;
+
+  // Menú para clientes (USER)
+  const clientMenu: UserMenu[] = [
+    { label: "MI CUENTA", href: "/cuenta", icon: "👤", divider: true },
+    { label: "Configuración", href: "/cuenta/configuracion", icon: "⚙️" },
+    { label: "Tickets y Notificaciones", href: "/cuenta/mis-jugadas", icon: "🎲" },
+    { label: "Historial", href: "/cuenta/historial", icon: "📜" },
+    { label: "Datos Bancarios", href: "/cuenta/datos-bancarios", icon: "🏦", divider: true },
+  ];
+
+  // Menú para administradores
+  const getAdminMenu = (): UserMenu[] => {
+    const menu: UserMenu[] = [
+      { label: "DASHBOARD", href: "/admin", icon: "📊", divider: true },
+    ];
+
+    // AGENT puede ver:
+    if (["AGENT", "SUPERADMIN", "MASTER"].includes(role || "")) {
+      menu.push({ label: "Página Principal", href: "/admin/pagina-principal", icon: "🏠" });
+    }
+
+    // CONTABLE puede ver:
+    if (["CONTABLE", "MASTER"].includes(role || "")) {
+      menu.push({ label: "Estadísticas", href: "/admin/estadisticas", icon: "📈" });
+      menu.push({ label: "Pagar Premios", href: "/admin/pagos", icon: "💰" });
+    }
+
+    // SUPERADMIN y MASTER pueden ver:
+    if (["SUPERADMIN", "MASTER"].includes(role || "")) {
+      menu.push({ label: "Usuarios", href: "/admin/usuarios", icon: "👥" });
+      menu.push({ label: "Historial", href: "/admin/historial", icon: "📜" });
+      menu.push({ label: "Referidos", href: "/admin/referidos", icon: "🔗" });
+      menu.push({ label: "Agentes", href: "/admin/roles/agentes", icon: "👨‍💼" });
+    }
+
+    // Solo MASTER puede ver:
+    if (role === "MASTER") {
+      menu.push({ label: "Super Admins", href: "/admin/roles/superadmins", icon: "👑" });
+      menu.push({ label: "Administradores", href: "/admin/roles/admins", icon: "🛡️" });
+      menu.push({ label: "Logs Super Admins", href: "/admin/logs-super", icon: "📋" });
+      menu.push({ label: "Logs Administradores", href: "/admin/logs-admins", icon: "📋" });
+      menu.push({ label: "Términos y Condiciones", href: "/admin/terminos", icon: "📄" });
+      menu.push({ label: "Reglas", href: "/admin/reglas", icon: "📋" });
+      menu.push({ label: "Pago Móvil", href: "/admin/pago-movil", icon: "💳" });
+      menu.push({ label: "Redes Sociales", href: "/admin/redes-sociales", icon: "📱" });
+      menu.push({ label: "Estadísticas Usuario", href: "/admin/estadisticas/user", icon: "📊" });
+    }
+
+    menu.push({ label: "Cerrar sesión", href: "#", icon: "🚪", divider: true });
+    return menu;
+  };
+
+  const displayName = userData?.username || auth?.user?.username || auth?.user?.email?.split("@")[0] || "Usuario";
+  const currentMenu = isAdmin ? getAdminMenu() : clientMenu;
+
+  // Menú público para usuarios no logueados
+  const publicMenu: UserMenu[] = [
+    { label: "NAVEGACIÓN", href: "/", icon: "🏠", divider: true },
+    { label: "Inicio", href: "/", icon: "🏠" },
+    { label: "Sorteos", href: "/raffles", icon: "🎲" },
+    { label: "En Vivo", href: "/live", icon: "📺" },
+    { label: "Resultados", href: "/results", icon: "🏆" },
+  ];
+
+  // Menú principal según estado de autenticación
+  const mainMenu = !auth ? publicMenu : currentMenu;
+
   return (
-    <header style={{ 
-      background: "#ffffff", 
-      borderBottom: "1px solid #d0fdd7", 
-      padding: "1rem 0",
-      position: "relative",
-      zIndex: 100,
-      width: "100%"
-    }}>
-      <div className="container" style={{ display: "flex", alignItems: "center", gap: "1rem", justifyContent: "center", padding: "1rem 0" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: "2rem", width: "100%", maxWidth: "1200px" }}>
-          <div style={{ cursor: "pointer", display: "flex", alignItems: "center", height: "37.5px", justifySelf: "start" }} onClick={() => router.push("/")}>
+    <header className="header-responsive">
+      <div className="header-container">
+        <div className="header-grid">
+          {/* Menú desplegable a la izquierda */}
+          <div className="header-menu-left">
+            <button
+              className="header-menu-button"
+              onClick={() => setUserMenuOpen((v) => !v)}
+              aria-label="Menú principal"
+            >
+              <span className="header-menu-icon">☰</span>
+            </button>
+            {userMenuOpen && (
+              <div className="header-menu-dropdown">
+                {mainMenu.map((item, index) => {
+                  if (item.href === "#") {
+                    return (
+                      <button
+                        key={index}
+                        onClick={logout}
+                        className="header-dropdown-item header-dropdown-button"
+                      >
+                        {item.icon && <span>{item.icon}</span>}
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  }
+                  return (
+                    <Link
+                      key={index}
+                      href={item.href}
+                      onClick={() => setUserMenuOpen(false)}
+                      className={`header-dropdown-item ${item.divider ? "header-dropdown-divider" : ""}`}
+                    >
+                      {item.icon && <span>{item.icon}</span>}
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Logo centrado */}
+          <div className="header-logo-center" onClick={() => router.push("/")}>
             <img 
               src="/images/LuckyLy-Logo.png" 
-              alt="LuckyLY Logo" 
-              style={{ height: "100%", width: "auto", maxWidth: "150px", objectFit: "contain", display: "block" }}
+              alt="LuckyLY Logo"
+              className="header-logo-image"
             />
           </div>
-          
-          <nav style={{ display: "flex", gap: "1.5rem", alignItems: "center", justifyContent: "center", gridColumn: "2" }}>
-            <Link href="/" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>Inicio</Link>
-            <Link href="/raffles" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>Sorteos</Link>
-            <Link href="/live" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>En Vivo</Link>
-            <Link href="/results" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>Resultados</Link>
-          </nav>
-          
-          <div style={{ display: "flex", gap: ".75rem", alignItems: "center", justifySelf: "end", gridColumn: "3" }}>
+
+          {/* Botones de login/registro o icono de usuario a la derecha */}
+          <div className="header-actions">
             {!auth ? (
               <>
-                <Link href="/auth/login" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>Ingresar</Link>
-                <Link href="/auth/register" style={{ padding: ".5rem .75rem", background: "#2a8c4a", color: "#ffffff", borderRadius: "8px", fontWeight: 700, textDecoration: "none", textTransform: "uppercase", transition: "background 0.2s" }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "#3a9c5a"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "#2a8c4a"}>
+                <Link href="/auth/login" className="header-link">Ingresar</Link>
+                <Link href="/auth/register" className="header-button">
                   Registrarse
                 </Link>
               </>
             ) : (
-              <div style={{ position: "relative" }}>
+              <div className="header-user-icon-container">
                 <button
-                  onClick={() => setMenuOpen((v) => !v)}
-                  style={{
-                    padding: ".5rem .75rem",
-                    borderRadius: "999px",
-                    border: "1px solid #d0fdd7",
-                    background: "#e8f5eb",
-                    color: "#1a5c2e",
-                    cursor: "pointer"
-                  }}
+                  className="header-user-icon-button"
+                  onClick={() => router.push(isAdmin ? "/admin" : "/cuenta")}
+                  aria-label={isAdmin ? "Panel de administración" : "Mi cuenta"}
+                  title={displayName}
                 >
-                  👤 {userData?.username || auth.user?.username || auth.user?.email?.split("@")[0] || "Usuario"}
+                  <span className="header-user-icon">
+                    {isAdmin ? "👑" : "👤"}
+                  </span>
                 </button>
-                {menuOpen && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: 0,
-                      marginTop: ".5rem",
-                      background: "#ffffff",
-                      border: "1px solid #d0fdd7",
-                      boxShadow: "0 4px 12px rgba(42, 140, 74, 0.15)",
-                      borderRadius: "10px",
-                      minWidth: "200px",
-                      zIndex: 10
-                    }}
-                  >
-                    <Link href="/cuenta" style={{ display: "block", padding: ".75rem 1rem", color: "#1a5c2e", textTransform: "uppercase", borderBottom: "1px solid #d0fdd7" }} onClick={() => setMenuOpen(false)}>
-                      MI CUENTA
-                    </Link>
-                    <Link href="/cuenta/configuracion" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem" }} onClick={() => setMenuOpen(false)}>
-                      ⚙️ Configuración
-                    </Link>
-                    <Link href="/cuenta/favoritos" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem" }} onClick={() => setMenuOpen(false)}>
-                      ⭐ Mis Favoritos
-                    </Link>
-                    <Link href="/cuenta/mis-jugadas" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem" }} onClick={() => setMenuOpen(false)}>
-                      🎲 Tickets y Notificaciones
-                    </Link>
-                    <Link href="/cuenta/historial" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem" }} onClick={() => setMenuOpen(false)}>
-                      📜 Historial
-                    </Link>
-                    <Link href="/cuenta/datos-bancarios" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem", borderBottom: "1px solid #d0fdd7" }} onClick={() => setMenuOpen(false)}>
-                      🏦 Datos Bancarios
-                    </Link>
-                    <button
-                      onClick={logout}
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        padding: ".75rem 1rem",
-                        border: "none",
-                        background: "transparent",
-                        color: "#1a5c2e",
-                        textAlign: "left",
-                        cursor: "pointer",
-                        textTransform: "uppercase"
-                      }}
-                    >
-                      Cerrar sesión
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </div>
+
+          {/* Menú móvil hamburguesa (solo para móviles) */}
+          <button
+            className="header-mobile-menu"
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            aria-label="Menú móvil"
+          >
+            {mobileMenuOpen ? "✕" : "☰"}
+          </button>
+
+          {/* Navegación móvil */}
+          {mobileMenuOpen && (
+            <nav className="header-nav-mobile">
+              {mainMenu.map((item, index) => {
+                if (item.href === "#") {
+                  return (
+                    <button
+                      key={index}
+                      onClick={logout}
+                      className="header-mobile-item header-mobile-button"
+                    >
+                      {item.icon && <span>{item.icon}</span>}
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                }
+                return (
+                  <Link
+                    key={index}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="header-mobile-item"
+                  >
+                    {item.icon && <span>{item.icon}</span>}
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
         </div>
       </div>
     </header>

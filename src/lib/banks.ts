@@ -58,3 +58,44 @@ export function formatBankDisplay(bank: string | null): string {
   }
   return bank;
 }
+
+/**
+ * Mapea el nombre del banco al valor del enum Bank de Prisma
+ * El enum solo tiene: BANESCO, VENEZUELA, MERCANTIL, BOD, PROVINCIAL, BICENTENARIO, OTRA
+ */
+export function mapBankNameToEnum(bankName: string): string | null {
+  if (!bankName) return null;
+  
+  const upperName = bankName.toUpperCase().trim();
+  
+  // Mapeo directo de nombres a valores del enum
+  const bankMap: Record<string, string> = {
+    "BANESCO": "BANESCO",
+    "BANCO DE VENEZUELA": "VENEZUELA",
+    "VENEZUELA": "VENEZUELA",
+    "BANCO MERCANTIL": "MERCANTIL",
+    "MERCANTIL": "MERCANTIL",
+    "BANCO OCCIDENTAL DE DESCUENTO": "BOD",
+    "BOD": "BOD",
+    "BBVA PROVINCIAL": "PROVINCIAL",
+    "PROVINCIAL": "PROVINCIAL",
+    "BANCO BICENTENARIO DEL PUEBLO": "BICENTENARIO",
+    "BICENTENARIO": "BICENTENARIO",
+  };
+  
+  // Buscar coincidencia exacta
+  if (bankMap[upperName]) {
+    return bankMap[upperName];
+  }
+  
+  // Buscar por nombre parcial (case-insensitive)
+  if (upperName.includes("BANESCO")) return "BANESCO";
+  if (upperName.includes("VENEZUELA") && !upperName.includes("BICENTENARIO")) return "VENEZUELA";
+  if (upperName.includes("MERCANTIL")) return "MERCANTIL";
+  if (upperName.includes("BOD") || upperName.includes("OCCIDENTAL")) return "BOD";
+  if (upperName.includes("PROVINCIAL")) return "PROVINCIAL";
+  if (upperName.includes("BICENTENARIO")) return "BICENTENARIO";
+  
+  // Si no coincide con ninguno de los valores del enum, usar OTRA
+  return "OTRA";
+}

@@ -1,12 +1,91 @@
+// Prisma 7 con Prisma Postgres
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool, PoolConfig } from "pg";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+// Singleton pattern para evitar múltiples conexiones en desarrollo
+const globalForPrisma = globalThis as unknown as { 
+  prisma: PrismaClient | undefined;
+  pool: Pool | undefined;
+};
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: ["warn", "error"]
+// Limpiar parámetros SSL obsoletos que causan warnings en pg-connection-string
+const cleanDatabaseUrl = (url: string): string => {
+  try {
+    const urlObj = new URL(url);
+    const obsoleteParams = ['sslmode', 'sslcert', 'sslkey', 'sslrootcert'];
+    obsoleteParams.forEach(param => {
+      if (urlObj.searchParams.has(param)) {
+        urlObj.searchParams.delete(param);
+      }
+    });
+    return urlObj.toString();
+  } catch {
+    return url;
+  }
+};
+
+// Función para crear el pool de conexiones
+function createPool(): Pool {
+  const databaseUrl = process.env.DATABASE_URL;
+  
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL no está definida en las variables de entorno");
+  }
+
+  const cleanedUrl = cleanDatabaseUrl(databaseUrl);
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Detectar si es Prisma Postgres (db.prisma.io) o Neon (neon.tech) u otro
+  const isPrismaPostgres = databaseUrl.includes('db.prisma.io');
+  const isNeon = databaseUrl.includes('neon.tech');
+  const requiresSSL = isPrismaPostgres || isNeon || isProduction;
+
+  const poolConfig: PoolConfig = {
+    connectionString: cleanedUrl,
+    // SSL siempre habilitado para bases de datos cloud
+    ssl: requiresSSL ? { rejectUnauthorized: false } : false,
+    // Configuración robusta para evitar errores P1017 (ConnectionClosed)
+    max: isProduction ? 20 : 5,
+    min: 1,
+    idleTimeoutMillis: 60000, // 60 segundos
+    connectionTimeoutMillis: 30000, // 30 segundos
+    allowExitOnIdle: true,
+  };
+
+  const pool = new Pool(poolConfig);
+
+  // Manejar errores del pool para evitar crashes
+  pool.on('error', (err) => {
+    console.error('🔴 Error inesperado en pool de PostgreSQL:', err.message);
   });
+
+  return pool;
+}
+
+// Función para crear PrismaClient
+function createPrismaClient(): PrismaClient {
+  // Reutilizar o crear pool
+  if (!globalForPrisma.pool) {
+    globalForPrisma.pool = createPool();
+  }
+
+  const adapter = new PrismaPg(globalForPrisma.pool);
+
+  return new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === "development"
+      ? ["warn", "error"]
+      : ["error"],
+    transactionOptions: {
+      maxWait: 30000,
+      timeout: 20000,
+    },
+  });
+}
+
+// Exportar instancia singleton
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

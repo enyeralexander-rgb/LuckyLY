@@ -35,22 +35,22 @@ export function ContactSection() {
   return (
     <section className="container" style={{ padding: "3rem 0" }}>
       <div className="card" style={{ padding: "2rem", maxWidth: "600px", margin: "0 auto" }}>
-        <h2 style={{ margin: "0 0 1.5rem", color: "#3E3E3C", fontSize: "2rem", textAlign: "center" }}>
+        <h2 style={{ margin: "0 0 1.5rem", fontSize: "2rem", textAlign: "center" }}>
           {config.title || "Contacto"}
         </h2>
         <div style={{ display: "grid", gap: "1rem", textAlign: "center" }}>
           {config.email && (
             <div>
-              <strong style={{ color: "#3E3E3C" }}>Email:</strong>{" "}
-              <a href={`mailto:${config.email}`} style={{ color: "#85BB65", textDecoration: "none" }}>
+              <strong>Email:</strong>{" "}
+              <a href={`mailto:${config.email}`}>
                 {config.email}
               </a>
             </div>
           )}
           {config.phone && (
             <div>
-              <strong style={{ color: "#3E3E3C" }}>Teléfono:</strong>{" "}
-              <a href={`tel:${config.phone}`} style={{ color: "#85BB65", textDecoration: "none" }}>
+              <strong>Teléfono:</strong>{" "}
+              <a href={`tel:${config.phone}`}>
                 {config.phone}
               </a>
             </div>
@@ -58,7 +58,7 @@ export function ContactSection() {
           {config.showForm && (
             <div style={{ marginTop: "1.5rem" }}>
               {/* Formulario de contacto aquí */}
-              <p style={{ color: "#6b7280", fontSize: "0.875rem" }}>
+              <p style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
                 El formulario de contacto se implementará próximamente.
               </p>
             </div>

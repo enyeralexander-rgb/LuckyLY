@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
 import { Role } from "@prisma/client";
@@ -102,8 +103,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
         name: user.name,
         email: user.email,
         username: user.username,
+        documentId: user.documentId,
         phoneNumber: user.phoneNumber,
         nationalId: user.nationalId,
+        nationalIdType: user.nationalIdType,
         bank: user.bank,
         createdAt: user.createdAt.toISOString()
       },

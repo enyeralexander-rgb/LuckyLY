@@ -2,15 +2,12 @@
 import { Footer } from "../../components/Footer";
 import { Hero } from "../../components/Hero";
 import { LiveSection } from "../../components/LiveSection";
-import { NavBar } from "../../components/NavBar";
 import { RaffleGrid } from "../../components/RaffleGrid";
-import { Header } from "../../components/Header";
 import { ContactSection } from "../../components/ContactSection";
 import { useEffect, useState, Suspense, createContext, useContext } from "react";
 import { useSearchParams } from "next/navigation";
 
 const SECTION_COMPONENTS: Record<string, React.ComponentType<any>> = {
-  header: Header,
   hero: Hero,
   raffles: RaffleGrid,
   live: LiveSection,
@@ -142,18 +139,12 @@ function PreviewContent() {
     );
   }
 
-  // El Header SIEMPRE se muestra - no se puede modificar desde el módulo 'PAGINA PRINCIPAL'
-  // Solo mostrar hero, raffles, live y footer (sin header en sectionOrder)
   const sections = Array.isArray(config.sectionOrder) 
     ? config.sectionOrder.filter((section: string) => section !== "header" && config.sectionVisibility?.[section] !== false)
     : ["hero", "raffles", "live", "footer"];
 
-  // El Header siempre se muestra, no depende de sectionOrder
-  const showNavBar = false; // No mostrar NavBar porque Header siempre está presente
-
   return (
     <PreviewConfigContext.Provider value={config}>
-      <Header />
       {sections.map((section: string) => {
         const Component = SECTION_COMPONENTS[section];
         if (!Component) return null;

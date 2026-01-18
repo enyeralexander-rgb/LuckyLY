@@ -1,5 +1,4 @@
 "use client";
-import { NavBar } from "../../../components/NavBar";
 import { AuthGuard } from "../../../components/AuthGuard";
 import { useEffect, useState, Suspense } from "react";
 import { getStoredAuth } from "../../../lib/clientAuth";
@@ -195,7 +194,6 @@ function PaymentContent() {
   if (loading) {
     return (
       <AuthGuard requiredRole={["USER"]}>
-        <NavBar />
         <main className="container" style={{ paddingTop: "2rem" }}>
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         </main>
@@ -206,7 +204,6 @@ function PaymentContent() {
   if (!raffle) {
     return (
       <AuthGuard requiredRole={["USER"]}>
-        <NavBar />
         <main className="container" style={{ paddingTop: "2rem" }}>
           <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
             Sorteo no encontrado
@@ -219,7 +216,6 @@ function PaymentContent() {
   return (
     <AuthGuard requiredRole={["USER"]}>
       <>
-        <NavBar />
         <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
           <div style={{ marginBottom: "1.5rem" }}>
             <Link href={`/raffles/${raffle.id}`} style={{ color: "#85BB65", textDecoration: "none" }}>
@@ -554,7 +550,6 @@ export default function PaymentPage() {
   return (
     <Suspense fallback={
       <AuthGuard requiredRole={["USER"]}>
-        <NavBar />
         <main className="container" style={{ paddingTop: "2rem" }}>
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         </main>

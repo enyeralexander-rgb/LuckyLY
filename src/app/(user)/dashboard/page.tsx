@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { NavBar } from "../../../components/NavBar";
 import { AuthGuard } from "../../../components/AuthGuard";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../lib/clientAuth";
@@ -111,7 +110,6 @@ export default function DashboardPage() {
   return (
     <AuthGuard requiredRole={["USER"]}>
       <>
-        <NavBar />
         <main className="container" style={{ paddingTop: "2rem", display: "grid", gap: "1.5rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h1>MI CUENTA</h1>

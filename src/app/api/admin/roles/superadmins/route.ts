@@ -42,13 +42,16 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    // Generar documentId único para superadmin
+    const documentId = `SUPER-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
     const superadmin = await prisma.user.create({
       data: {
         name,
         email,
         passwordHash,
         role: Role.SUPERADMIN,
-        birthDate: new Date()
+        documentId
       }
     });
 

@@ -15,6 +15,26 @@ export async function PUT(request: Request) {
 
     const cleanUsername = username.trim().toLowerCase();
 
+    // Obtener el usuario actual
+    const currentUser = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { usernameUpdatedAt: true }
+    });
+
+    // Verificar restricción de 30 días
+    if (currentUser?.usernameUpdatedAt) {
+      const lastUpdate = new Date(currentUser.usernameUpdatedAt);
+      const now = new Date();
+      const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysSinceUpdate < 30) {
+        const daysRemaining = 30 - daysSinceUpdate;
+        return NextResponse.json({ 
+          error: `Solo puedes cambiar tu nombre de usuario una vez cada 30 días. Faltan ${daysRemaining} días.` 
+        }, { status: 400 });
+      }
+    }
+
     // Verificar si el username ya existe
     const existingUser = await prisma.user.findUnique({
       where: { username: cleanUsername }
@@ -24,10 +44,13 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Este nombre de usuario ya está en uso" }, { status: 400 });
     }
 
-    // Actualizar username
+    // Actualizar username y registrar timestamp
     await prisma.user.update({
       where: { id: auth.userId },
-      data: { username: cleanUsername }
+      data: { 
+        username: cleanUsername,
+        usernameUpdatedAt: new Date()
+      }
     });
 
     return NextResponse.json({ success: true, message: "Nombre de usuario actualizado exitosamente" });

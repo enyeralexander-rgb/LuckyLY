@@ -79,13 +79,64 @@ function CrearSorteosPageContent() {
       return { error: "El 2° ganador no puede ganar un monto mayor que el 1° ganador", invalidIndex: 1 };
     }
     
+    // Validar que la suma de premios no exceda el 50% de las ganancias totales
+    const pricePerSlot = parseFloat(formData.pricePerSlot) || 0;
+    const slots = parseInt(formData.slots) || 0;
+    const totalIncome = pricePerSlot * slots;
+    const maxPrizeTotal = totalIncome * 0.5; // 50% máximo
+    const totalPrizes = prizes.reduce((sum, p) => sum + p, 0);
+    
+    if (totalPrizes > maxPrizeTotal && totalIncome > 0) {
+      return { 
+        error: `La suma de premios (Bs. ${totalPrizes.toFixed(2)}) excede el 50% de las ganancias totales (Bs. ${maxPrizeTotal.toFixed(2)})`, 
+        invalidIndex: 0 
+      };
+    }
+    
     return { error: null, invalidIndex: null };
+  }
+
+  // Validar cantidad de cupos (mínimo 10, máximo 100)
+  function validateSlots(): string | null {
+    const slots = parseInt(formData.slots);
+    if (formData.type === "STATES" || formData.type === "ZODIAC") {
+      return null; // Los fijos no se validan aquí
+    }
+    if (isNaN(slots) || slots < 10) {
+      return "La cantidad mínima de cupos es 10";
+    }
+    if (slots > 100) {
+      return "La cantidad máxima de cupos es 100";
+    }
+    return null;
+  }
+
+  // Prevenir entrada de caracteres no numéricos en campos de precio
+  function handlePriceKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    // Prevenir la letra 'e', 'E', '+', '-' que son válidos en inputs type="number"
+    if (['e', 'E', '+', '-'].includes(e.key)) {
+      e.preventDefault();
+    }
+  }
+
+  function handleSlotsKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    // Prevenir cualquier caracter que no sea número o teclas de control
+    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) {
+      e.preventDefault();
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!auth?.token) {
       alert("No autenticado");
+      return;
+    }
+
+    // Validar cantidad de cupos
+    const slotsError = validateSlots();
+    if (slotsError) {
+      alert(slotsError);
       return;
     }
 
@@ -140,35 +191,35 @@ function CrearSorteosPageContent() {
     <>
       <AdminNavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
-        <h1 style={{ color: "#3E3E3C" }}>Crear Sorteo</h1>
+        <h1 style={{ color: "var(--text-primary)" }}>Crear Sorteo</h1>
         <form onSubmit={handleSubmit} className="card" style={{ display: "grid", gap: "1.5rem" }}>
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: "#3E3E3C" }}>Título del sorteo</label>
+            <label style={{ color: "var(--text-primary)" }}>Título del sorteo</label>
             <input
               type="text"
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: "#3E3E3C" }}>Descripción (opcional)</label>
+            <label style={{ color: "var(--text-primary)" }}>Descripción (opcional)</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: "#3E3E3C" }}>Tipo de ruleta</label>
+            <label style={{ color: "var(--text-primary)" }}>Tipo de ruleta</label>
             <select
               value={formData.type}
               onChange={(e) => handleTypeChange(e.target.value)}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             >
               <option value="NUMBERS">NÚMEROS (10-100)</option>
               <option value="ANIMALS">ANIMALES (10-50)</option>
@@ -179,7 +230,7 @@ function CrearSorteosPageContent() {
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: "#3E3E3C" }}>Precio por cupo (Bs.)</label>
+            <label style={{ color: "var(--text-primary)" }}>Precio por cupo (Bs.)</label>
             <input
               type="number"
               step="0.01"
@@ -187,40 +238,53 @@ function CrearSorteosPageContent() {
               required
               value={formData.pricePerSlot}
               onChange={(e) => setFormData({ ...formData, pricePerSlot: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              onKeyDown={handlePriceKeyDown}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: "#3E3E3C" }}>Cantidad de cupos</label>
+            <label style={{ color: "var(--text-primary)" }}>Cantidad de cupos</label>
             <input
               type="number"
-              min={formData.type === "STATES" || formData.type === "ZODIAC" ? (formData.type === "STATES" ? 24 : 12) : formData.type === "NUMBERS" || formData.type === "FLAGS" ? 10 : 10}
-              max={formData.type === "STATES" || formData.type === "ZODIAC" ? (formData.type === "STATES" ? 24 : 12) : formData.type === "NUMBERS" || formData.type === "FLAGS" ? 100 : 50}
+              min={10}
+              max={100}
               required
               value={formData.slots}
               onChange={(e) => {
                 if (formData.type !== "STATES" && formData.type !== "ZODIAC") {
-                  setFormData({ ...formData, slots: e.target.value });
+                  // Solo permitir valores entre 10 y 100
+                  const value = e.target.value;
+                  setFormData({ ...formData, slots: value });
+                }
+              }}
+              onKeyDown={handleSlotsKeyDown}
+              onBlur={() => {
+                // Validar al salir del campo
+                const slots = parseInt(formData.slots);
+                if (!isNaN(slots)) {
+                  if (slots < 10) setFormData({ ...formData, slots: "10" });
+                  else if (slots > 100) setFormData({ ...formData, slots: "100" });
                 }
               }}
               disabled={formData.type === "STATES" || formData.type === "ZODIAC"}
               style={{ 
                 padding: ".75rem", 
                 borderRadius: "8px", 
-                border: "1px solid #d4d4c4", 
-                background: (formData.type === "STATES" || formData.type === "ZODIAC") ? "#e5e7eb" : "#F5F5E6", 
-                color: "#3E3E3C",
-                cursor: (formData.type === "STATES" || formData.type === "ZODIAC") ? "not-allowed" : "text"
+                border: "1px solid var(--border-color)", 
+                background: (formData.type === "STATES" || formData.type === "ZODIAC") ? "var(--input-disabled-bg)" : "var(--input-bg)", 
+                color: "var(--text-primary)",
+                cursor: (formData.type === "STATES" || formData.type === "ZODIAC") ? "not-allowed" : "text",
+                opacity: (formData.type === "STATES" || formData.type === "ZODIAC") ? 0.7 : 1
               }}
             />
-            <small style={{ color: "#3E3E3C", opacity: 0.7 }}>
-              {formData.type === "STATES" ? "24 estados fijos (automático)" : formData.type === "ZODIAC" ? "12 signos zodiacales fijos (automático)" : formData.type === "NUMBERS" || formData.type === "FLAGS" ? "Entre 10 y 100" : "Entre 10 y 50"}
+            <small style={{ color: "var(--text-primary)", opacity: 0.7 }}>
+              {formData.type === "STATES" ? "24 estados fijos (automático)" : formData.type === "ZODIAC" ? "12 signos zodiacales fijos (automático)" : "Entre 10 y 100 cupos (mínimo 10, máximo 100)"}
             </small>
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: "#3E3E3C" }}>Cantidad de ganadores (1-3)</label>
+            <label style={{ color: "var(--text-primary)" }}>Cantidad de ganadores (1-3)</label>
             <input
               type="number"
               min="1"
@@ -239,23 +303,23 @@ function CrearSorteosPageContent() {
                   handleWinnersCountChange(clampedValue);
                 }
               }}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: "#3E3E3C" }}>Fecha y hora de inicio</label>
+            <label style={{ color: "var(--text-primary)" }}>Fecha y hora de inicio</label>
             <input
               type="datetime-local"
               value={formData.startsAt}
               onChange={(e) => setFormData({ ...formData, startsAt: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
-            <small style={{ color: "#3E3E3C", opacity: 0.7 }}>Modificable hasta agotar los cupos</small>
+            <small style={{ color: "var(--text-primary)", opacity: 0.7 }}>Modificable hasta agotar los cupos</small>
           </div>
 
           <div style={{ display: "grid", gap: ".5rem" }}>
-            <label style={{ color: "#3E3E3C" }}>Premios (Bs.) - {formData.winnersCount} premio(s) requerido(s)</label>
+            <label style={{ color: "var(--text-primary)" }}>Premios (Bs.) - {formData.winnersCount} premio(s) requerido(s)</label>
             {Array.from({ length: formData.winnersCount }, (_, idx) => {
               const prize = formData.prizes[idx] || "";
               const validation = validatePrizes();
@@ -263,7 +327,7 @@ function CrearSorteosPageContent() {
               
               return (
                 <div key={idx} style={{ display: "grid", gap: ".25rem" }}>
-                  <label style={{ color: "#3E3E3C", fontSize: ".875rem", fontWeight: 600 }}>
+                  <label style={{ color: "var(--text-primary)", fontSize: ".875rem", fontWeight: 600 }}>
                     {idx === 0 ? "1°" : idx === 1 ? "2°" : "3°"} Ganador
                   </label>
                   <input
@@ -273,13 +337,14 @@ function CrearSorteosPageContent() {
                     required
                     value={prize}
                     onChange={(e) => updatePrize(idx, e.target.value)}
+                    onKeyDown={handlePriceKeyDown}
                     placeholder="0.00"
                     style={{ 
                       padding: ".75rem", 
                       borderRadius: "8px", 
                       border: hasError ? "1px solid #ef4444" : "1px solid #d4d4c4", 
-                      background: "#F5F5E6", 
-                      color: "#3E3E3C" 
+                      background: "var(--input-bg)", 
+                      color: "var(--text-primary)" 
                     }}
                   />
                   {hasError && validation.error && (
@@ -288,8 +353,16 @@ function CrearSorteosPageContent() {
                 </div>
               );
             })}
-            <small style={{ color: "#3E3E3C", opacity: 0.7 }}>
-              Los premios deben estar ordenados de mayor a menor (1° ganador ≥ 2° ganador ≥ 3° ganador)
+            <small style={{ color: "var(--text-primary)", opacity: 0.7 }}>
+              Los premios deben estar ordenados de mayor a menor (1° ganador ≥ 2° ganador ≥ 3° ganador).
+              <br />
+              <strong style={{ color: "#f59e0b" }}>⚠️ Regla: La suma total de premios no puede exceder el 50% de las ganancias del sorteo.</strong>
+              {formData.pricePerSlot && formData.slots && (
+                <span style={{ display: "block", marginTop: "0.25rem" }}>
+                  Ganancias totales: Bs. {(parseFloat(formData.pricePerSlot) * parseInt(formData.slots || "0")).toFixed(2)} | 
+                  Máximo premios: Bs. {((parseFloat(formData.pricePerSlot) * parseInt(formData.slots || "0")) * 0.5).toFixed(2)}
+                </span>
+              )}
             </small>
           </div>
 
@@ -305,7 +378,7 @@ function CrearSorteosPageContent() {
           <button
             type="submit"
             disabled={loading}
-            style={{ padding: ".75rem 1.5rem", borderRadius: "8px", border: "none", background: "#85BB65", color: "#3E3E3C", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}
+            style={{ padding: ".75rem 1.5rem", borderRadius: "8px", border: "none", background: "#85BB65", color: "var(--text-primary)", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}
           >
             {loading ? "Guardando..." : "Crear Sorteo"}
           </button>

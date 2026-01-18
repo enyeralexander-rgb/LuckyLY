@@ -124,7 +124,7 @@ function LogsAgentesPageContent() {
           <h3 style={{ margin: "0 0 1rem", fontSize: "1.125rem" }}>Filtros</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", alignItems: "end" }}>
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", color: "#94a3b8" }}>
+              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", color: "var(--text-secondary)" }}>
                 Fecha Desde
               </label>
               <input
@@ -142,7 +142,7 @@ function LogsAgentesPageContent() {
               />
             </div>
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", color: "#94a3b8" }}>
+              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", color: "var(--text-secondary)" }}>
                 Fecha Hasta
               </label>
               <input
@@ -234,7 +234,7 @@ function LogsAgentesPageContent() {
             </button>
           </div>
         ) : logs.length === 0 ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>No hay logs registrados</div>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>No hay logs registrados</div>
         ) : (
           <div className="card" style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -264,7 +264,7 @@ function LogsAgentesPageContent() {
                     <td style={{ padding: ".75rem", fontSize: ".875rem" }}>
                       {log.actor?.name || "N/A"}
                       <br />
-                      <span style={{ color: "#94a3b8", fontSize: ".75rem" }}>{log.actor?.email || ""}</span>
+                      <span style={{ color: "var(--text-secondary)", fontSize: ".75rem" }}>{log.actor?.email || ""}</span>
                     </td>
                     <td style={{ padding: ".75rem", fontSize: ".875rem" }}>
                       <span style={{
@@ -280,10 +280,10 @@ function LogsAgentesPageContent() {
                     <td style={{ padding: ".75rem", fontSize: ".875rem" }}>
                       <strong>{getActionLabel(log.action)}</strong>
                     </td>
-                    <td style={{ padding: ".75rem", fontSize: ".875rem", color: "#94a3b8", maxWidth: "400px", wordBreak: "break-word" }}>
+                    <td style={{ padding: ".75rem", fontSize: ".875rem", color: "var(--text-secondary)", maxWidth: "400px", wordBreak: "break-word" }}>
                       {formatMeta(log.meta, log.action)}
                     </td>
-                    <td style={{ padding: ".75rem", fontSize: ".75rem", color: "#6b7280" }}>
+                    <td style={{ padding: ".75rem", fontSize: ".75rem", color: "var(--text-tertiary)" }}>
                       {log.ip || "N/A"}
                     </td>
                   </tr>

@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { NavBar } from "../../../../components/NavBar";
 import { AuthGuard } from "../../../../components/AuthGuard";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
@@ -119,7 +118,6 @@ export default function MisJugadasPage() {
   if (loading) {
     return (
       <AuthGuard requiredRole={["USER"]}>
-        <NavBar />
         <main className="container" style={{ paddingTop: "2rem" }}>
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         </main>
@@ -129,10 +127,9 @@ export default function MisJugadasPage() {
 
   return (
     <AuthGuard requiredRole={["USER"]}>
-      <NavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "1200px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-          <h1 style={{ margin: 0 }}>TICKETS Y NOTIFICACIONES</h1>
+          <h1 style={{ margin: 0, color: "var(--text-primary)" }}>TICKETS Y NOTIFICACIONES</h1>
           <Link href="/cuenta" style={{ color: "#85BB65", textDecoration: "none", fontWeight: 600 }}>← Volver a MI CUENTA</Link>
         </div>
 
@@ -143,7 +140,7 @@ export default function MisJugadasPage() {
             style={{
               padding: ".75rem 1.5rem",
               background: "#85BB65",
-              color: "#3E3E3C",
+              color: "var(--text-primary)",
               border: "none",
               borderBottom: "3px solid #85BB65",
               borderRadius: "8px 8px 0 0",
@@ -178,9 +175,9 @@ export default function MisJugadasPage() {
         {/* Contenido de pestañas */}
         {activeTab === "notificaciones" && (
           <div className="card" style={{ padding: "1.5rem" }}>
-            <h2 style={{ margin: "0 0 1.5rem", color: "#3E3E3C" }}>Notificaciones</h2>
+            <h2 style={{ margin: "0 0 1.5rem", color: "var(--text-primary)" }}>Notificaciones</h2>
             {notifications.length === 0 ? (
-              <div style={{ padding: "2rem", textAlign: "center", color: "#6b7280" }}>
+              <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>
                 No tienes notificaciones
               </div>
             ) : (
@@ -205,7 +202,7 @@ export default function MisJugadasPage() {
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.5rem" }}>
-                      <h3 style={{ margin: 0, color: "#3E3E3C", fontSize: "1rem" }}>{notification.title}</h3>
+                      <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem" }}>{notification.title}</h3>
                       {!notification.read && (
                         <span style={{
                           width: "10px",
@@ -216,10 +213,35 @@ export default function MisJugadasPage() {
                         }} />
                       )}
                     </div>
-                    <p style={{ margin: "0 0 0.5rem", color: "#6b7280", fontSize: "0.875rem" }}>{notification.message}</p>
+                    <p style={{ margin: "0 0 0.5rem", color: "var(--text-secondary)", fontSize: "0.875rem" }}>{notification.message}</p>
                     <p style={{ margin: 0, color: "#9ca3af", fontSize: "0.75rem" }}>
                       {new Date(notification.createdAt).toLocaleString("es-ES")}
                     </p>
+                    {/* Botones personalizados de la notificación */}
+                    {notification.data?.buttons && Array.isArray(notification.data.buttons) && (
+                      <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem", flexWrap: "wrap" }}>
+                        {notification.data.buttons.map((btn: { label: string; href: string; primary: boolean }, idx: number) => (
+                          <a
+                            key={idx}
+                            href={btn.href}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              padding: "0.5rem 1rem",
+                              background: btn.primary ? "#85BB65" : "transparent",
+                              color: btn.primary ? "var(--text-primary)" : "#85BB65",
+                              border: btn.primary ? "none" : "2px solid #85BB65",
+                              borderRadius: "6px",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              fontSize: "0.875rem",
+                              textDecoration: "none"
+                            }}
+                          >
+                            {btn.label}
+                          </a>
+                        ))}
+                      </div>
+                    )}
                     {notification.data?.ticketId && (
                       <button
                         onClick={(e) => {
@@ -230,7 +252,7 @@ export default function MisJugadasPage() {
                           marginTop: "0.5rem",
                           padding: "0.5rem 1rem",
                           background: "#85BB65",
-                          color: "#3E3E3C",
+                          color: "var(--text-primary)",
                           border: "none",
                           borderRadius: "6px",
                           fontWeight: 600,

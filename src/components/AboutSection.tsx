@@ -35,11 +35,11 @@ export function AboutSection() {
   return (
     <section className="container" style={{ padding: "3rem 0" }}>
       <div className="card" style={{ padding: "2rem" }}>
-        <h2 style={{ margin: "0 0 1rem", color: "#3E3E3C", fontSize: "2rem", textAlign: "center" }}>
+        <h2 style={{ margin: "0 0 1rem", fontSize: "2rem", textAlign: "center" }}>
           {config.title || "Quiénes Somos"}
         </h2>
         {config.content && (
-          <div style={{ color: "#3E3E3C", fontSize: "1.125rem", lineHeight: "1.8", maxWidth: "800px", margin: "0 auto" }}>
+          <div style={{ fontSize: "1.125rem", lineHeight: "1.8", maxWidth: "800px", margin: "0 auto" }}>
             {config.content.split("\n").map((paragraph: string, index: number) => (
               <p key={index} style={{ margin: "0 0 1rem" }}>
                 {paragraph}

@@ -1,5 +1,4 @@
 "use client";
-import { NavBar } from "../../../../components/NavBar";
 import { AuthGuard } from "../../../../components/AuthGuard";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
@@ -52,10 +51,9 @@ export default function PagosPage() {
 
   return (
     <AuthGuard requiredRole={["USER"]}>
-      <NavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "1200px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-          <h1 style={{ margin: 0 }}>💳 Historial de Pagos</h1>
+          <h1 style={{ margin: 0, color: "var(--text-primary)" }}>💳 Historial de Pagos</h1>
           <Link href="/cuenta" style={{ color: "#85BB65", textDecoration: "none", fontWeight: 600 }}>
             ← Volver a MI CUENTA
           </Link>
@@ -65,7 +63,7 @@ export default function PagosPage() {
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando pagos...</div>
         ) : payments.length === 0 ? (
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
-            <p style={{ margin: 0, color: "#6b7280" }}>No tienes pagos registrados aún.</p>
+            <p style={{ margin: 0, color: "var(--text-secondary)" }}>No tienes pagos registrados aún.</p>
           </div>
         ) : (
           <>
@@ -74,8 +72,8 @@ export default function PagosPage() {
                 <div key={payment.id} className="card" style={{ padding: "1.5rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "1rem" }}>
                     <div>
-                      <h3 style={{ margin: "0 0 0.5rem", color: "#3E3E3C" }}>{payment.raffle?.title || "Sorteo"}</h3>
-                      <p style={{ margin: 0, color: "#6b7280", fontSize: "0.875rem" }}>
+                      <h3 style={{ margin: "0 0 0.5rem", color: "var(--text-primary)" }}>{payment.raffle?.title || "Sorteo"}</h3>
+                      <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                         {new Date(payment.purchasedAt).toLocaleString("es-ES")}
                       </p>
                     </div>
@@ -115,7 +113,7 @@ export default function PagosPage() {
                   </div>
 
                   <div style={{ marginBottom: "1rem" }}>
-                    <p style={{ margin: "0 0 0.5rem", color: "#3E3E3C", fontWeight: 600, fontSize: "0.875rem" }}>
+                    <p style={{ margin: "0 0 0.5rem", color: "var(--text-primary)", fontWeight: 600, fontSize: "0.875rem" }}>
                       Cupos comprados:
                     </p>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
@@ -125,10 +123,10 @@ export default function PagosPage() {
                             key={idx}
                             style={{
                               padding: "0.25rem 0.75rem",
-                              background: "#F5F5E6",
+                              background: "var(--card-bg)",
                               borderRadius: "4px",
                               fontSize: "0.875rem",
-                              color: "#3E3E3C",
+                              color: "var(--text-primary)",
                             }}
                           >
                             {getItemWithEmoji(item, payment.raffle?.type || "ANIMALS")}
@@ -139,8 +137,8 @@ export default function PagosPage() {
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", fontSize: "0.875rem" }}>
                     <div>
-                      <span style={{ color: "#6b7280" }}>Método: </span>
-                      <span style={{ color: "#3E3E3C", fontWeight: 600 }}>
+                      <span style={{ color: "var(--text-secondary)" }}>Método: </span>
+                      <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
                         {payment.paymentMethod === "MOBILE"
                           ? "Pago Móvil"
                           : payment.paymentMethod === "BANESCO"
@@ -150,8 +148,8 @@ export default function PagosPage() {
                     </div>
                     {payment.paymentMobileRef && (
                       <div>
-                        <span style={{ color: "#6b7280" }}>Referencia: </span>
-                        <span style={{ color: "#3E3E3C", fontWeight: 600 }}>{payment.paymentMobileRef}</span>
+                        <span style={{ color: "var(--text-secondary)" }}>Referencia: </span>
+                        <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{payment.paymentMobileRef}</span>
                       </div>
                     )}
                   </div>
@@ -187,7 +185,7 @@ export default function PagosPage() {
                   style={{
                     padding: "0.5rem 1rem",
                     background: page === 1 ? "#6b7280" : "#85BB65",
-                    color: "#3E3E3C",
+                    color: "var(--text-primary)",
                     border: "none",
                     borderRadius: "8px",
                     cursor: page === 1 ? "not-allowed" : "pointer",
@@ -196,7 +194,7 @@ export default function PagosPage() {
                 >
                   Anterior
                 </button>
-                <span style={{ color: "#3E3E3C" }}>
+                <span style={{ color: "var(--text-primary)" }}>
                   Página {page} de {totalPages}
                 </span>
                 <button
@@ -205,7 +203,7 @@ export default function PagosPage() {
                   style={{
                     padding: "0.5rem 1rem",
                     background: page === totalPages ? "#6b7280" : "#85BB65",
-                    color: "#3E3E3C",
+                    color: "var(--text-primary)",
                     border: "none",
                     borderRadius: "8px",
                     cursor: page === totalPages ? "not-allowed" : "pointer",
