@@ -21,8 +21,12 @@ model User {
   bank                    Bank?
   bankPhone               String?
   suspended               Boolean                  @default(false)
+  suspendedReason         String?
+  suspendedAt             DateTime?
   emailVerified           Boolean                  @default(false)
   emailVerifiedAt         DateTime?
+  emailUpdatedAt          DateTime?
+  usernameUpdatedAt       DateTime?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   role                    Role                     @default(USER)

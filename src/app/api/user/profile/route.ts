@@ -22,7 +22,10 @@ export async function GET(request: Request) {
         nationalIdType: true,
         phoneNumber: true,
         bank: true,
-        bankPhone: true
+        bankPhone: true,
+        emailVerified: true,
+        emailUpdatedAt: true,
+        usernameUpdatedAt: true
       }
     });
 

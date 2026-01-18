@@ -13,6 +13,26 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Correo electrónico inválido" }, { status: 400 });
     }
 
+    // Obtener el usuario actual
+    const currentUser = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { emailUpdatedAt: true }
+    });
+
+    // Verificar restricción de 30 días
+    if (currentUser?.emailUpdatedAt) {
+      const lastUpdate = new Date(currentUser.emailUpdatedAt);
+      const now = new Date();
+      const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysSinceUpdate < 30) {
+        const daysRemaining = 30 - daysSinceUpdate;
+        return NextResponse.json({ 
+          error: `Solo puedes cambiar tu correo una vez cada 30 días. Faltan ${daysRemaining} días.` 
+        }, { status: 400 });
+      }
+    }
+
     // Verificar si el correo ya existe
     const existingUser = await prisma.user.findUnique({
       where: { email }
@@ -22,10 +42,15 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Este correo electrónico ya está en uso" }, { status: 400 });
     }
 
-    // Actualizar correo
+    // Actualizar correo y registrar timestamp
     await prisma.user.update({
       where: { id: auth.userId },
-      data: { email }
+      data: { 
+        email,
+        emailUpdatedAt: new Date(),
+        emailVerified: false, // Requiere re-verificación
+        emailVerifiedAt: null
+      }
     });
 
     return NextResponse.json({ success: true, message: "Correo actualizado exitosamente" });

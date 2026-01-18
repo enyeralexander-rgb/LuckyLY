@@ -35,6 +35,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
     }
 
+    // Verificar si el usuario está suspendido
+    if (user.suspended) {
+      const reason = user.suspendedReason || "Sin motivo especificado";
+      return NextResponse.json({ 
+        error: `USUARIO SUSPENDIDO POR EL MOTIVO: ${reason}`,
+        suspended: true,
+        reason
+      }, { status: 403 });
+    }
+
     const token = jwt.sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: "12h" });
     
     // Registrar log de inicio de sesión para administradores

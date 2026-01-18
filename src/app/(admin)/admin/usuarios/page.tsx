@@ -16,6 +16,8 @@ type User = {
   nationalIdType: string | null;
   bank: string | null;
   createdAt: string;
+  suspended: boolean;
+  suspendedReason: string | null;
 };
 
 type Pagination = {
@@ -38,6 +40,12 @@ function DatosUsuariosPageContent() {
   const [searchTelefono, setSearchTelefono] = useState("");
   const [searchBanco, setSearchBanco] = useState("");
   const [searchFecha, setSearchFecha] = useState("");
+  
+  // Modal de suspensión
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [suspendReason, setSuspendReason] = useState("");
+  const [suspendLoading, setSuspendLoading] = useState(false);
 
   useEffect(() => {
     setAuth(getStoredAuth());
@@ -82,6 +90,47 @@ function DatosUsuariosPageContent() {
         setUsers([]);
         setLoading(false);
       });
+  }
+
+  async function handleSuspendUser() {
+    if (!auth?.token || !selectedUser) return;
+    
+    setSuspendLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}/suspend`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`
+        },
+        body: JSON.stringify({
+          suspended: !selectedUser.suspended,
+          reason: suspendReason
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || "Operación exitosa");
+        setShowSuspendModal(false);
+        setSelectedUser(null);
+        setSuspendReason("");
+        loadUsers();
+      } else {
+        alert(data.error || "Error al procesar la solicitud");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Error al procesar la solicitud");
+    } finally {
+      setSuspendLoading(false);
+    }
+  }
+
+  function openSuspendModal(user: User) {
+    setSelectedUser(user);
+    setSuspendReason("");
+    setShowSuspendModal(true);
   }
 
   function handleSearch() {
@@ -369,27 +418,52 @@ function DatosUsuariosPageContent() {
                   <tr style={{ borderBottom: "2px solid #d4d4c4", background: "var(--input-bg)" }}>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>Nombre</th>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>Email</th>
-                    <th style={{ padding: ".75rem", textAlign: "left" }}>ID</th>
-                    <th style={{ padding: ".75rem", textAlign: "left" }}>Cédula</th>
+                    <th style={{ padding: ".75rem", textAlign: "left" }}>Documento</th>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>Teléfono</th>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>Banco</th>
+                    <th style={{ padding: ".75rem", textAlign: "left" }}>Estado</th>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>Registrado</th>
+                    <th style={{ padding: ".75rem", textAlign: "center" }}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user) => (
-                    <tr key={user.id} style={{ borderBottom: "1px solid #d4d4c4" }}>
+                    <tr key={user.id} style={{ borderBottom: "1px solid #d4d4c4", background: user.suspended ? "rgba(239, 68, 68, 0.1)" : "transparent" }}>
                       <td style={{ padding: ".75rem" }}>{user.name}</td>
                       <td style={{ padding: ".75rem" }}>{user.email}</td>
-                      <td style={{ padding: ".75rem" }}>{user.documentId}</td>
-                      <td style={{ padding: ".75rem" }}>
-                        {user.nationalId 
-                          ? `${user.nationalIdType || ""}${user.nationalIdType ? "-" : ""}${user.nationalId}` 
-                          : "-"}
-                      </td>
+                      <td style={{ padding: ".75rem" }}>{user.documentId || "-"}</td>
                       <td style={{ padding: ".75rem" }}>{user.phoneNumber || "-"}</td>
                       <td style={{ padding: ".75rem" }}>{user.bank ? formatBankDisplay(user.bank) : "-"}</td>
+                      <td style={{ padding: ".75rem" }}>
+                        <span style={{
+                          padding: ".25rem .5rem",
+                          borderRadius: "4px",
+                          fontSize: ".75rem",
+                          fontWeight: 600,
+                          background: user.suspended ? "rgba(239, 68, 68, 0.2)" : "rgba(133, 187, 101, 0.2)",
+                          color: user.suspended ? "#ef4444" : "#85BB65"
+                        }}>
+                          {user.suspended ? "SUSPENDIDO" : "ACTIVO"}
+                        </span>
+                      </td>
                       <td style={{ padding: ".75rem" }}>{formatDate(user.createdAt)}</td>
+                      <td style={{ padding: ".75rem", textAlign: "center" }}>
+                        <button
+                          onClick={() => openSuspendModal(user)}
+                          style={{
+                            padding: ".5rem 1rem",
+                            borderRadius: "6px",
+                            border: "none",
+                            background: user.suspended ? "#85BB65" : "#ef4444",
+                            color: user.suspended ? "#1a5c2e" : "#ffffff",
+                            fontWeight: 600,
+                            fontSize: ".75rem",
+                            cursor: "pointer"
+                          }}
+                        >
+                          {user.suspended ? "REACTIVAR" : "SUSPENDER"}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -397,6 +471,123 @@ function DatosUsuariosPageContent() {
             </div>
             {renderPagination()}
           </>
+        )}
+
+        {/* Modal de Suspensión */}
+        {showSuspendModal && selectedUser && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000
+          }}>
+            <div style={{
+              background: "var(--card-bg)",
+              borderRadius: "12px",
+              padding: "2rem",
+              maxWidth: "500px",
+              width: "90%",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
+            }}>
+              <h2 style={{ margin: "0 0 1rem", color: "var(--text-primary)" }}>
+                {selectedUser.suspended ? "Reactivar Usuario" : "Suspender Usuario"}
+              </h2>
+              
+              <div style={{ marginBottom: "1.5rem" }}>
+                <p style={{ margin: "0 0 .5rem", color: "var(--text-secondary)" }}>
+                  <strong>Usuario:</strong> {selectedUser.name}
+                </p>
+                <p style={{ margin: 0, color: "var(--text-secondary)" }}>
+                  <strong>Email:</strong> {selectedUser.email}
+                </p>
+              </div>
+
+              {!selectedUser.suspended && (
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
+                    Motivo de la suspensión *
+                  </label>
+                  <textarea
+                    value={suspendReason}
+                    onChange={(e) => setSuspendReason(e.target.value)}
+                    placeholder="Ingrese el motivo de la suspensión..."
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      padding: ".75rem",
+                      borderRadius: "8px",
+                      border: "1px solid var(--border-color)",
+                      background: "var(--input-bg)",
+                      color: "var(--text-primary)",
+                      fontSize: "1rem",
+                      resize: "vertical"
+                    }}
+                  />
+                </div>
+              )}
+
+              {selectedUser.suspended && selectedUser.suspendedReason && (
+                <div style={{ 
+                  marginBottom: "1.5rem", 
+                  padding: "1rem", 
+                  background: "rgba(239, 68, 68, 0.1)", 
+                  borderRadius: "8px" 
+                }}>
+                  <p style={{ margin: 0, color: "#ef4444", fontSize: ".875rem" }}>
+                    <strong>Motivo actual:</strong> {selectedUser.suspendedReason}
+                  </p>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => {
+                    setShowSuspendModal(false);
+                    setSelectedUser(null);
+                    setSuspendReason("");
+                  }}
+                  style={{
+                    padding: ".75rem 1.5rem",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border-color)",
+                    background: "transparent",
+                    color: "var(--text-primary)",
+                    fontWeight: 600,
+                    cursor: "pointer"
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSuspendUser}
+                  disabled={suspendLoading || (!selectedUser.suspended && !suspendReason.trim())}
+                  style={{
+                    padding: ".75rem 1.5rem",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: (!selectedUser.suspended && !suspendReason.trim()) || suspendLoading 
+                      ? "#6b7280" 
+                      : (selectedUser.suspended ? "#85BB65" : "#ef4444"),
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    cursor: (!selectedUser.suspended && !suspendReason.trim()) || suspendLoading 
+                      ? "not-allowed" 
+                      : "pointer"
+                  }}
+                >
+                  {suspendLoading 
+                    ? "Procesando..." 
+                    : (selectedUser.suspended ? "Reactivar Usuario" : "Suspender Usuario")}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </>

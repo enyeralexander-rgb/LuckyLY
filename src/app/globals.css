@@ -151,6 +151,7 @@ body[data-theme="light"] {
   --input-border: #d4d4c4;
   --input-border-focus: #2a8c4a;
   --input-placeholder: #9ca3af;
+  --input-disabled-bg: #e5e7eb;
   
   /* Footer */
   --footer-bg: #d0fdd7;
@@ -241,6 +242,7 @@ body[data-theme="dark"] {
   --input-border: #475569;
   --input-border-focus: #3b82f6;
   --input-placeholder: #94a3b8;
+  --input-disabled-bg: #1e293b;
   
   /* Footer */
   --footer-bg: #1e293b;
@@ -1158,6 +1160,32 @@ video {
 .header-dropdown-button:hover {
   background: rgba(239, 68, 68, 0.1);
   color: var(--button-danger);
+}
+
+/* Botón de tema en dropdown */
+.header-dropdown-theme {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-dropdown-theme:hover {
+  background: var(--header-dropdown-hover);
+  color: var(--text-primary);
+}
+
+/* Botón de tema en menú móvil */
+.header-mobile-theme {
+  color: var(--text-secondary);
+  background: var(--bg-accent);
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+.header-mobile-theme:hover {
+  background: var(--header-dropdown-hover);
+  color: var(--text-primary);
 }
 
 .header-mobile-menu {

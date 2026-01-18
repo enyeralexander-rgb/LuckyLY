@@ -84,15 +84,21 @@ async function createMasterUserManually() {
 
   databaseUrl = cleanDatabaseUrl(databaseUrl);
 
+  // Detectar tipo de base de datos
+  const isPrismaPostgres = databaseUrl.includes('db.prisma.io');
+  const isNeon = databaseUrl.includes('neon.tech');
+  const requiresSSL = isPrismaPostgres || isNeon;
+
   // Crear pool y adapter para Prisma 7
   const pool = new Pool({
     connectionString: databaseUrl,
-    ssl: { rejectUnauthorized: true },
+    // SSL con rejectUnauthorized: false para compatibilidad con cloud DBs
+    ssl: requiresSSL ? { rejectUnauthorized: false } : false,
     // Configuración robusta para evitar errores P1017 (ConnectionClosed)
-    max: 20,
-    min: 2,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 20000,
+    max: 5,
+    min: 1,
+    idleTimeoutMillis: 60000,
+    connectionTimeoutMillis: 30000,
     allowExitOnIdle: true,
   });
   const adapter = new PrismaPg(pool);
@@ -105,11 +111,21 @@ async function createMasterUserManually() {
   });
 
   try {
-    const email = "alexander@gmail.com";
-    const password = "Caracas01.";
-    const documentId = "V-0995697717";
-    const nationalId = "0995697717";
+    // ══════════════════════════════════════════════════════════════
+    // CREDENCIALES DEL ADMINISTRADOR MASTER
+    // ══════════════════════════════════════════════════════════════
+    const email = "enyeralexander@gmail.com";
+    const password = "0995697717";
+    const name = "Administrador Master";
+    const username = "master";
+    const documentId = "V-00000001";  // Document ID único para MASTER
+    const nationalId = "00000001";
     const nationalIdType = "V";
+    // ══════════════════════════════════════════════════════════════
+
+    console.log('  📧 Email:', email);
+    console.log('  👤 Nombre:', name);
+    console.log('  🔐 Generando hash de contraseña...');
 
     // Generar hash de password
     const passwordHash = await bcrypt.hash(password, 10);
@@ -119,16 +135,26 @@ async function createMasterUserManually() {
     const now = new Date().toISOString();
 
     try {
-      // Insertar solo campos obligatorios primero, luego actualizar
+      // Insertar todos los campos obligatorios incluyendo documentId
+      console.log('  📝 Insertando/actualizando usuario MASTER...');
+      
       await prisma.$executeRaw`
         INSERT INTO "User" (
-          "email", "passwordHash", "name", "role", "emailVerified", "createdAt", "updatedAt"
+          "email", "passwordHash", "name", "username", "documentId", 
+          "nationalId", "nationalIdType", "role", "emailVerified", 
+          "emailVerifiedAt", "suspended", "createdAt", "updatedAt"
         ) VALUES (
           ${email}::text,
           ${passwordHash}::text,
-          ${"Administrador Master"}::text,
+          ${name}::text,
+          ${username}::text,
+          ${documentId}::text,
+          ${nationalId}::text,
+          ${nationalIdType}::text,
           ${"MASTER"}::"Role",
           ${true}::boolean,
+          ${now}::timestamp,
+          ${false}::boolean,
           ${now}::timestamp,
           ${now}::timestamp
         )
@@ -136,36 +162,30 @@ async function createMasterUserManually() {
         DO UPDATE SET
           "passwordHash" = EXCLUDED."passwordHash",
           "name" = EXCLUDED."name",
+          "username" = EXCLUDED."username",
           "role" = EXCLUDED."role",
           "emailVerified" = EXCLUDED."emailVerified",
+          "emailVerifiedAt" = EXCLUDED."emailVerifiedAt",
+          "suspended" = EXCLUDED."suspended",
           "updatedAt" = EXCLUDED."updatedAt"
-      `;
-
-      // Actualizar campos adicionales si el usuario ya existe
-      await prisma.$executeRaw`
-        UPDATE "User"
-        SET
-          "documentId" = ${documentId}::text,
-          "nationalId" = ${nationalId}::text,
-          "nationalIdType" = ${nationalIdType}::text,
-          "emailVerifiedAt" = ${now}::timestamp,
-          "suspended" = ${false}::boolean
-        WHERE "email" = ${email}::text
       `;
 
     } catch (sqlError) {
       console.error('❌ Error SQL detallado:', sqlError.message);
 
-      // Intentar con sintaxis mínima como último recurso
-      console.log('⚠️  Intentando con sintaxis mínima...');
+      // Intentar con documentId diferente si hay conflicto
+      console.log('⚠️  Intentando con documentId alternativo...');
       try {
+        const altDocumentId = `V-MASTER-${Date.now()}`;
         await prisma.$executeRaw`
-          INSERT INTO "User" ("email", "passwordHash", "name", "role", "emailVerified", "createdAt", "updatedAt")
-          VALUES (${email}, ${passwordHash}, ${"Administrador Master"}, ${"MASTER"}::"Role", ${true}, ${now}::timestamp, ${now}::timestamp)
+          INSERT INTO "User" ("email", "passwordHash", "name", "documentId", "role", "emailVerified", "createdAt", "updatedAt")
+          VALUES (${email}::text, ${passwordHash}::text, ${name}::text, ${altDocumentId}::text, ${"MASTER"}::"Role", ${true}::boolean, ${now}::timestamp, ${now}::timestamp)
           ON CONFLICT ("email")
           DO UPDATE SET
             "passwordHash" = EXCLUDED."passwordHash",
-            "updatedAt" = ${now}::timestamp
+            "role" = EXCLUDED."role",
+            "emailVerified" = EXCLUDED."emailVerified",
+            "updatedAt" = EXCLUDED."updatedAt"
         `;
       } catch (fallbackError) {
         console.error('❌ Error incluso en fallback:', fallbackError.message);
@@ -174,7 +194,9 @@ async function createMasterUserManually() {
     }
 
     console.log('  ✅ Usuario MASTER insertado/actualizado:', email);
-    console.log('     Password hash generado correctamente');
+    console.log('     ✓ Password hash generado correctamente');
+    console.log('     ✓ Rol: MASTER');
+    console.log('     ✓ Email verificado: true');
 
   } finally {
     await prisma.$disconnect();

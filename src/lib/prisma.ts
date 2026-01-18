@@ -1,25 +1,18 @@
 // Prisma 7 con Prisma Postgres
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import { Pool, PoolConfig } from "pg";
 
+// Singleton pattern para evitar múltiples conexiones en desarrollo
 const globalForPrisma = globalThis as unknown as { 
-  prisma: PrismaClient | undefined 
+  prisma: PrismaClient | undefined;
+  pool: Pool | undefined;
 };
 
-// Prisma Postgres con protocolo postgres:// requiere adapter
-let databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL no está definida en las variables de entorno");
-}
-
 // Limpiar parámetros SSL obsoletos que causan warnings en pg-connection-string
-// Remover sslmode=require, sslmode=prefer, sslmode=verify-ca que son tratados como aliases
 const cleanDatabaseUrl = (url: string): string => {
   try {
     const urlObj = new URL(url);
-    // Remover parámetros SSL obsoletos
     const obsoleteParams = ['sslmode', 'sslcert', 'sslkey', 'sslrootcert'];
     obsoleteParams.forEach(param => {
       if (urlObj.searchParams.has(param)) {
@@ -27,41 +20,72 @@ const cleanDatabaseUrl = (url: string): string => {
       }
     });
     return urlObj.toString();
-  } catch (error) {
-    // Si no es una URL válida, devolver como está
+  } catch {
     return url;
   }
 };
 
-databaseUrl = cleanDatabaseUrl(databaseUrl);
+// Función para crear el pool de conexiones
+function createPool(): Pool {
+  const databaseUrl = process.env.DATABASE_URL;
+  
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL no está definida en las variables de entorno");
+  }
 
-// Crear pool de conexiones y adapter con configuración robusta
-// Configuración SSL moderna para evitar warnings de pg-connection-string
-const pool = new Pool({
-  connectionString: databaseUrl,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
-  // Configuración robusta para evitar errores P1017 (ConnectionClosed)
-  max: 20, // Máximo de conexiones en el pool
-  min: 2,  // Mínimo de conexiones en el pool
-  idleTimeoutMillis: 30000, // Cerrar conexiones idle después de 30 segundos
-  connectionTimeoutMillis: 20000, // Timeout de conexión de 20 segundos
-  allowExitOnIdle: true, // Permitir salir cuando esté idle
-});
-const adapter = new PrismaPg(pool);
+  const cleanedUrl = cleanDatabaseUrl(databaseUrl);
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Detectar si es Prisma Postgres (db.prisma.io) o Neon (neon.tech) u otro
+  const isPrismaPostgres = databaseUrl.includes('db.prisma.io');
+  const isNeon = databaseUrl.includes('neon.tech');
+  const requiresSSL = isPrismaPostgres || isNeon || isProduction;
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+  const poolConfig: PoolConfig = {
+    connectionString: cleanedUrl,
+    // SSL siempre habilitado para bases de datos cloud
+    ssl: requiresSSL ? { rejectUnauthorized: false } : false,
+    // Configuración robusta para evitar errores P1017 (ConnectionClosed)
+    max: isProduction ? 20 : 5,
+    min: 1,
+    idleTimeoutMillis: 60000, // 60 segundos
+    connectionTimeoutMillis: 30000, // 30 segundos
+    allowExitOnIdle: true,
+  };
+
+  const pool = new Pool(poolConfig);
+
+  // Manejar errores del pool para evitar crashes
+  pool.on('error', (err) => {
+    console.error('🔴 Error inesperado en pool de PostgreSQL:', err.message);
+  });
+
+  return pool;
+}
+
+// Función para crear PrismaClient
+function createPrismaClient(): PrismaClient {
+  // Reutilizar o crear pool
+  if (!globalForPrisma.pool) {
+    globalForPrisma.pool = createPool();
+  }
+
+  const adapter = new PrismaPg(globalForPrisma.pool);
+
+  return new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === "development"
       ? ["warn", "error"]
       : ["error"],
-    // Configuración robusta para manejar reconexiones
     transactionOptions: {
-      maxWait: 20000, // Máximo tiempo de espera para transacción
-      timeout: 10000, // Timeout de transacción
+      maxWait: 30000,
+      timeout: 20000,
     },
   });
+}
+
+// Exportar instancia singleton
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

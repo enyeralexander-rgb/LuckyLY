@@ -22,7 +22,10 @@
     "fix:webpack": "npm run stop && npm run clean:webpack && npm run clean:deep && echo '✅ Caché de webpack limpiada. Ejecuta: npm run dev'",
     "prisma:generate": "prisma generate",
     "prisma:seed": "prisma db seed",
+    "prisma:push": "prisma db push",
     "prisma:update": "node scripts/update-prisma.js",
+    "db:verify": "node scripts/verify-connection.js",
+    "db:setup": "prisma generate && prisma db push && node scripts/apply-schema-postgres.js",
     "postbuild": "node scripts/copy-prisma-binary.js"
   },
   "ts-node": {

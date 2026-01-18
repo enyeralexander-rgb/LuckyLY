@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -101,37 +102,66 @@ export default function LoginPage() {
                 style={{ 
                   padding: ".75rem", 
                   borderRadius: "8px", 
-                  border: emailError ? "2px solid #ef4444" : "1px solid #d4d4c4", 
-                  background: "#F5F5E6", 
-                  color: "#3E3E3C" 
+                  border: emailError ? "2px solid var(--text-error)" : "1px solid var(--border-input)", 
+                  background: "var(--input-bg)", 
+                  color: "var(--text-primary)" 
                 }}
               />
               {emailError && (
-                <small style={{ color: "#ef4444", fontSize: "0.75rem" }}>{emailError}</small>
+                <small style={{ color: "var(--text-error)", fontSize: "0.75rem" }}>{emailError}</small>
               )}
             </label>
             <label style={{ display: "grid", gap: ".35rem" }}>
               <span>Contraseña</span>
-              <input
-                type="password"
-                name="password"
-                autoComplete="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{ 
+                    padding: ".75rem", 
+                    paddingRight: "3rem",
+                    borderRadius: "8px", 
+                    border: "1px solid var(--border-input)", 
+                    background: "var(--input-bg)", 
+                    color: "var(--text-primary)",
+                    width: "100%"
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "0.75rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "1.25rem",
+                    padding: "0.25rem",
+                    lineHeight: 1
+                  }}
+                  title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
             </label>
-            <button type="submit" disabled={loading} style={{ padding: ".75rem", background: "#85BB65", color: "#3E3E3C", border: "none", borderRadius: "10px", fontWeight: 700, opacity: loading ? 0.7 : 1 }}>
+            <button type="submit" disabled={loading} style={{ padding: ".75rem", background: "var(--button-primary)", color: "var(--button-text)", border: "none", borderRadius: "10px", fontWeight: 700, opacity: loading ? 0.7 : 1 }}>
               {loading ? "Entrando..." : "Entrar"}
             </button>
           </form>
-          {message && <p style={{ color: "#f97316", margin: 0 }}>{message}</p>}
+          {message && <p style={{ color: "var(--text-error)", margin: 0 }}>{message}</p>}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "center" }}>
-            <Link href="/auth/forgot-password" style={{ color: "#85BB65", fontSize: "0.875rem", textDecoration: "none" }}>
+            <Link href="/auth/forgot-password" style={{ color: "var(--color-primary)", fontSize: "0.875rem", textDecoration: "none" }}>
               ¿Olvidaste tu contraseña?
             </Link>
-            <Link href="/auth/register" style={{ color: "#85BB65" }}>¿No tienes cuenta? Regístrate</Link>
+            <Link href="/auth/register" style={{ color: "var(--color-primary)" }}>¿No tienes cuenta? Regístrate</Link>
           </div>
         </div>
       </main>

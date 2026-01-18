@@ -104,7 +104,7 @@ export default function HistorialPage() {
     <AuthGuard requiredRole={["USER"]}>
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "1200px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-          <h1 style={{ margin: 0 }}>HISTORIAL</h1>
+          <h1 style={{ margin: 0, color: "var(--text-primary)" }}>HISTORIAL</h1>
           <Link href="/cuenta" style={{ color: "#85BB65", textDecoration: "none", fontWeight: 600 }}>← Volver a MI CUENTA</Link>
         </div>
 
@@ -120,9 +120,9 @@ export default function HistorialPage() {
                 minWidth: "200px",
                 padding: ".75rem",
                 borderRadius: "8px",
-                border: "1px solid #d4d4c4",
-                background: "#F5F5E6",
-                color: "#3E3E3C",
+                border: "1px solid var(--border-color)",
+                background: "var(--input-bg)",
+                color: "var(--text-primary)",
                 fontSize: "1rem"
               }}
             />
@@ -132,9 +132,9 @@ export default function HistorialPage() {
               style={{
                 padding: ".75rem",
                 borderRadius: "8px",
-                border: "1px solid #d4d4c4",
-                background: "#F5F5E6",
-                color: "#3E3E3C",
+                border: "1px solid var(--border-color)",
+                background: "var(--input-bg)",
+                color: "var(--text-primary)",
                 fontSize: "1rem"
               }}
             >
@@ -146,7 +146,7 @@ export default function HistorialPage() {
           </div>
 
           {filteredTickets.length === 0 ? (
-            <div style={{ padding: "2rem", textAlign: "center", color: "#6b7280" }}>
+            <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>
               No se encontraron tickets
             </div>
           ) : (
@@ -159,14 +159,14 @@ export default function HistorialPage() {
                 return (
                   <div key={ticket.id} className="card" style={{ padding: "1.5rem", display: "grid", gap: "1rem" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.5rem" }}>
-                      <h3 style={{ margin: 0, color: "#3E3E3C" }}>{ticket.raffle.title}</h3>
+                      <h3 style={{ margin: 0, color: "var(--text-primary)" }}>{ticket.raffle.title}</h3>
                       {isWinner && (
-                        <span style={{ padding: ".25rem .75rem", background: "#85BB65", borderRadius: "6px", fontSize: ".75rem", color: "#3E3E3C", fontWeight: 700 }}>
+                        <span style={{ padding: ".25rem .75rem", background: "#85BB65", borderRadius: "6px", fontSize: ".75rem", color: "var(--text-primary)", fontWeight: 700 }}>
                           🎉 GANADOR
                         </span>
                       )}
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: ".75rem", fontSize: ".875rem", color: "#6b7280" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: ".75rem", fontSize: ".875rem", color: "var(--text-secondary)" }}>
                       <div><strong>Tipo:</strong> {getTypeLabel(ticket.raffle.type)}</div>
                       <div><strong>Cupos comprados:</strong> {ticketItems.length}</div>
                       <div><strong>Total pagado:</strong> {Number(ticket.totalPaid).toFixed(2)} Bs</div>
@@ -177,14 +177,14 @@ export default function HistorialPage() {
                     </div>
                     <div style={{ marginTop: ".5rem" }}>
                       <strong style={{ color: "#85BB65" }}>Cupos: </strong>
-                      <span style={{ color: "#3E3E3C" }}>
+                      <span style={{ color: "var(--text-primary)" }}>
                         {ticketItems.map(item => getItemWithEmoji(item, ticket.raffle.type)).join(", ")}
                       </span>
                     </div>
                     {ticket.raffle.prizes && Array.isArray(ticket.raffle.prizes) && ticket.raffle.prizes.length > 0 && (
                       <div style={{ marginTop: ".5rem", padding: ".75rem", background: "rgba(133, 187, 101, 0.1)", borderRadius: "8px" }}>
                         <strong>Premios a ganar: </strong>
-                        <span style={{ color: "#3E3E3C" }}>{ticket.raffle.prizes.join(", ")}</span>
+                        <span style={{ color: "var(--text-primary)" }}>{ticket.raffle.prizes.join(", ")}</span>
                       </div>
                     )}
                     {ticket.raffle.winningItem && (
@@ -201,7 +201,7 @@ export default function HistorialPage() {
                         style={{
                           padding: ".5rem 1rem",
                           background: "#85BB65",
-                          color: "#3E3E3C",
+                          color: "var(--text-primary)",
                           border: "none",
                           borderRadius: "6px",
                           fontWeight: 600,

@@ -32,14 +32,20 @@ const cleanDatabaseUrl = (url: string): string => {
 
 databaseUrl = cleanDatabaseUrl(databaseUrl);
 
+// Detectar si es Prisma Postgres (db.prisma.io) o Neon (neon.tech) u otro
+const isPrismaPostgres = databaseUrl.includes('db.prisma.io');
+const isNeon = databaseUrl.includes('neon.tech');
+const requiresSSL = isPrismaPostgres || isNeon || process.env.NODE_ENV === 'production';
+
 const pool = new Pool({
   connectionString: databaseUrl,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
+  // SSL siempre habilitado para bases de datos cloud
+  ssl: requiresSSL ? { rejectUnauthorized: false } : false,
   // Configuración robusta para evitar errores P1017 (ConnectionClosed)
-  max: 20,
-  min: 2,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 20000,
+  max: 5,
+  min: 1,
+  idleTimeoutMillis: 60000,
+  connectionTimeoutMillis: 30000,
   allowExitOnIdle: true,
 });
 const adapter = new PrismaPg(pool);
@@ -88,6 +94,52 @@ async function main() {
   console.log("\n✅ Limpieza completada. Base de datos limpia.\n");
 
   console.log("👥 Creando usuarios de prueba...\n");
+
+  // ══════════════════════════════════════════════════════════════
+  // USUARIO MASTER PRINCIPAL (credenciales reales)
+  // ══════════════════════════════════════════════════════════════
+  const masterUser = {
+    email: "enyeralexander@gmail.com",
+    password: "0995697717",
+    name: "Administrador Master",
+    username: "master",
+    documentId: "V-00000001",
+    nationalId: "00000001",
+    nationalIdType: "V",
+    role: Role.MASTER,
+    emailVerified: true,
+  };
+
+  console.log("  👑 Creando usuario MASTER principal...");
+  const masterPasswordHash = await bcrypt.hash(masterUser.password, 10);
+  try {
+    await prisma.user.upsert({
+      where: { email: masterUser.email },
+      update: {
+        passwordHash: masterPasswordHash,
+        name: masterUser.name,
+        role: masterUser.role,
+        emailVerified: masterUser.emailVerified,
+      },
+      create: {
+        email: masterUser.email,
+        passwordHash: masterPasswordHash,
+        name: masterUser.name,
+        username: masterUser.username,
+        documentId: masterUser.documentId,
+        nationalId: masterUser.nationalId,
+        nationalIdType: masterUser.nationalIdType,
+        role: masterUser.role,
+        emailVerified: masterUser.emailVerified,
+        emailVerifiedAt: new Date(),
+      },
+    });
+    console.log("     ✅ Usuario MASTER creado:", masterUser.email);
+  } catch (masterError: unknown) {
+    const errorMessage = masterError instanceof Error ? masterError.message : String(masterError);
+    console.log("     ⚠️ Usuario MASTER ya existe o error:", errorMessage);
+  }
+  // ══════════════════════════════════════════════════════════════
 
   // Crear 5 usuarios de prueba de cada tipo
   const testUsers = [

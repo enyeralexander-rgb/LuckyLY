@@ -127,7 +127,7 @@ export default function DatosBancariosPage() {
     <AuthGuard requiredRole={["USER"]}>
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <h1>DATOS BANCARIOS</h1>
+          <h1 style={{ color: "var(--text-primary)" }}>DATOS BANCARIOS</h1>
           <Link href="/cuenta" style={{ color: "#85BB65", textDecoration: "none", fontWeight: 600 }}>← Volver a MI CUENTA</Link>
         </div>
 
@@ -142,14 +142,14 @@ export default function DatosBancariosPage() {
           </div>
 
           <div>
-            <p style={{ margin: "0 0 1rem", color: "#3E3E3C", fontSize: ".875rem", opacity: 0.8 }}>
+            <p style={{ margin: "0 0 1rem", color: "var(--text-primary)", fontSize: ".875rem", opacity: 0.8 }}>
               Estos datos se utilizarán para pagos de cupos y retiros de premios mediante Pago Móvil.
             </p>
           </div>
 
           <div style={{ display: "grid", gap: "1rem" }}>
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontWeight: 600 }}>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Documento de Identidad *
               </label>
               <input
@@ -161,49 +161,20 @@ export default function DatosBancariosPage() {
                   width: "100%",
                   padding: ".75rem",
                   borderRadius: "8px",
-                  border: "1px solid #d4d4c4",
-                  background: "#e5e5e5",
-                  color: "#6b7280",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-disabled-bg)",
+                  color: "var(--text-secondary)",
                   fontSize: "1rem",
                   cursor: "not-allowed"
                 }}
               />
-              <small style={{ color: "#6b7280", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>
+              <small style={{ color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>
                 Este dato no se puede modificar. Fue registrado al crear tu cuenta.
               </small>
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontWeight: 600 }}>
-                Cédula de Identidad *
-              </label>
-              <input
-                type="text"
-                value={
-                  userData?.nationalId && userData?.nationalIdType
-                    ? `${userData.nationalIdType}-${userData.nationalId}`
-                    : userData?.nationalId || ""
-                }
-                disabled
-                readOnly
-                style={{
-                  width: "100%",
-                  padding: ".75rem",
-                  borderRadius: "8px",
-                  border: "1px solid #d4d4c4",
-                  background: "#e5e5e5",
-                  color: "#6b7280",
-                  fontSize: "1rem",
-                  cursor: "not-allowed"
-                }}
-              />
-              <small style={{ color: "#6b7280", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>
-                Este dato se deriva automáticamente del Documento de Identidad y no se puede modificar.
-              </small>
-            </div>
-
-            <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontWeight: 600 }}>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Banco *
               </label>
               <select
@@ -213,9 +184,9 @@ export default function DatosBancariosPage() {
                   width: "100%",
                   padding: ".75rem",
                   borderRadius: "8px",
-                  border: "1px solid #d4d4c4",
-                  background: "#F5F5E6",
-                  color: "#3E3E3C",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)",
                   fontSize: "1rem"
                 }}
               >
@@ -229,7 +200,7 @@ export default function DatosBancariosPage() {
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontWeight: 600 }}>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Teléfono (Pago Móvil) *
               </label>
               <input
@@ -245,13 +216,13 @@ export default function DatosBancariosPage() {
                   width: "100%",
                   padding: ".75rem",
                   borderRadius: "8px",
-                  border: "1px solid #d4d4c4",
-                  background: "#F5F5E6",
-                  color: "#3E3E3C",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)",
                   fontSize: "1rem"
                 }}
               />
-              <small style={{ color: "#6b7280", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>
+              <small style={{ color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>
                 Solo números (sin guiones ni espacios)
               </small>
             </div>
@@ -263,7 +234,7 @@ export default function DatosBancariosPage() {
             style={{
               padding: ".75rem 1.5rem",
               background: hasCompleteData() && !saving ? "#85BB65" : "#6b7280",
-              color: "#3E3E3C",
+              color: "var(--text-primary)",
               border: "none",
               borderRadius: "8px",
               fontWeight: 700,

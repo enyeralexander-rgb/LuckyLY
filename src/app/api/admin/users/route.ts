@@ -82,6 +82,8 @@ export async function GET(request: Request) {
         nationalId: true,
         nationalIdType: true,
         bank: true,
+        suspended: true,
+        suspendedReason: true,
         createdAt: true
       },
       orderBy: { createdAt: "desc" },
