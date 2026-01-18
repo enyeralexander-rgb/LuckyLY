@@ -481,7 +481,7 @@ export default function ConfiguracionPage() {
                     }
                   }}
                   placeholder="nuevo@correo.com"
-                  disabled={emailRestriction && !emailRestriction.canChange}
+                  disabled={!!(emailRestriction && !emailRestriction.canChange)}
                   style={{
                     width: "100%",
                     padding: ".75rem",
@@ -497,7 +497,7 @@ export default function ConfiguracionPage() {
               </div>
               <button
                 onClick={handleUpdateEmail}
-                disabled={saving || !formData.email || formData.email === userData?.email || (emailRestriction && !emailRestriction.canChange)}
+                disabled={saving || !formData.email || formData.email === userData?.email || !!(emailRestriction && !emailRestriction.canChange)}
                 style={{
                   padding: ".75rem 1.5rem",
                   background: saving || !formData.email || formData.email === userData?.email || (emailRestriction && !emailRestriction.canChange) ? "#6b7280" : "#85BB65",
@@ -560,7 +560,7 @@ export default function ConfiguracionPage() {
                     }
                   }}
                   placeholder="mi_usuario"
-                  disabled={usernameRestriction && !usernameRestriction.canChange}
+                  disabled={!!(usernameRestriction && !usernameRestriction.canChange)}
                   style={{
                     width: "100%",
                     padding: ".75rem",
@@ -576,7 +576,7 @@ export default function ConfiguracionPage() {
               </div>
               <button
                 onClick={handleUpdateUsername}
-                disabled={saving || !formData.username || formData.username === userData?.username || (usernameRestriction && !usernameRestriction.canChange)}
+                disabled={saving || !formData.username || formData.username === userData?.username || !!(usernameRestriction && !usernameRestriction.canChange)}
                 style={{
                   padding: ".75rem 1.5rem",
                   background: saving || !formData.username || formData.username === userData?.username || (usernameRestriction && !usernameRestriction.canChange) ? "#6b7280" : "#85BB65",
