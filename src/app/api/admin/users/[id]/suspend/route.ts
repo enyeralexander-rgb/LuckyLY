@@ -90,12 +90,13 @@ export async function PUT(
         action: suspended ? "SUSPEND_USER" : "UNSUSPEND_USER",
         entity: "User",
         entityId: id,
-        details: {
+        meta: {
           targetUser: user.email,
           targetName: user.name,
           reason: suspended ? (reason || "Sin motivo especificado") : "Usuario reactivado"
         },
-        userId: auth.userId
+        actorId: auth.userId,
+        actorRole: auth.role
       }
     });
 
