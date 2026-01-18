@@ -1,5 +1,4 @@
 "use client";
-import { NavBar } from "../../components/NavBar";
 import { Footer } from "../../components/Footer";
 import { useEffect, useState } from "react";
 
@@ -30,7 +29,6 @@ export default function SocialPage() {
 
   return (
     <>
-      <NavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
         <h1>Redes Sociales</h1>
         {loading ? (

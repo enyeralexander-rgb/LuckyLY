@@ -155,13 +155,13 @@ function PagosPageContent() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
           <h1 style={{ margin: 0 }}>Gestión de Pagos de Premios</h1>
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <Link href="/admin" style={{ color: "#85BB65", textDecoration: "none", fontWeight: 600 }}>← Volver</Link>
+            <Link href="/admin" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: 600 }}>← Volver</Link>
           </div>
         </div>
         {loading ? (
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         ) : pending.length === 0 ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>
             No hay reclamos pendientes
           </div>
         ) : (
@@ -171,10 +171,10 @@ function PagosPageContent() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                   <div>
                     <h3 style={{ margin: 0 }}>{claim.user.name}</h3>
-                    <p style={{ margin: ".25rem 0", color: "#94a3b8" }}>
+                    <p style={{ margin: ".25rem 0", color: "var(--text-secondary)" }}>
                       {claim.user.email} | Sorteo: {claim.ticket.raffle.title}
                     </p>
-                    <p style={{ margin: ".25rem 0", color: "#94a3b8" }}>
+                    <p style={{ margin: ".25rem 0", color: "var(--text-secondary)" }}>
                       Ganador: {claim.ticket.raffle.winningItem || "N/A"} | Monto: {Number(claim.ticket.totalPaid).toFixed(2)} Bs.
                     </p>
                   </div>

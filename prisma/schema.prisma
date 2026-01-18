@@ -5,7 +5,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -15,15 +14,20 @@ model User {
   name                    String
   username                String?                  @unique
   avatarUrl               String?
-  birthDate               DateTime
+  documentId              String                   @unique
   phoneNumber             String?
   nationalId              String?
   nationalIdType          String? // "V" para Venezolano, "E" para Extranjero
   bank                    Bank?
   bankPhone               String?
   suspended               Boolean                  @default(false)
+  suspendedReason         String?
+  suspendedAt             DateTime?
   emailVerified           Boolean                  @default(false)
   emailVerifiedAt         DateTime?
+  emailUpdatedAt          DateTime?
+  usernameUpdatedAt       DateTime?
+  bankDataUpdatedAt       DateTime?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   role                    Role                     @default(USER)
@@ -49,6 +53,7 @@ model User {
 
   @@index([role])
   @@index([username])
+  @@index([documentId])
   @@index([suspended])
   @@index([emailVerified])
 }
@@ -199,6 +204,7 @@ model Notification {
   data      Json? // Datos adicionales (ticketId, raffleId, etc.)
   read      Boolean          @default(false)
   createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
   readAt    DateTime?
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -263,6 +269,7 @@ enum PrizeStatus {
   PROCESSING
   PAID
   REJECTED
+  INCORRECT_DATA
 }
 
 enum Bank {

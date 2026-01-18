@@ -1,5 +1,4 @@
 "use client";
-import { NavBar } from "../../../../components/NavBar";
 import { AuthGuard } from "../../../../components/AuthGuard";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
@@ -11,11 +10,13 @@ type UserData = {
   id: string;
   name: string;
   email: string;
+  documentId: string | null;
   nationalId: string | null;
   nationalIdType: string | null;
   phoneNumber: string | null;
   bank: string | null;
   bankPhone: string | null;
+  bankDataUpdatedAt: string | null;
 };
 
 export default function DatosBancariosPage() {
@@ -50,23 +51,11 @@ export default function DatosBancariosPage() {
             return;
           }
           setUserData(data);
-          // Extraer tipo y número de cédula si existe
-          let idType = "V";
-          let idNumber = "";
-          if (data.nationalId) {
-            if (data.nationalIdType) {
-              idType = data.nationalIdType;
-              idNumber = data.nationalId;
-            } else if (data.nationalId.startsWith("V-") || data.nationalId.startsWith("E-")) {
-              idType = data.nationalId.substring(0, 1);
-              idNumber = data.nationalId.substring(2);
-            } else {
-              idNumber = data.nationalId;
-            }
-          }
+          // El nationalId se deriva automáticamente del documentId en el backend
+          // Solo necesitamos mostrar los datos bancarios editables
           setFormData({
-            nationalIdType: data.nationalIdType || idType,
-            nationalId: idNumber,
+            nationalIdType: data.nationalIdType || "V",
+            nationalId: data.nationalId || "",
             bank: data.bank || "",
             phoneNumber: data.phoneNumber || ""
           });
@@ -82,15 +71,15 @@ export default function DatosBancariosPage() {
   async function handleSave() {
     if (!auth?.token || saving) return;
 
-    if (!formData.nationalIdType || !formData.nationalId || !formData.bank || !formData.phoneNumber) {
-      alert("Todos los campos son obligatorios");
+    if (!formData.bank || !formData.phoneNumber || formData.phoneNumber.trim().length < 11) {
+      alert("Todos los campos son obligatorios. El teléfono debe tener al menos 11 números.");
       return;
     }
 
     setSaving(true);
     try {
-      // Guardar solo el número de cédula (sin el prefijo V/E)
-      // El tipo se guarda por separado en nationalIdType
+      // El backend extrae automáticamente nationalId y nationalIdType del documentId
+      // Solo enviamos los campos editables: bank y phoneNumber
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: {
@@ -98,10 +87,8 @@ export default function DatosBancariosPage() {
           Authorization: `Bearer ${auth.token}`
         },
         body: JSON.stringify({
-          nationalId: formData.nationalId, // Solo números
-          nationalIdType: formData.nationalIdType, // V o E
           bank: formData.bank,
-          phoneNumber: formData.phoneNumber
+          phoneNumber: formData.phoneNumber.trim()
         })
       });
 
@@ -122,13 +109,28 @@ export default function DatosBancariosPage() {
   }
 
   function hasCompleteData(): boolean {
-    return !!(formData.nationalId && formData.bank && formData.phoneNumber);
+    // Solo validar bank y phoneNumber ya que documentId es readonly
+    // El teléfono debe tener mínimo 11 números
+    return !!(formData.bank && formData.phoneNumber && formData.phoneNumber.trim().length >= 11);
   }
+
+  // Calcular restricción de 1 semana para datos bancarios
+  function getBankDataRestriction(): { canChange: boolean; daysRemaining: number } | null {
+    if (!userData?.bank || !userData?.phoneNumber || !userData?.bankDataUpdatedAt) {
+      return null; // Nunca ha guardado datos, puede guardar
+    }
+    const lastUpdate = new Date(userData.bankDataUpdatedAt);
+    const now = new Date();
+    const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.max(0, 7 - daysSinceUpdate);
+    return { canChange: daysSinceUpdate >= 7, daysRemaining };
+  }
+
+  const bankRestriction = getBankDataRestriction();
 
   if (loading) {
     return (
       <AuthGuard requiredRole={["USER"]}>
-        <NavBar />
         <main className="container" style={{ paddingTop: "2rem" }}>
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         </main>
@@ -138,10 +140,9 @@ export default function DatosBancariosPage() {
 
   return (
     <AuthGuard requiredRole={["USER"]}>
-      <NavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <h1>DATOS BANCARIOS</h1>
+          <h1 style={{ color: "var(--text-primary)" }}>DATOS BANCARIOS</h1>
           <Link href="/cuenta" style={{ color: "#85BB65", textDecoration: "none", fontWeight: 600 }}>← Volver a MI CUENTA</Link>
         </div>
 
@@ -155,58 +156,56 @@ export default function DatosBancariosPage() {
             </div>
           </div>
 
+          {/* Aviso de restricción semanal */}
+          <div style={{ padding: "1rem", background: "rgba(245, 158, 11, 0.1)", border: "2px solid #f59e0b", borderRadius: "8px" }}>
+            <div style={{ color: "#d97706", fontWeight: 700, fontSize: "0.875rem", marginBottom: "0.5rem" }}>
+              📅 RESTRICCIÓN DE MODIFICACIÓN
+            </div>
+            <div style={{ color: "#d97706", fontSize: "0.875rem" }}>
+              Una vez que guardes tus datos bancarios, solo podrás modificarlos <strong>1 vez por semana</strong>. 
+              Asegúrate de ingresar la información correcta antes de guardar.
+            </div>
+            {bankRestriction && !bankRestriction.canChange && (
+              <div style={{ marginTop: "0.5rem", padding: "0.5rem", background: "rgba(245, 158, 11, 0.2)", borderRadius: "4px" }}>
+                <strong>⏳ Próxima modificación disponible en: {bankRestriction.daysRemaining} día(s)</strong>
+              </div>
+            )}
+          </div>
+
           <div>
-            <p style={{ margin: "0 0 1rem", color: "#3E3E3C", fontSize: ".875rem", opacity: 0.8 }}>
+            <p style={{ margin: "0 0 1rem", color: "var(--text-primary)", fontSize: ".875rem", opacity: 0.8 }}>
               Estos datos se utilizarán para pagos de cupos y retiros de premios mediante Pago Móvil.
             </p>
           </div>
 
           <div style={{ display: "grid", gap: "1rem" }}>
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontWeight: 600 }}>
-                Cédula de Identidad *
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
+                Documento de Identidad *
               </label>
-              <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "0.5rem" }}>
-                <select
-                  value={formData.nationalIdType}
-                  onChange={(e) => setFormData({ ...formData, nationalIdType: e.target.value })}
-                  style={{
-                    padding: ".75rem",
-                    borderRadius: "8px",
-                    border: "1px solid #d4d4c4",
-                    background: "#F5F5E6",
-                    color: "#3E3E3C",
-                    fontSize: "1rem"
-                  }}
-                >
-                  <option value="V">V</option>
-                  <option value="E">E</option>
-                </select>
-                <input
-                  type="text"
-                  value={formData.nationalId}
-                  onChange={(e) => {
-                    // Solo permitir números
-                    const value = e.target.value.replace(/\D/g, "");
-                    setFormData({ ...formData, nationalId: value });
-                  }}
-                  placeholder="Solo números"
-                  maxLength={10}
-                  style={{
-                    width: "100%",
-                    padding: ".75rem",
-                    borderRadius: "8px",
-                    border: "1px solid #d4d4c4",
-                    background: "#F5F5E6",
-                    color: "#3E3E3C",
-                    fontSize: "1rem"
-                  }}
-                />
-              </div>
+              <input
+                type="text"
+                value={userData?.documentId || ""}
+                disabled
+                readOnly
+                style={{
+                  width: "100%",
+                  padding: ".75rem",
+                  borderRadius: "8px",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-disabled-bg)",
+                  color: "var(--text-secondary)",
+                  fontSize: "1rem",
+                  cursor: "not-allowed"
+                }}
+              />
+              <small style={{ color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>
+                Este dato no se puede modificar. Fue registrado al crear tu cuenta.
+              </small>
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontWeight: 600 }}>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Banco *
               </label>
               <select
@@ -216,9 +215,9 @@ export default function DatosBancariosPage() {
                   width: "100%",
                   padding: ".75rem",
                   borderRadius: "8px",
-                  border: "1px solid #d4d4c4",
-                  background: "#F5F5E6",
-                  color: "#3E3E3C",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)",
                   fontSize: "1rem"
                 }}
               >
@@ -232,42 +231,49 @@ export default function DatosBancariosPage() {
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontWeight: 600 }}>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Teléfono (Pago Móvil) *
               </label>
               <input
                 type="text"
                 value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                placeholder="Ej: 0412-1234567"
+                onChange={(e) => {
+                  // Solo permitir números (sin mostrarlo visiblemente)
+                  const value = e.target.value.replace(/\D/g, "");
+                  setFormData({ ...formData, phoneNumber: value });
+                }}
+                placeholder="Ej: 04121234567"
                 style={{
                   width: "100%",
                   padding: ".75rem",
                   borderRadius: "8px",
-                  border: "1px solid #d4d4c4",
-                  background: "#F5F5E6",
-                  color: "#3E3E3C",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)",
                   fontSize: "1rem"
                 }}
               />
+              <small style={{ color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>
+                Solo números (sin guiones ni espacios)
+              </small>
             </div>
           </div>
 
           <button
             onClick={handleSave}
-            disabled={!hasCompleteData() || saving}
+            disabled={!hasCompleteData() || saving || (bankRestriction !== null && !bankRestriction.canChange)}
             style={{
               padding: ".75rem 1.5rem",
-              background: hasCompleteData() && !saving ? "#85BB65" : "#6b7280",
-              color: "#3E3E3C",
+              background: hasCompleteData() && !saving && (bankRestriction === null || bankRestriction.canChange) ? "#85BB65" : "#6b7280",
+              color: "var(--text-primary)",
               border: "none",
               borderRadius: "8px",
               fontWeight: 700,
               fontSize: "1rem",
-              cursor: hasCompleteData() && !saving ? "pointer" : "not-allowed"
+              cursor: hasCompleteData() && !saving && (bankRestriction === null || bankRestriction.canChange) ? "pointer" : "not-allowed"
             }}
           >
-            {saving ? "Guardando..." : "Guardar Datos"}
+            {saving ? "Guardando..." : bankRestriction !== null && !bankRestriction.canChange ? `Disponible en ${bankRestriction.daysRemaining} día(s)` : "Guardar Datos"}
           </button>
         </div>
       </main>

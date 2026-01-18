@@ -1,10 +1,8 @@
 import { Footer } from "../../components/Footer";
-import { NavBar } from "../../components/NavBar";
 
 export default function LivePage() {
   return (
     <>
-      <NavBar />
       <main className="container" style={{ display: "grid", gap: "1.5rem", paddingTop: "2rem" }}>
         <div className="card" style={{ display: "grid", gap: "1rem" }}>
           <h1 style={{ margin: 0 }}>Sección en vivo</h1>

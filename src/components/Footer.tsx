@@ -1,9 +1,13 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useTheme } from "../hooks/useTheme";
 
 export function Footer() {
   const [config, setConfig] = useState<any>(null);
+  // El hook useTheme maneja el estado del tema globalmente
+  // ya no necesitamos estado local ni toggleDarkMode aquí
+  useTheme();
 
   useEffect(() => {
     // Primero verificar si hay configuración de preview
@@ -35,15 +39,16 @@ export function Footer() {
   const showSocialLinks = config?.showSocialLinks !== false;
 
   return (
-    <footer style={{ marginTop: "3rem", borderTop: "1px solid #d0fdd7", background: "#d0fdd7" }}>
+    <footer className="footer-theme">
       <div className="container" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "1.5rem", paddingTop: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-        <span style={{ color: "#1a5c2e" }}>{copyright}</span>
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-          <Link href="/terms" style={{ color: "#2a8c4a", textDecoration: "none" }}>Términos y Condiciones</Link>
-          <Link href="/rules" style={{ color: "#2a8c4a", textDecoration: "none" }}>Reglas</Link>
+        <span className="footer-text">{copyright}</span>
+        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+          <Link href="/terms" className="footer-link">Términos y Condiciones</Link>
+          <Link href="/rules" className="footer-link">Reglas</Link>
           {showSocialLinks && (
-            <Link href="/social" style={{ color: "#2a8c4a", textDecoration: "none" }}>Redes Sociales</Link>
+            <Link href="/social" className="footer-link">Redes Sociales</Link>
           )}
+          {/* Botón de tema movido al menú desplegable del Header */}
         </div>
       </div>
     </footer>

@@ -59,6 +59,7 @@ export async function POST(request: Request) {
         winnersCount: parsed.data.winnersCount,
         mirrorMode: parsed.data.mirrorMode ?? false,
         startsAt: parsed.data.startsAt ?? null,
+        closesAt: parsed.data.closesAt ?? null,
         prizes: parsed.data.prizes,
         status: "ACTIVE",
         createdById: auth.userId
@@ -86,6 +87,7 @@ export async function POST(request: Request) {
             mirrorMode: raffle.mirrorMode,
             prizes: raffle.prizes,
             startsAt: raffle.startsAt?.toISOString() || null,
+            closesAt: raffle.closesAt?.toISOString() || null,
             status: raffle.status
           }
         }

@@ -1,6 +1,5 @@
 "use client";
 import { Footer } from "../../components/Footer";
-import { NavBar } from "../../components/NavBar";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../lib/clientAuth";
 
@@ -97,7 +96,6 @@ export default function ResultsPage() {
 
   return (
     <>
-      <NavBar />
       <main className="container" style={{ paddingTop: "2rem" }}>
         <h1 style={{ color: "#3E3E3C" }}>Resultados</h1>
         {loading ? (

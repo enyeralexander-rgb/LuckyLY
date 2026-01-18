@@ -229,7 +229,7 @@ function LogsAdminsPageContent() {
 
   function formatMetaData(meta: any, action: string): JSX.Element {
     if (!meta || typeof meta !== "object") {
-      return <span style={{ color: "#94a3b8" }}>Sin detalles adicionales</span>;
+      return <span style={{ color: "var(--text-secondary)" }}>Sin detalles adicionales</span>;
     }
 
     const elements: JSX.Element[] = [];
@@ -238,7 +238,7 @@ function LogsAdminsPageContent() {
     if (meta.title) {
       elements.push(
         <div key="title" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Título:</strong> {String(meta.title)}
+          <strong style={{ color: "var(--text-primary)" }}>Título:</strong> {String(meta.title)}
         </div>
       );
     }
@@ -246,7 +246,7 @@ function LogsAdminsPageContent() {
     if (meta.description) {
       elements.push(
         <div key="description" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Descripción:</strong> {String(meta.description)}
+          <strong style={{ color: "var(--text-primary)" }}>Descripción:</strong> {String(meta.description)}
         </div>
       );
     }
@@ -255,7 +255,7 @@ function LogsAdminsPageContent() {
     if (meta.type) {
       elements.push(
         <div key="type" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Tipo de Ruleta:</strong> {String(meta.type)}
+          <strong style={{ color: "var(--text-primary)" }}>Tipo de Ruleta:</strong> {String(meta.type)}
         </div>
       );
     }
@@ -263,7 +263,7 @@ function LogsAdminsPageContent() {
     if (meta.pricePerSlot) {
       elements.push(
         <div key="price" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Precio por Cupo:</strong> {String(meta.pricePerSlot)} Bs.
+          <strong style={{ color: "var(--text-primary)" }}>Precio por Cupo:</strong> {String(meta.pricePerSlot)} Bs.
         </div>
       );
     }
@@ -271,7 +271,7 @@ function LogsAdminsPageContent() {
     if (meta.slots) {
       elements.push(
         <div key="slots" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Total de Cupos:</strong> {String(meta.slots)}
+          <strong style={{ color: "var(--text-primary)" }}>Total de Cupos:</strong> {String(meta.slots)}
         </div>
       );
     }
@@ -279,7 +279,7 @@ function LogsAdminsPageContent() {
     if (meta.winnersCount) {
       elements.push(
         <div key="winners" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Ganadores:</strong> {String(meta.winnersCount)}
+          <strong style={{ color: "var(--text-primary)" }}>Ganadores:</strong> {String(meta.winnersCount)}
         </div>
       );
     }
@@ -287,7 +287,7 @@ function LogsAdminsPageContent() {
     if (meta.prizes) {
       elements.push(
         <div key="prizes" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Premios:</strong>
+          <strong style={{ color: "var(--text-primary)" }}>Premios:</strong>
           <ul style={{ margin: ".25rem 0 0 1.5rem", padding: 0 }}>
             {(Array.isArray(meta.prizes) ? meta.prizes : []).map((prize: string, idx: number) => (
               <li key={idx}>{prize}</li>
@@ -301,7 +301,7 @@ function LogsAdminsPageContent() {
     if (meta.winner) {
       elements.push(
         <div key="winner" style={{ marginBottom: ".5rem", padding: ".5rem", background: "rgba(133, 187, 101, 0.1)", borderRadius: "4px" }}>
-          <strong style={{ color: "#85BB65" }}>Ganador:</strong> {String(meta.winner)}
+          <strong style={{ color: "var(--color-primary)" }}>Ganador:</strong> {String(meta.winner)}
         </div>
       );
     }
@@ -309,7 +309,7 @@ function LogsAdminsPageContent() {
     if (meta.winners) {
       elements.push(
         <div key="winners" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Ganadores:</strong>
+          <strong style={{ color: "var(--text-primary)" }}>Ganadores:</strong>
           <ul style={{ margin: ".25rem 0 0 1.5rem", padding: 0 }}>
             {(Array.isArray(meta.winners) ? meta.winners : []).map((winner: string, idx: number) => (
               <li key={idx}>{winner}</li>
@@ -323,7 +323,7 @@ function LogsAdminsPageContent() {
     if (meta.raffleTitle) {
       elements.push(
         <div key="raffleTitle" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Sorteo:</strong> {String(meta.raffleTitle)}
+          <strong style={{ color: "var(--text-primary)" }}>Sorteo:</strong> {String(meta.raffleTitle)}
         </div>
       );
     }
@@ -331,7 +331,7 @@ function LogsAdminsPageContent() {
     if (meta.value) {
       elements.push(
         <div key="value" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Cupo:</strong> {String(meta.value)}
+          <strong style={{ color: "var(--text-primary)" }}>Cupo:</strong> {String(meta.value)}
         </div>
       );
     }
@@ -339,7 +339,7 @@ function LogsAdminsPageContent() {
     if (meta.userName) {
       elements.push(
         <div key="userName" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Usuario:</strong> {String(meta.userName)} ({String(meta.userEmail || "N/A")})
+          <strong style={{ color: "var(--text-primary)" }}>Usuario:</strong> {String(meta.userName)} ({String(meta.userEmail || "N/A")})
         </div>
       );
     }
@@ -347,7 +347,7 @@ function LogsAdminsPageContent() {
     if (meta.paymentMobileRef) {
       elements.push(
         <div key="paymentRef" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Referencia de Pago:</strong> {String(meta.paymentMobileRef)}
+          <strong style={{ color: "var(--text-primary)" }}>Referencia de Pago:</strong> {String(meta.paymentMobileRef)}
         </div>
       );
     }
@@ -356,7 +356,7 @@ function LogsAdminsPageContent() {
     if (meta.email) {
       elements.push(
         <div key="email" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Email:</strong> {String(meta.email)}
+          <strong style={{ color: "var(--text-primary)" }}>Email:</strong> {String(meta.email)}
         </div>
       );
     }
@@ -364,7 +364,7 @@ function LogsAdminsPageContent() {
     if (meta.username) {
       elements.push(
         <div key="username" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Usuario:</strong> {String(meta.username)}
+          <strong style={{ color: "var(--text-primary)" }}>Usuario:</strong> {String(meta.username)}
         </div>
       );
     }
@@ -382,7 +382,7 @@ function LogsAdminsPageContent() {
     if (meta.changes) {
       elements.push(
         <div key="changes" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Campos Modificados:</strong>
+          <strong style={{ color: "var(--text-primary)" }}>Campos Modificados:</strong>
           <ul style={{ margin: ".25rem 0 0 1.5rem", padding: 0 }}>
             {(Array.isArray(meta.changes) ? meta.changes : []).map((change: string, idx: number) => (
               <li key={idx}>{change}</li>
@@ -405,7 +405,7 @@ function LogsAdminsPageContent() {
     if (meta.startsAt) {
       elements.push(
         <div key="startsAt" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Fecha de Inicio:</strong> {formatDate(String(meta.startsAt))}
+          <strong style={{ color: "var(--text-primary)" }}>Fecha de Inicio:</strong> {formatDate(String(meta.startsAt))}
         </div>
       );
     }
@@ -413,7 +413,7 @@ function LogsAdminsPageContent() {
     if (meta.executedAt) {
       elements.push(
         <div key="executedAt" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Fecha de Ejecución:</strong> {formatDate(String(meta.executedAt))}
+          <strong style={{ color: "var(--text-primary)" }}>Fecha de Ejecución:</strong> {formatDate(String(meta.executedAt))}
         </div>
       );
     }
@@ -422,7 +422,7 @@ function LogsAdminsPageContent() {
     if (meta.action) {
       elements.push(
         <div key="action" style={{ marginBottom: ".5rem" }}>
-          <strong style={{ color: "#3E3E3C" }}>Acción Realizada:</strong> {String(meta.action)}
+          <strong style={{ color: "var(--text-primary)" }}>Acción Realizada:</strong> {String(meta.action)}
         </div>
       );
     }
@@ -434,7 +434,7 @@ function LogsAdminsPageContent() {
         if (value !== null && value !== undefined) {
           elements.push(
             <div key={key} style={{ marginBottom: ".5rem" }}>
-              <strong style={{ color: "#3E3E3C" }}>{key}:</strong> {String(value)}
+              <strong style={{ color: "var(--text-primary)" }}>{key}:</strong> {String(value)}
             </div>
           );
         }
@@ -458,7 +458,7 @@ function LogsAdminsPageContent() {
 
           <div className="card" style={{ marginBottom: "1.5rem", padding: "1rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "#3E3E3C" }}>
+              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "var(--text-primary)" }}>
                 Filtrar por Rol:
               </label>
               <select
@@ -468,9 +468,9 @@ function LogsAdminsPageContent() {
                   width: "100%",
                   padding: ".5rem",
                   borderRadius: "8px",
-                  border: "1px solid #d4d4c4",
-                  background: "#F5F5E6",
-                  color: "#3E3E3C",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)",
                   cursor: "pointer"
                 }}
               >
@@ -485,14 +485,14 @@ function LogsAdminsPageContent() {
           {loading ? (
             <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
           ) : filteredAdmins.length === 0 ? (
-            <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+            <div className="card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>
               No hay administradores registrados
             </div>
           ) : (
             <div className="card" style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ borderBottom: "2px solid #d4d4c4", background: "#F5F5E6" }}>
+                  <tr style={{ borderBottom: "2px solid #d4d4c4", background: "var(--input-bg)" }}>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>ADMINISTRADOR</th>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>NOMBRE</th>
                     <th style={{ padding: ".75rem", textAlign: "left" }}>ROL</th>
@@ -506,7 +506,7 @@ function LogsAdminsPageContent() {
                     <tr key={admin.id} style={{ borderBottom: "1px solid #d4d4c4" }}>
                       <td style={{ padding: ".75rem" }}>
                         <div style={{ fontWeight: 600 }}>{admin.name}</div>
-                        <div style={{ fontSize: ".75rem", color: "#94a3b8" }}>{admin.email}</div>
+                        <div style={{ fontSize: ".75rem", color: "var(--text-secondary)" }}>{admin.email}</div>
                       </td>
                       <td style={{ padding: ".75rem" }}>{admin.name}</td>
                       <td style={{ padding: ".75rem" }}>
@@ -583,14 +583,14 @@ function LogsAdminsPageContent() {
               <h2 style={{ margin: "0 0 1rem" }}>Información del Administrador</h2>
               <div style={{ display: "grid", gap: ".75rem" }}>
                 <div>
-                  <strong style={{ color: "#3E3E3C" }}>Status:</strong>{" "}
-                  <span style={{ color: "#85BB65", fontWeight: 600 }}>Activo</span>
+                  <strong style={{ color: "var(--text-primary)" }}>Status:</strong>{" "}
+                  <span style={{ color: "var(--color-primary)", fontWeight: 600 }}>Activo</span>
                 </div>
                 <div>
-                  <strong style={{ color: "#3E3E3C" }}>Administrador:</strong> {selectedAdmin.email}
+                  <strong style={{ color: "var(--text-primary)" }}>Administrador:</strong> {selectedAdmin.email}
                 </div>
                 <div>
-                  <strong style={{ color: "#3E3E3C" }}>Rol:</strong>{" "}
+                  <strong style={{ color: "var(--text-primary)" }}>Rol:</strong>{" "}
                   <span
                     style={{
                       padding: ".25rem .5rem",
@@ -605,16 +605,16 @@ function LogsAdminsPageContent() {
                   </span>
                 </div>
                 <div>
-                  <strong style={{ color: "#3E3E3C" }}>Nombre del administrador:</strong> {selectedAdmin.name}
+                  <strong style={{ color: "var(--text-primary)" }}>Nombre del administrador:</strong> {selectedAdmin.name}
                 </div>
                 <div>
-                  <strong style={{ color: "#3E3E3C" }}>Total de Acciones:</strong> {selectedAdmin.totalActions}
+                  <strong style={{ color: "var(--text-primary)" }}>Total de Acciones:</strong> {selectedAdmin.totalActions}
                 </div>
               </div>
             </div>
 
             <div className="card" style={{ marginBottom: "1.5rem", padding: "1rem" }}>
-              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "#3E3E3C" }}>
+              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "var(--text-primary)" }}>
                 Filtrar por Fecha:
               </label>
               <input
@@ -626,9 +626,9 @@ function LogsAdminsPageContent() {
                   maxWidth: "300px",
                   padding: ".5rem",
                   borderRadius: "8px",
-                  border: "1px solid #d4d4c4",
-                  background: "#F5F5E6",
-                  color: "#3E3E3C"
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)"
                 }}
               />
               {dateFilter && (
@@ -652,7 +652,7 @@ function LogsAdminsPageContent() {
             <div style={{ display: "grid", gap: "1rem" }}>
               <h3 style={{ margin: 0 }}>Acciones Realizadas</h3>
               {logs.length === 0 ? (
-                <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+                <div className="card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>
                   No hay acciones registradas{dateFilter ? " para la fecha seleccionada" : ""}
                 </div>
               ) : (
@@ -673,22 +673,22 @@ function LogsAdminsPageContent() {
                           >
                             {getActionLabel(log.action)}
                           </span>
-                          <span style={{ fontSize: ".875rem", color: "#94a3b8" }}>
+                          <span style={{ fontSize: ".875rem", color: "var(--text-secondary)" }}>
                             {formatDate(log.createdAt)}
                           </span>
                         </div>
-                        <div style={{ fontSize: ".875rem", color: "#94a3b8" }}>
+                        <div style={{ fontSize: ".875rem", color: "var(--text-secondary)" }}>
                           {log.entity} {log.entityId ? `#${log.entityId}` : ""}
                         </div>
                       </div>
                       {log.ip && (
-                        <div style={{ fontSize: ".875rem", color: "#94a3b8" }}>
+                        <div style={{ fontSize: ".875rem", color: "var(--text-secondary)" }}>
                           <strong>IP:</strong> {log.ip}
                         </div>
                       )}
                     </div>
-                    <div style={{ padding: "1rem", background: "#F5F5E6", borderRadius: "8px", border: "1px solid #d4d4c4" }}>
-                      <strong style={{ color: "#3E3E3C", display: "block", marginBottom: ".5rem" }}>Detalles:</strong>
+                    <div style={{ padding: "1rem", background: "var(--input-bg)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                      <strong style={{ color: "var(--text-primary)", display: "block", marginBottom: ".5rem" }}>Detalles:</strong>
                       {formatMetaData(log.meta, log.action)}
                     </div>
                   </div>

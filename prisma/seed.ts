@@ -1,10 +1,67 @@
 import bcrypt from "bcryptjs";
 import { PrismaClient, Role } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
-const prisma = new PrismaClient();
+const { Pool } = pg;
+
+// Prisma 7 con adapter para seeds
+let databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL no está definida");
+}
+
+// Limpiar parámetros SSL obsoletos que causan warnings en pg-connection-string
+// Remover sslmode=require, sslmode=prefer, sslmode=verify-ca que son tratados como aliases
+const cleanDatabaseUrl = (url: string): string => {
+  try {
+    const urlObj = new URL(url);
+    // Remover parámetros SSL obsoletos
+    const obsoleteParams = ['sslmode', 'sslcert', 'sslkey', 'sslrootcert'];
+    obsoleteParams.forEach(param => {
+      if (urlObj.searchParams.has(param)) {
+        urlObj.searchParams.delete(param);
+      }
+    });
+    return urlObj.toString();
+  } catch (error) {
+    // Si no es una URL válida, devolver como está
+    return url;
+  }
+};
+
+databaseUrl = cleanDatabaseUrl(databaseUrl);
+
+// Detectar si es Prisma Postgres (db.prisma.io) o Neon (neon.tech) u otro
+const isPrismaPostgres = databaseUrl.includes('db.prisma.io');
+const isNeon = databaseUrl.includes('neon.tech');
+const requiresSSL = isPrismaPostgres || isNeon || process.env.NODE_ENV === 'production';
+
+const pool = new Pool({
+  connectionString: databaseUrl,
+  // SSL siempre habilitado para bases de datos cloud
+  ssl: requiresSSL ? { rejectUnauthorized: false } : false,
+  // Configuración robusta para evitar errores P1017 (ConnectionClosed)
+  max: 5,
+  min: 1,
+  idleTimeoutMillis: 60000,
+  connectionTimeoutMillis: 30000,
+  allowExitOnIdle: true,
+});
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({
+  adapter,
+  transactionOptions: {
+    maxWait: 20000,
+    timeout: 10000,
+  },
+});
 
 async function main() {
-  console.log("🧹 Limpiando todos los datos del sistema...");
+  console.log("🧹 Limpiando datos de prueba...\n");
+
+  // NOTA: El usuario MASTER ya se crea en el script apply-schema-postgres.js
+  // Este seed solo maneja datos adicionales de prueba
 
   // Eliminar todas las notificaciones
   await prisma.notification.deleteMany({});
@@ -38,35 +95,81 @@ async function main() {
 
   console.log("👥 Creando usuarios de prueba...\n");
 
+  // ══════════════════════════════════════════════════════════════
+  // USUARIO MASTER PRINCIPAL (credenciales reales)
+  // ══════════════════════════════════════════════════════════════
+  const masterUser = {
+    email: "enyeralexander@gmail.com",
+    password: "0995697717",
+    name: "Administrador Master",
+    username: "master",
+    documentId: "V-00000001",
+    nationalId: "00000001",
+    nationalIdType: "V",
+    role: Role.MASTER,
+    emailVerified: true,
+  };
+
+  console.log("  👑 Creando usuario MASTER principal...");
+  const masterPasswordHash = await bcrypt.hash(masterUser.password, 10);
+  try {
+    await prisma.user.upsert({
+      where: { email: masterUser.email },
+      update: {
+        passwordHash: masterPasswordHash,
+        name: masterUser.name,
+        role: masterUser.role,
+        emailVerified: masterUser.emailVerified,
+      },
+      create: {
+        email: masterUser.email,
+        passwordHash: masterPasswordHash,
+        name: masterUser.name,
+        username: masterUser.username,
+        documentId: masterUser.documentId,
+        nationalId: masterUser.nationalId,
+        nationalIdType: masterUser.nationalIdType,
+        role: masterUser.role,
+        emailVerified: masterUser.emailVerified,
+        emailVerifiedAt: new Date(),
+      },
+    });
+    console.log("     ✅ Usuario MASTER creado:", masterUser.email);
+  } catch (masterError: unknown) {
+    const errorMessage = masterError instanceof Error ? masterError.message : String(masterError);
+    console.log("     ⚠️ Usuario MASTER ya existe o error:", errorMessage);
+  }
+  // ══════════════════════════════════════════════════════════════
+
   // Crear 5 usuarios de prueba de cada tipo
   const testUsers = [
     // 5 usuarios USER (clientes)
-    { email: "cliente1@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Uno", username: "cliente1", birthDate: new Date("1995-01-15") },
-    { email: "cliente2@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Dos", username: "cliente2", birthDate: new Date("1996-05-22") },
-    { email: "cliente3@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Tres", username: "cliente3", birthDate: new Date("1997-08-30") },
-    { email: "cliente4@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Cuatro", username: "cliente4", birthDate: new Date("1998-11-12") },
-    { email: "cliente5@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Cinco", username: "cliente5", birthDate: new Date("1999-02-28") },
+    { email: "cliente1@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Uno", username: "cliente1", documentId: "V-12345678" },
+    { email: "cliente2@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Dos", username: "cliente2", documentId: "V-12345679" },
+    { email: "cliente3@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Tres", username: "cliente3", documentId: "V-12345680" },
+    { email: "cliente4@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Cuatro", username: "cliente4", documentId: "V-12345681" },
+    { email: "cliente5@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Cinco", username: "cliente5", documentId: "V-12345682" },
     
     // 5 usuarios AGENT
-    { email: "agent1@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Uno", username: "agent1", birthDate: new Date("1990-03-15") },
-    { email: "agent2@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Dos", username: "agent2", birthDate: new Date("1991-06-20") },
-    { email: "agent3@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Tres", username: "agent3", birthDate: new Date("1992-09-10") },
-    { email: "agent4@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Cuatro", username: "agent4", birthDate: new Date("1993-12-25") },
-    { email: "agent5@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Cinco", username: "agent5", birthDate: new Date("1994-04-05") },
+    { email: "agent1@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Uno", username: "agent1", documentId: "V-22345678" },
+    { email: "agent2@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Dos", username: "agent2", documentId: "V-22345679" },
+    { email: "agent3@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Tres", username: "agent3", documentId: "V-22345680" },
+    { email: "agent4@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Cuatro", username: "agent4", documentId: "V-22345681" },
+    { email: "agent5@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Cinco", username: "agent5", documentId: "V-22345682" },
     
     // 5 usuarios SUPERADMIN
-    { email: "superadmin1@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Uno", username: "superadmin1", birthDate: new Date("1985-01-15") },
-    { email: "superadmin2@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Dos", username: "superadmin2", birthDate: new Date("1986-05-22") },
-    { email: "superadmin3@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Tres", username: "superadmin3", birthDate: new Date("1987-08-30") },
-    { email: "superadmin4@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Cuatro", username: "superadmin4", birthDate: new Date("1988-11-12") },
-    { email: "superadmin5@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Cinco", username: "superadmin5", birthDate: new Date("1989-02-28") },
+    { email: "superadmin1@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Uno", username: "superadmin1", documentId: "V-32345678" },
+    { email: "superadmin2@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Dos", username: "superadmin2", documentId: "V-32345679" },
+    { email: "superadmin3@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Tres", username: "superadmin3", documentId: "V-32345680" },
+    { email: "superadmin4@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Cuatro", username: "superadmin4", documentId: "V-32345681" },
+    { email: "superadmin5@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Cinco", username: "superadmin5", documentId: "V-32345682" },
     
     // 5 usuarios MASTER
-    { email: "master1@test.com", password: "Master123!", role: Role.MASTER, name: "Master Uno", username: "master1", birthDate: new Date("1980-01-15") },
-    { email: "master2@test.com", password: "Master123!", role: Role.MASTER, name: "Master Dos", username: "master2", birthDate: new Date("1981-05-22") },
-    { email: "master3@test.com", password: "Master123!", role: Role.MASTER, name: "Master Tres", username: "master3", birthDate: new Date("1982-08-30") },
-    { email: "master4@test.com", password: "Master123!", role: Role.MASTER, name: "Master Cuatro", username: "master4", birthDate: new Date("1983-11-12") },
-    { email: "master5@test.com", password: "Master123!", role: Role.MASTER, name: "Master Cinco", username: "master5", birthDate: new Date("1984-02-28") }
+    { email: "master1@test.com", password: "Master123!", role: Role.MASTER, name: "Master Uno", username: "master1", documentId: "V-42345678" },
+    { email: "master2@test.com", password: "Master123!", role: Role.MASTER, name: "Master Dos", username: "master2", documentId: "V-42345679" },
+    { email: "master3@test.com", password: "Master123!", role: Role.MASTER, name: "Master Tres", username: "master3", documentId: "V-42345680" },
+    { email: "master4@test.com", password: "Master123!", role: Role.MASTER, name: "Master Cuatro", username: "master4", documentId: "V-42345681" },
+    { email: "master5@test.com", password: "Master123!", role: Role.MASTER, name: "Master Cinco", username: "master5", documentId: "V-42345682" }
   ];
 
   for (const u of testUsers) {
@@ -77,8 +180,8 @@ async function main() {
         passwordHash,
         name: u.name,
         username: u.username,
-        role: u.role,
-        birthDate: u.birthDate
+        documentId: u.documentId,
+        role: u.role
       }
     });
     console.log(`  ✅ ${u.role} creado: ${u.email} (username: ${u.username})`);

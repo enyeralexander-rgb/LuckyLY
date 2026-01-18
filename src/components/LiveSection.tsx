@@ -56,14 +56,18 @@ export function LiveSection() {
     fetch("/api/public/homepage")
       .then((r) => {
         if (!r.ok) {
+          console.error("Error al cargar homepage config:", r.status);
           return null;
         }
         return r.json();
       })
       .then((data: HomePageConfig | null) => {
+        console.log("LiveSection - Config recibida:", data);
         if (data && data.instagramVideoUrl) {
+          console.log("LiveSection - Usando video URL:", data.instagramVideoUrl);
           setVideoUrl(data.instagramVideoUrl);
         } else {
+          console.log("LiveSection - Usando video por defecto");
           // Video por defecto
           setVideoUrl("/images/RULETA FONDO REDES.mp4");
         }
@@ -101,40 +105,64 @@ export function LiveSection() {
           </Link>
         </div>
         <div style={{ position: "relative", paddingBottom: "56.25%", background: "#228D57", borderRadius: "12px", overflow: "hidden", border: "2px solid #1a6b42", boxShadow: "0 10px 30px rgba(0,0,0,0.3)" }}>
-          {videoUrl && instagramUrl ? (
-            <video
-              src={videoUrl}
-              autoPlay
-              loop
-              muted
-              playsInline
-              onClick={handleVideoClick}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                cursor: "pointer"
-              }}
-            />
-          ) : videoUrl ? (
-            <video
-              src={videoUrl}
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover"
-              }}
-            />
+          {videoUrl ? (
+            // Verificar si es una URL de video o una imagen
+            videoUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+              <video
+                src={videoUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                onClick={instagramUrl ? handleVideoClick : undefined}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  cursor: instagramUrl ? "pointer" : "default"
+                }}
+              />
+            ) : videoUrl.startsWith("http") ? (
+              // Es un enlace externo (Instagram, etc.)
+              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #228D57 0%, #1a6b42 100%)" }}>
+                <div style={{ fontSize: "4rem", marginBottom: "1rem" }}>📱</div>
+                <p style={{ color: "#ffffff", fontSize: "1.25rem", fontWeight: 600, marginBottom: "1rem" }}>Síguenos en Instagram</p>
+                <a 
+                  href={videoUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{
+                    padding: "0.75rem 1.5rem",
+                    background: "#ffffff",
+                    color: "#228D57",
+                    borderRadius: "8px",
+                    textDecoration: "none",
+                    fontWeight: 700
+                  }}
+                >
+                  Ver en Instagram →
+                </a>
+              </div>
+            ) : (
+              // Es una imagen local
+              <img
+                src={videoUrl}
+                alt="Momento de la Suerte"
+                onClick={instagramUrl ? handleVideoClick : undefined}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  cursor: instagramUrl ? "pointer" : "default"
+                }}
+              />
+            )
           ) : (
             <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#ffffff", fontSize: "1.125rem" }}>
               <div style={{ textAlign: "center" }}>

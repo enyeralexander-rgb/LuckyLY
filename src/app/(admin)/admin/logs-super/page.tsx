@@ -62,7 +62,7 @@ function LogsSuperPageContent() {
         {loading ? (
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         ) : logs.length === 0 ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>No hay logs registrados</div>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>No hay logs registrados</div>
         ) : (
           <div className="card" style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -86,7 +86,7 @@ function LogsSuperPageContent() {
                     <td style={{ padding: ".75rem", fontSize: ".875rem" }}>
                       {log.entity} {log.entityId ? `#${log.entityId}` : ""}
                     </td>
-                    <td style={{ padding: ".75rem", fontSize: ".875rem", color: "#94a3b8" }}>
+                    <td style={{ padding: ".75rem", fontSize: ".875rem", color: "var(--text-secondary)" }}>
                       {log.meta ? JSON.stringify(log.meta).substring(0, 50) + "..." : "-"}
                     </td>
                   </tr>

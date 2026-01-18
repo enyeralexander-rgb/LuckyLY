@@ -101,21 +101,21 @@ function GestionarAgentesPageContent() {
               placeholder="Nombre completo"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
             <input
               type="email"
               placeholder="Email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
             <input
               type="password"
               placeholder="Contraseña"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid #d4d4c4", background: "#F5F5E6", color: "#3E3E3C" }}
+              style={{ padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
             <button
               onClick={handleCreate}
@@ -137,15 +137,15 @@ function GestionarAgentesPageContent() {
         {loading ? (
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         ) : agents.length === 0 ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>No hay agentes registrados</div>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>No hay agentes registrados</div>
         ) : (
           <div style={{ display: "grid", gap: "1rem" }}>
             {agents.map((agent) => (
               <div key={agent.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h3 style={{ margin: 0 }}>{agent.name}</h3>
-                  <p style={{ margin: ".25rem 0", color: "#94a3b8" }}>{agent.email}</p>
-                  <p style={{ margin: ".25rem 0", color: "#94a3b8", fontSize: ".875rem" }}>
+                  <p style={{ margin: ".25rem 0", color: "var(--text-secondary)" }}>{agent.email}</p>
+                  <p style={{ margin: ".25rem 0", color: "var(--text-secondary)", fontSize: ".875rem" }}>
                     Creado: {new Date(agent.createdAt).toLocaleDateString()}
                   </p>
                 </div>
