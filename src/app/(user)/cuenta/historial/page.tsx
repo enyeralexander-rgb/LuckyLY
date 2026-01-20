@@ -104,7 +104,7 @@ export default function HistorialPage() {
     <AuthGuard requiredRole={["USER"]}>
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "1200px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-          <h1 style={{ margin: 0, color: "var(--text-primary)" }}>HISTORIAL</h1>
+          <h1 style={{ margin: 0, color: "var(--text-primary)" }}>HISTORIAL DE APUESTAS</h1>
           <Link href="/cuenta" style={{ color: "#85BB65", textDecoration: "none", fontWeight: 600 }}>← Volver a MI CUENTA</Link>
         </div>
 
