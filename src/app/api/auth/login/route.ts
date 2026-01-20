@@ -50,7 +50,8 @@ export async function POST(request: Request) {
     }
 
     // Verificar si el administrador tiene 2FA habilitado
-    const isAdmin = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER].includes(user.role);
+    const adminRoles: Role[] = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER];
+    const isAdmin = adminRoles.includes(user.role);
     if (isAdmin && user.twoFactorAuth?.enabled) {
       // Generar token temporal para 2FA (válido por 5 minutos)
       const tempToken = crypto.randomBytes(32).toString("hex");
