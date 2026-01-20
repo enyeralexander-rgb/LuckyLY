@@ -38,7 +38,15 @@ export function AdminNavBar() {
     <header className="navbar-responsive">
       <div className="container" style={{ display: "flex", alignItems: "center", gap: "1rem", justifyContent: "center", padding: "1rem 0" }}>
         <div className="navbar-grid">
-          <div className="navbar-logo" onClick={() => router.push("/admin")}>
+          <div 
+            className="navbar-logo" 
+            onClick={() => {
+              // Abrir la página principal en una nueva pestaña para no perder la sesión de admin
+              window.open("/", "_blank");
+            }}
+            title="Ver página principal (nueva pestaña)"
+            style={{ cursor: "pointer" }}
+          >
             <img 
               src="/images/LuckyLy-Logo.png" 
               alt="LuckyLY Logo"
