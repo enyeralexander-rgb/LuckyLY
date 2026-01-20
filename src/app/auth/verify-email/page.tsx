@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -8,8 +8,12 @@ function VerifyEmailPageContent() {
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
+  const hasVerified = useRef(false); // Prevenir doble verificación
 
   useEffect(() => {
+    // Prevenir múltiples llamadas
+    if (hasVerified.current) return;
+    
     const token = searchParams.get("token");
     if (!token) {
       setStatus("error");
@@ -17,24 +21,35 @@ function VerifyEmailPageContent() {
       return;
     }
 
-    fetch(`/api/auth/verify-email?token=${token}`)
+    hasVerified.current = true;
+
+    fetch(`/api/auth/verify-email?token=${token}`, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      redirect: "manual" // No seguir redirects automáticamente
+    })
       .then(async (res) => {
-        if (res.ok) {
+        const data = await res.json().catch(() => null);
+        
+        if (res.ok && data?.success) {
           setStatus("success");
-          setMessage("Email verificado exitosamente. Serás redirigido al login...");
+          if (data.alreadyVerified) {
+            setMessage("Tu email ya estaba verificado. Serás redirigido al login...");
+          } else {
+            setMessage("¡Email verificado exitosamente! Serás redirigido al login...");
+          }
           setTimeout(() => {
             router.push("/auth/login?verified=true");
           }, 3000);
         } else {
-          const data = await res.json();
           setStatus("error");
-          setMessage(data.error || "Error al verificar email");
+          setMessage(data?.error || "Error al verificar email");
         }
       })
       .catch((err) => {
         console.error("Error:", err);
         setStatus("error");
-        setMessage("Error al verificar email");
+        setMessage("Error de conexión al verificar email");
       });
   }, [searchParams, router]);
 
