@@ -74,11 +74,12 @@ function CrearSorteosPageContent() {
     if (!template) return;
 
     // Parsear premios de la plantilla (formato "Bs. X.XX")
-    let parsedPrizes: string[] = [""];
+    let parsedPrizes: string[] = [];
     if (template.prizes && Array.isArray(template.prizes)) {
       parsedPrizes = template.prizes.map(p => {
-        const match = p.match(/[\d.]+/);
-        return match ? match[0] : "";
+        // Extraer número del premio (puede ser "Bs. 1000.00", "1000 Bs", etc.)
+        const match = p.match(/(\d+(?:\.\d+)?)/);
+        return match ? match[1] : "";
       });
     }
 
@@ -87,19 +88,22 @@ function CrearSorteosPageContent() {
       parsedPrizes.push("");
     }
 
-    setFormData({
-      ...formData,
+    // Aplicar todos los campos de la plantilla
+    const newFormData = {
       title: "", // Mantener vacío para que el usuario lo llene
       description: template.description || "",
-      type: template.type as any,
-      pricePerSlot: template.pricePerSlot.toString(),
-      slots: template.slots.toString(),
+      type: template.type as "NUMBERS" | "ANIMALS" | "STATES" | "FLAGS" | "ZODIAC",
+      pricePerSlot: String(template.pricePerSlot),
+      slots: String(template.slots),
       winnersCount: template.winnersCount,
       mirrorMode: template.mirrorMode,
+      startsAt: formData.startsAt, // Mantener la fecha si ya se había establecido
       prizes: parsedPrizes.slice(0, template.winnersCount)
-    });
+    };
 
-    // Actualizar customItems si es necesario
+    setFormData(newFormData);
+
+    // Actualizar customItems según el tipo de la plantilla
     if (template.type === "STATES") {
       setCustomItems(VENEZUELA_STATES);
     } else {

@@ -405,7 +405,7 @@ export default function RaffleDetailPage({ params }: Props) {
                   <strong>⚠️ Límite alcanzado:</strong> Ya has comprado {userPurchasedSlots} cupo(s) en este sorteo. El máximo permitido es 2 cupos por sorteo.
                 </div>
               )}
-              <div style={{ display: "grid", gap: ".75rem", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))" }}>
+              <div style={{ display: "grid", gap: ".75rem", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))" }}>
                 {allSlots.map((slot) => {
                   const purchased = isSlotPurchased(slot);
                   const pending = isSlotPending(slot);
@@ -417,7 +417,7 @@ export default function RaffleDetailPage({ params }: Props) {
                       onClick={() => toggleSlot(slot)}
                       disabled={purchased || pending || buying || userPurchasedSlots >= 3}
                       style={{
-                        padding: "1rem",
+                        padding: "0.75rem 0.5rem",
                         borderRadius: "10px",
                         textAlign: "center",
                         border: selected ? "2px solid #85BB65" : pending ? "2px solid #f59e0b" : userPurchasedSlots >= 3 ? "1px solid #6b7280" : "1px solid #1f2937",
@@ -434,8 +434,17 @@ export default function RaffleDetailPage({ params }: Props) {
                         fontWeight: selected || pending ? 700 : 600,
                         cursor: purchased || pending || buying || userPurchasedSlots >= 3 ? "not-allowed" : "pointer",
                         opacity: purchased || pending || userPurchasedSlots >= 3 ? 0.6 : 1,
-                        transition: "all 0.2s"
+                        transition: "all 0.2s",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        fontSize: "0.85rem",
+                        minHeight: "48px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
                       }}
+                      title={getItemWithEmoji(slot, raffle?.type || "")}
                     >
                       {purchased ? "✕" : pending ? "⏳" : selected ? "✓" : ""} {getItemWithEmoji(slot, raffle?.type || "")}
                     </button>

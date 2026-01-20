@@ -5,6 +5,41 @@ import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../../lib/clientAuth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getItemWithEmoji } from "../../../../../lib/raffleEmojis";
+
+// Listas de valores para cada tipo de ruleta
+const VENEZUELA_STATES = [
+  "Amazonas", "Anzoátegui", "Apure", "Aragua", "Barinas", "Bolívar",
+  "Carabobo", "Cojedes", "Delta Amacuro", "Distrito Capital", "Falcón",
+  "Guárico", "Lara", "Mérida", "Miranda", "Monagas", "Nueva Esparta",
+  "Portuguesa", "Sucre", "Táchira", "Trujillo", "Vargas", "Yaracuy", "Zulia"
+];
+
+const ANIMALS = [
+  "León", "Tigre", "Elefante", "Jirafa", "Cebra", "Mono", "Oso", "Lobo", 
+  "Zorro", "Águila", "Delfín", "Ballena", "Tiburón", "Cocodrilo", "Serpiente", 
+  "Pájaro", "Caballo", "Vaca", "Cerdo", "Gato", "Perro", "Conejo", "Ratón", 
+  "Hámster", "Pez", "Tortuga", "Rana", "Mariposa", "Abeja", "Araña", 
+  "Escorpión", "Camello", "Canguro", "Panda", "Koala", "Zebra", "Hipopótamo", 
+  "Rinoceronte", "Jaguar", "Pantera", "Lince", "Búfalo", "Alce", "Ciervo", 
+  "Mapache", "Mofeta", "Erizo", "Armadillo", "Tapir", "Capibara"
+];
+
+const COUNTRIES = [
+  "🇻🇪 Venezuela", "🇨🇴 Colombia", "🇧🇷 Brasil", "🇦🇷 Argentina", "🇨🇱 Chile", "🇵🇪 Perú", "🇪🇨 Ecuador", 
+  "🇺🇾 Uruguay", "🇵🇾 Paraguay", "🇧🇴 Bolivia", "🇲🇽 México", "🇪🇸 España", "🇫🇷 Francia", "🇮🇹 Italia", 
+  "🇩🇪 Alemania", "🇬🇧 Reino Unido", "🇺🇸 Estados Unidos", "🇨🇦 Canadá", "🇯🇵 Japón", "🇨🇳 China", 
+  "🇷🇺 Rusia", "🇮🇳 India", "🇦🇺 Australia", "🇳🇿 Nueva Zelanda", "🇿🇦 Sudáfrica", "🇪🇬 Egipto", 
+  "🇲🇦 Marruecos", "🇹🇷 Turquía", "🇬🇷 Grecia", "🇵🇹 Portugal", "🇳🇱 Holanda", "🇧🇪 Bélgica", 
+  "🇨🇭 Suiza", "🇦🇹 Austria", "🇸🇪 Suecia", "🇳🇴 Noruega", "🇩🇰 Dinamarca", "🇫🇮 Finlandia", 
+  "🇵🇱 Polonia", "🇨🇿 República Checa", "🇭🇺 Hungría", "🇷🇴 Rumania", "🇧🇬 Bulgaria", "🇭🇷 Croacia", 
+  "🇷🇸 Serbia", "🇺🇦 Ucrania", "🇰🇷 Corea del Sur", "🇹🇭 Tailandia", "🇵🇭 Filipinas", "🇮🇩 Indonesia"
+];
+
+const ZODIAC_SIGNS = [
+  "♈ Aries", "♉ Tauro", "♊ Géminis", "♋ Cáncer", "♌ Leo", "♍ Virgo",
+  "♎ Libra", "♏ Escorpio", "♐ Sagitario", "♑ Capricornio", "♒ Acuario", "♓ Piscis"
+];
 
 type TicketItem = {
   id: string;
@@ -374,13 +409,18 @@ function EjecutarSorteosPageContent() {
             background: "var(--card-bg)", 
             borderRadius: "12px", 
             padding: "2rem", 
-            maxWidth: "900px", 
+            maxWidth: "950px", 
             width: "100%", 
-            maxHeight: "80vh", 
+            maxHeight: "85vh", 
             overflow: "auto" 
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-              <h2 style={{ margin: 0, color: "var(--text-primary)" }}>Estado de Cupos - {selectedRaffle.title}</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <div>
+                <h2 style={{ margin: 0, color: "var(--text-primary)" }}>Estado de Cupos - {selectedRaffle.title}</h2>
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.875rem", color: "var(--text-secondary)" }}>
+                  Tipo: <strong>{selectedRaffle.type}</strong> | Total: <strong>{selectedRaffle.slots}</strong> cupos
+                </p>
+              </div>
               <button
                 onClick={closeCuposModal}
                 style={{ background: "transparent", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "var(--text-primary)" }}
@@ -391,62 +431,96 @@ function EjecutarSorteosPageContent() {
 
             <div style={{ 
               display: "grid", 
-              gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", 
+              gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", 
               gap: "0.5rem" 
             }}>
-              {Array.from({ length: selectedRaffle.slots }, (_, i) => {
-                const slotNumber = (i + 1).toString().padStart(2, "0");
-                const item = selectedRaffle.ticketItems.find(ti => ti.value === slotNumber || ti.value === (i + 1).toString());
-                
-                let bgColor = "#e5e7eb"; // Disponible
-                let textColor = "#374151";
-                let statusIcon = "📋";
-                let statusText = "Disponible";
-                let userName = "";
-
-                if (item) {
-                  if (item.status === "CONFIRMED") {
-                    bgColor = "#10b981";
-                    textColor = "#fff";
-                    statusIcon = "✓";
-                    statusText = "Comprado";
-                    userName = item.ticket?.user?.name || "Usuario";
-                  } else if (item.status === "PENDING") {
-                    bgColor = "#f59e0b";
-                    textColor = "#fff";
-                    statusIcon = "⏳";
-                    statusText = "Pendiente";
-                    userName = item.ticket?.user?.name || "Usuario";
-                  } else if (item.status === "REJECTED") {
-                    bgColor = "#ef4444";
-                    textColor = "#fff";
-                    statusIcon = "✖";
-                    statusText = "Rechazado";
-                  }
+              {(() => {
+                // Generar lista de valores según el tipo de ruleta
+                let slotValues: string[] = [];
+                if (selectedRaffle.type === "NUMBERS") {
+                  slotValues = Array.from({ length: selectedRaffle.slots }, (_, i) => String(i + 1));
+                } else if (selectedRaffle.type === "STATES") {
+                  slotValues = VENEZUELA_STATES.slice(0, selectedRaffle.slots);
+                } else if (selectedRaffle.type === "ANIMALS") {
+                  slotValues = ANIMALS.slice(0, selectedRaffle.slots);
+                } else if (selectedRaffle.type === "FLAGS") {
+                  slotValues = COUNTRIES.slice(0, selectedRaffle.slots);
+                } else if (selectedRaffle.type === "ZODIAC") {
+                  slotValues = ZODIAC_SIGNS.slice(0, selectedRaffle.slots);
                 }
 
-                return (
-                  <div 
-                    key={i}
-                    style={{ 
-                      padding: "0.75rem", 
-                      background: bgColor, 
-                      borderRadius: "8px",
-                      textAlign: "center",
-                      color: textColor
-                    }}
-                    title={userName ? `${statusText} - ${userName}` : statusText}
-                  >
-                    <div style={{ fontSize: "1.25rem", fontWeight: 700 }}>{statusIcon} {slotNumber}</div>
-                    <div style={{ fontSize: "0.65rem", marginTop: "0.25rem", opacity: 0.9 }}>{statusText}</div>
-                    {userName && (
-                      <div style={{ fontSize: "0.6rem", marginTop: "0.15rem", opacity: 0.8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {userName}
+                return slotValues.map((slotValue, i) => {
+                  // Buscar si este cupo está en ticketItems (comparar por valor exacto o número)
+                  const item = selectedRaffle.ticketItems.find(ti => 
+                    ti.value === slotValue || 
+                    ti.value === String(i + 1) ||
+                    ti.value === String(i + 1).padStart(2, "0")
+                  );
+                  
+                  let bgColor = "#e5e7eb"; // Disponible
+                  let textColor = "#374151";
+                  let statusIcon = "📋";
+                  let statusText = "Disponible";
+                  let userName = "";
+
+                  if (item) {
+                    if (item.status === "CONFIRMED") {
+                      bgColor = "#10b981";
+                      textColor = "#fff";
+                      statusIcon = "✓";
+                      statusText = "Comprado";
+                      userName = item.ticket?.user?.name || "Usuario";
+                    } else if (item.status === "PENDING") {
+                      bgColor = "#f59e0b";
+                      textColor = "#fff";
+                      statusIcon = "⏳";
+                      statusText = "Pendiente";
+                      userName = item.ticket?.user?.name || "Usuario";
+                    } else if (item.status === "REJECTED") {
+                      bgColor = "#ef4444";
+                      textColor = "#fff";
+                      statusIcon = "✖";
+                      statusText = "Rechazado";
+                    }
+                  }
+
+                  const displayValue = getItemWithEmoji(slotValue, selectedRaffle.type);
+
+                  return (
+                    <div 
+                      key={i}
+                      style={{ 
+                        padding: "0.6rem 0.5rem", 
+                        background: bgColor, 
+                        borderRadius: "8px",
+                        textAlign: "center",
+                        color: textColor,
+                        minHeight: "70px",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center"
+                      }}
+                      title={userName ? `${statusText} - ${userName}` : statusText}
+                    >
+                      <div style={{ 
+                        fontSize: selectedRaffle.type === "NUMBERS" ? "1.1rem" : "0.8rem", 
+                        fontWeight: 700, 
+                        overflow: "hidden", 
+                        textOverflow: "ellipsis", 
+                        whiteSpace: "nowrap" 
+                      }}>
+                        {statusIcon} {displayValue}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                      <div style={{ fontSize: "0.65rem", marginTop: "0.25rem", opacity: 0.9 }}>{statusText}</div>
+                      {userName && (
+                        <div style={{ fontSize: "0.6rem", marginTop: "0.15rem", opacity: 0.8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {userName}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
             </div>
 
             <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem", flexWrap: "wrap", justifyContent: "center" }}>
