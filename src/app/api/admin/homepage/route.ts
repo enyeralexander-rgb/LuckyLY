@@ -81,6 +81,7 @@ export async function PUT(request: Request) {
     if (body.heroAutoSlide !== undefined) updateData.heroAutoSlide = body.heroAutoSlide;
     if (body.heroAutoSlideMode !== undefined) updateData.heroAutoSlideMode = body.heroAutoSlideMode || null;
     if (body.heroAutoSlideInterval !== undefined) updateData.heroAutoSlideInterval = body.heroAutoSlideInterval;
+    if (body.heroPauseOnHover !== undefined) updateData.heroPauseOnHover = body.heroPauseOnHover;
     if (body.heroScrollFade !== undefined) updateData.heroScrollFade = body.heroScrollFade;
     if (body.heroOpacity !== undefined) updateData.heroOpacity = body.heroOpacity;
     if (body.heroBlur !== undefined) updateData.heroBlur = body.heroBlur;
@@ -120,6 +121,7 @@ export async function PUT(request: Request) {
           heroAutoSlide: updateData.heroAutoSlide ?? false,
           heroAutoSlideMode: updateData.heroAutoSlideMode ?? "linear",
           heroAutoSlideInterval: updateData.heroAutoSlideInterval ?? 5000,
+          heroPauseOnHover: updateData.heroPauseOnHover ?? false,
           heroScrollFade: updateData.heroScrollFade ?? true,
           heroOpacity: updateData.heroOpacity ?? 1.0,
           heroBlur: updateData.heroBlur ?? 0,
