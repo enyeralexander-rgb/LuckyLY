@@ -54,7 +54,8 @@ export async function POST(request: Request) {
     const token = jwt.sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: "12h" });
 
     // Registrar log de inicio de sesión con 2FA
-    const isAdmin = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER].includes(user.role);
+    const adminRoles: Role[] = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER];
+    const isAdmin = adminRoles.includes(user.role);
     if (isAdmin) {
       try {
         const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
