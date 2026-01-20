@@ -68,6 +68,9 @@ model Raffle {
   winnersCount    Int              @default(1)
   mirrorMode      Boolean          @default(false)
   status          String           @default("ACTIVE")
+  approved        Boolean          @default(false) // Sorteo aprobado y visible para usuarios
+  approvedAt      DateTime? // Fecha de aprobación
+  approvedById    String? // ID del admin que aprobó
   startsAt        DateTime?
   closesAt        DateTime?
   executedAt      DateTime?
@@ -87,6 +90,7 @@ model Raffle {
   @@index([status, closesAt])
   @@index([templateId])
   @@index([autoExecute])
+  @@index([approved])
 }
 
 model Ticket {
@@ -412,6 +416,7 @@ model HomePageConfig {
   heroAutoSlide         Boolean  @default(false)
   heroAutoSlideMode     String?  // "none", "linear", "reverse", "fade", "zoom", "slide-up", "slide-down"
   heroAutoSlideInterval Int      @default(5000)
+  heroPauseOnHover      Boolean  @default(false) // Pausar deslizamiento al pasar el mouse
   heroScrollFade        Boolean  @default(true)
   heroOpacity           Float    @default(0.8)
   heroBlur              Float    @default(4.0)

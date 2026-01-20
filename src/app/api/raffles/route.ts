@@ -4,14 +4,40 @@ import { raffleCreateSchema } from "../../../lib/validators";
 import { requireAuth, AuthError } from "../../../lib/auth";
 import { Role } from "@prisma/client";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const includeNotApproved = searchParams.get("includeNotApproved") === "true";
+
+    // Construir el filtro WHERE
+    const whereClause: any = {};
+    
+    // Por defecto, solo mostrar sorteos aprobados a usuarios públicos
+    // Los administradores pueden ver todos pasando includeNotApproved=true
+    if (!includeNotApproved) {
+      whereClause.approved = true;
+    }
+
     const raffles = await prisma.raffle.findMany({
+      where: whereClause,
       orderBy: { createdAt: "desc" },
       take: 100,
       include: {
         createdBy: { select: { name: true } },
-        ticketItems: { select: { value: true, status: true } }
+        ticketItems: { 
+          select: { 
+            id: true,
+            value: true, 
+            status: true,
+            ticket: {
+              select: {
+                user: {
+                  select: { name: true, email: true }
+                }
+              }
+            }
+          } 
+        }
       }
     });
     
@@ -19,18 +45,26 @@ export async function GET() {
     const formattedRaffles = raffles.map((raffle) => ({
       id: raffle.id,
       title: raffle.title,
+      description: raffle.description,
       type: raffle.type,
       pricePerSlot: Number(raffle.pricePerSlot) || 0,
       slots: raffle.slots || 0,
       status: raffle.status || "ACTIVE",
+      approved: raffle.approved ?? false,
+      mirrorMode: raffle.mirrorMode ?? false,
       ticketItems: (raffle.ticketItems || []).map((item: any) => ({
+        id: item.id,
         value: item.value || "",
-        status: item.status || null
+        status: item.status || null,
+        ticket: item.ticket
       })),
       prizes: Array.isArray(raffle.prizes) ? raffle.prizes : [],
       winnersCount: raffle.winnersCount || 0,
       startsAt: raffle.startsAt ? raffle.startsAt.toISOString() : null,
-      closesAt: raffle.closesAt ? raffle.closesAt.toISOString() : null
+      closesAt: raffle.closesAt ? raffle.closesAt.toISOString() : null,
+      executedAt: raffle.executedAt ? raffle.executedAt.toISOString() : null,
+      createdAt: raffle.createdAt ? raffle.createdAt.toISOString() : null,
+      createdBy: raffle.createdBy
     }));
     
     return NextResponse.json(formattedRaffles);

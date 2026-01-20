@@ -17,6 +17,7 @@ type HomePageConfig = {
   heroAutoSlide: boolean;
   heroAutoSlideMode: string;
   heroAutoSlideInterval: number;
+  heroPauseOnHover: boolean;
   heroImageSize?: string;
   instagramVideoUrl: string | null;
   heroEffect: string | null;
@@ -66,6 +67,7 @@ function PaginaPrincipalContent() {
     heroAutoSlide: false,
     heroAutoSlideMode: "linear",
     heroAutoSlideInterval: 5000,
+    heroPauseOnHover: false,
     heroImageSize: "contain",
     instagramVideoUrl: "/images/RULETA FONDO REDES.mp4",
     heroEffect: "fade",
@@ -124,6 +126,7 @@ function PaginaPrincipalContent() {
           heroAutoSlide: data.heroAutoSlide ?? false,
           heroAutoSlideMode: data.heroAutoSlideMode || "linear",
           heroAutoSlideInterval: data.heroAutoSlideInterval || 5000,
+          heroPauseOnHover: data.heroPauseOnHover ?? false,
           heroImageSize: data.heroImageSize || "contain",
           instagramVideoUrl: data.instagramVideoUrl || "",
           heroEffect: data.heroEffect || "fade",
@@ -164,6 +167,7 @@ function PaginaPrincipalContent() {
         heroAutoSlide: config.heroAutoSlide ?? false,
         heroAutoSlideMode: config.heroAutoSlideMode || "linear",
         heroAutoSlideInterval: config.heroAutoSlideInterval ?? 5000,
+        heroPauseOnHover: config.heroPauseOnHover ?? false,
         heroImageSize: config.heroImageSize || "contain",
         instagramVideoUrl: config.instagramVideoUrl || null,
         heroEffect: config.heroEffect || "fade",
@@ -632,6 +636,23 @@ function PaginaPrincipalContent() {
                     <div style={{ fontSize: "0.875rem", color: "var(--text-tertiary)", paddingLeft: "120px" }}>
                       ⚡ Velocidad: {config.heroAutoSlideInterval < 3000 ? "Muy Rápida" : config.heroAutoSlideInterval < 5000 ? "Rápida" : config.heroAutoSlideInterval < 8000 ? "Normal" : "Lenta"} 
                       (Recomendado: 5000-8000ms para mejor experiencia)
+                    </div>
+                  </div>
+
+                  {/* Pause on Hover */}
+                  <div style={{ padding: "1rem", background: "var(--bg-accent)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={config.heroPauseOnHover || false}
+                        onChange={(e) => setConfig({ ...config, heroPauseOnHover: e.target.checked })}
+                      />
+                      <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>⏸️ Pausar al pasar el mouse (Pause on Hover)</span>
+                    </label>
+                    <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)", paddingLeft: "1.5rem" }}>
+                      {config.heroPauseOnHover 
+                        ? "✓ El carrusel se pausará cuando el usuario pase el mouse sobre él" 
+                        : "✗ El carrusel continuará deslizándose aunque el usuario pase el mouse"}
                     </div>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 "use client";
 import { AdminNavBar } from "../../../../../components/AdminNavBar";
 import { AuthGuard } from "../../../../../components/AuthGuard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getStoredAuth } from "../../../../../lib/clientAuth";
 import { useRouter } from "next/navigation";
 
@@ -12,10 +12,24 @@ const VENEZUELA_STATES = [
   "Portuguesa", "Sucre", "Táchira", "Trujillo", "Vargas", "Yaracuy", "Zulia"
 ];
 
+type Template = {
+  id: string;
+  name: string;
+  description: string | null;
+  type: string;
+  pricePerSlot: number;
+  slots: number;
+  winnersCount: number;
+  mirrorMode: boolean;
+  prizes: string[] | null;
+};
+
 function CrearSorteosPageContent() {
   const router = useRouter();
   const auth = getStoredAuth();
   const [loading, setLoading] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -29,6 +43,69 @@ function CrearSorteosPageContent() {
   });
 
   const [customItems, setCustomItems] = useState<string[]>([]);
+
+  // Cargar plantillas al iniciar
+  useEffect(() => {
+    async function loadTemplates() {
+      if (!auth?.token) {
+        setLoadingTemplates(false);
+        return;
+      }
+      try {
+        const res = await fetch("/api/admin/templates", {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        });
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setTemplates(data);
+        }
+      } catch (err) {
+        console.error("Error al cargar plantillas:", err);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    }
+    loadTemplates();
+  }, [auth?.token]);
+
+  // Función para aplicar una plantilla
+  function applyTemplate(templateId: string) {
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
+    // Parsear premios de la plantilla (formato "Bs. X.XX")
+    let parsedPrizes: string[] = [""];
+    if (template.prizes && Array.isArray(template.prizes)) {
+      parsedPrizes = template.prizes.map(p => {
+        const match = p.match(/[\d.]+/);
+        return match ? match[0] : "";
+      });
+    }
+
+    // Ajustar cantidad de premios según winnersCount
+    while (parsedPrizes.length < template.winnersCount) {
+      parsedPrizes.push("");
+    }
+
+    setFormData({
+      ...formData,
+      title: "", // Mantener vacío para que el usuario lo llene
+      description: template.description || "",
+      type: template.type as any,
+      pricePerSlot: template.pricePerSlot.toString(),
+      slots: template.slots.toString(),
+      winnersCount: template.winnersCount,
+      mirrorMode: template.mirrorMode,
+      prizes: parsedPrizes.slice(0, template.winnersCount)
+    });
+
+    // Actualizar customItems si es necesario
+    if (template.type === "STATES") {
+      setCustomItems(VENEZUELA_STATES);
+    } else {
+      setCustomItems([]);
+    }
+  }
 
   function handleTypeChange(type: string) {
     if (type === "STATES") {
@@ -79,20 +156,7 @@ function CrearSorteosPageContent() {
       return { error: "El 2° ganador no puede ganar un monto mayor que el 1° ganador", invalidIndex: 1 };
     }
     
-    // Validar que la suma de premios no exceda el 50% de las ganancias totales
-    const pricePerSlot = parseFloat(formData.pricePerSlot) || 0;
-    const slots = parseInt(formData.slots) || 0;
-    const totalIncome = pricePerSlot * slots;
-    const maxPrizeTotal = totalIncome * 0.5; // 50% máximo
-    const totalPrizes = prizes.reduce((sum, p) => sum + p, 0);
-    
-    if (totalPrizes > maxPrizeTotal && totalIncome > 0) {
-      return { 
-        error: `La suma de premios (Bs. ${totalPrizes.toFixed(2)}) excede el 50% de las ganancias totales (Bs. ${maxPrizeTotal.toFixed(2)})`, 
-        invalidIndex: 0 
-      };
-    }
-    
+    // Los premios son totalmente personalizables - sin restricción del 50%
     return { error: null, invalidIndex: null };
   }
 
@@ -192,6 +256,46 @@ function CrearSorteosPageContent() {
       <AdminNavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
         <h1 style={{ color: "var(--text-primary)" }}>Crear Sorteo</h1>
+        
+        {/* Selector de Plantillas */}
+        {!loadingTemplates && templates.length > 0 && (
+          <div className="card" style={{ marginBottom: "1.5rem", padding: "1.5rem", background: "var(--bg-accent)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+              <label style={{ color: "var(--text-primary)", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                📋 Usar Plantilla:
+              </label>
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    applyTemplate(e.target.value);
+                  }
+                }}
+                defaultValue=""
+                style={{ 
+                  flex: 1,
+                  minWidth: "200px",
+                  padding: ".75rem", 
+                  borderRadius: "8px", 
+                  border: "2px solid var(--color-primary)", 
+                  background: "var(--input-bg)", 
+                  color: "var(--text-primary)",
+                  fontWeight: 500
+                }}
+              >
+                <option value="">-- Selecciona una plantilla (opcional) --</option>
+                {templates.map(template => (
+                  <option key={template.id} value={template.id}>
+                    {template.name} ({template.type} - {template.slots} cupos - Bs. {Number(template.pricePerSlot).toFixed(2)})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p style={{ margin: "0.5rem 0 0", fontSize: "0.875rem", color: "var(--text-secondary)" }}>
+              Selecciona una plantilla para cargar automáticamente la configuración del sorteo.
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="card" style={{ display: "grid", gap: "1.5rem" }}>
           <div style={{ display: "grid", gap: ".5rem" }}>
             <label style={{ color: "var(--text-primary)" }}>Título del sorteo</label>
@@ -355,12 +459,9 @@ function CrearSorteosPageContent() {
             })}
             <small style={{ color: "var(--text-primary)", opacity: 0.7 }}>
               Los premios deben estar ordenados de mayor a menor (1° ganador ≥ 2° ganador ≥ 3° ganador).
-              <br />
-              <strong style={{ color: "#f59e0b" }}>⚠️ Regla: La suma total de premios no puede exceder el 50% de las ganancias del sorteo.</strong>
               {formData.pricePerSlot && formData.slots && (
                 <span style={{ display: "block", marginTop: "0.25rem" }}>
-                  Ganancias totales: Bs. {(parseFloat(formData.pricePerSlot) * parseInt(formData.slots || "0")).toFixed(2)} | 
-                  Máximo premios: Bs. {((parseFloat(formData.pricePerSlot) * parseInt(formData.slots || "0")) * 0.5).toFixed(2)}
+                  Ganancias totales estimadas: Bs. {(parseFloat(formData.pricePerSlot) * parseInt(formData.slots || "0")).toFixed(2)}
                 </span>
               )}
             </small>

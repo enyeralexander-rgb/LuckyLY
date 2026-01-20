@@ -10,6 +10,7 @@ type HomePageConfig = {
   heroAutoSlide: boolean;
   heroAutoSlideMode: string;
   heroAutoSlideInterval: number;
+  heroPauseOnHover: boolean;
   heroScrollFade: boolean;
   heroOpacity: number;
   heroBlur: number;
@@ -30,6 +31,7 @@ export function Hero() {
     heroAutoSlide: false,
     heroAutoSlideMode: "linear",
     heroAutoSlideInterval: 5000,
+    heroPauseOnHover: false,
     heroScrollFade: true,
     heroOpacity: 0.8,
     heroBlur: 4.0,
@@ -42,6 +44,7 @@ export function Hero() {
   const [opacity, setOpacity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -66,6 +69,7 @@ export function Hero() {
               heroAutoSlide: previewConfig.heroAutoSlide ?? false,
               heroAutoSlideMode: previewConfig.heroAutoSlideMode || "linear",
               heroAutoSlideInterval: previewConfig.heroAutoSlideInterval || 5000,
+              heroPauseOnHover: previewConfig.heroPauseOnHover ?? false,
               heroScrollFade: previewConfig.heroScrollFade ?? true,
               heroOpacity: previewConfig.heroOpacity !== undefined ? previewConfig.heroOpacity : 0.8,
               heroBlur: previewConfig.heroBlur !== undefined ? previewConfig.heroBlur : 4.0,
@@ -101,6 +105,7 @@ export function Hero() {
             heroAutoSlide: data.heroAutoSlide ?? false,
             heroAutoSlideMode: data.heroAutoSlideMode || "linear",
             heroAutoSlideInterval: data.heroAutoSlideInterval || 5000,
+            heroPauseOnHover: data.heroPauseOnHover ?? false,
             heroScrollFade: data.heroScrollFade ?? true,
             // Convertir de formato base de datos (0-1) a formato del componente (0-100%)
             heroOpacity: data.heroOpacity !== undefined ? (data.heroOpacity > 1 ? data.heroOpacity : data.heroOpacity * 100) : 80,
@@ -140,6 +145,9 @@ export function Hero() {
   useEffect(() => {
     if (!config.heroAutoSlide || config.heroImages.length <= 1 || config.heroAutoSlideMode === "none") return;
 
+    // Si está pausado por hover, no avanzar
+    if (isPaused && config.heroPauseOnHover) return;
+
     const getNextIndex = (current: number): number => {
       const mode = config.heroAutoSlideMode || "linear";
       switch (mode) {
@@ -158,7 +166,7 @@ export function Hero() {
     }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [config.heroAutoSlide, config.heroAutoSlideMode, config.heroAutoSlideInterval, config.heroImages.length]);
+  }, [config.heroAutoSlide, config.heroAutoSlideMode, config.heroAutoSlideInterval, config.heroImages.length, config.heroPauseOnHover, isPaused]);
 
   const currentImage = config.heroImages[currentImageIndex] || config.heroImages[0];
   const textColor = config.heroTextColor || "#e2e8f0";
@@ -256,9 +264,24 @@ export function Hero() {
     }
   };
 
+  // Handlers para pause on hover
+  const handleMouseEnter = () => {
+    if (config.heroPauseOnHover) {
+      setIsPaused(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (config.heroPauseOnHover) {
+      setIsPaused(false);
+    }
+  };
+
   return (
     <section 
       className="hero-section-responsive"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{ 
         position: "relative", 
         width: "100%", 
@@ -272,7 +295,8 @@ export function Hero() {
         alignItems: "center",
         justifyContent: "center",
         margin: 0,
-        padding: 0
+        padding: 0,
+        cursor: config.heroPauseOnHover ? "pointer" : "default"
       }}
     >
       {config.heroEffect === "slide" && config.heroImages.length > 1 ? (
