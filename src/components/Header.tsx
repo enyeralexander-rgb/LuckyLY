@@ -74,9 +74,9 @@ export function Header() {
   const clientMenu: UserMenu[] = [
     { label: "MI CUENTA", href: "/cuenta", icon: "👤", divider: true },
     { label: "Configuración", href: "/cuenta/configuracion", icon: "⚙️" },
-    { label: "Tickets y Notificaciones", href: "/cuenta/mis-jugadas", icon: "🎲" },
-    { label: "Historial", href: "/cuenta/historial", icon: "📜" },
+    { label: "Historial de Apuestas", href: "/cuenta/historial", icon: "🎲" },
     { label: "Datos Bancarios", href: "/cuenta/datos-bancarios", icon: "🏦", divider: true },
+    { label: "Cerrar Sesión", href: "#", icon: "🚪" },
   ];
 
   // Menú para administradores
@@ -140,45 +140,12 @@ export function Header() {
     <header className="header-responsive">
       <div className="header-container">
         <div className="header-grid">
-          {/* Menú desplegable a la izquierda */}
-          <div className="header-menu-left">
-            <button
-              className="header-menu-button"
-              onClick={() => setUserMenuOpen((v) => !v)}
-              aria-label="Menú principal"
-            >
-              <span className="header-menu-icon">☰</span>
-            </button>
-            {userMenuOpen && (
-              <div className="header-menu-dropdown">
-                {mainMenu.map((item, index) => {
-                  if (item.href === "#") {
-                    return (
-                      <button
-                        key={index}
-                        onClick={logout}
-                        className="header-dropdown-item header-dropdown-button"
-                      >
-                        {item.icon && <span>{item.icon}</span>}
-                        <span>{item.label}</span>
-                      </button>
-                    );
-                  }
-                  return (
-                    <Link
-                      key={index}
-                      href={item.href}
-                      onClick={() => setUserMenuOpen(false)}
-                      className={`header-dropdown-item ${item.divider ? "header-dropdown-divider" : ""}`}
-                    >
-                      {item.icon && <span>{item.icon}</span>}
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          {/* Navegación principal a la izquierda */}
+          <nav className="header-nav-left">
+            <Link href="/" className="header-nav-link">Inicio</Link>
+            <Link href="/live" className="header-nav-link">En Vivo</Link>
+            <Link href="/results" className="header-nav-link">Resultados</Link>
+          </nav>
 
           {/* Logo centrado */}
           <div className="header-logo-center" onClick={() => router.push("/")}>
@@ -189,7 +156,7 @@ export function Header() {
             />
           </div>
 
-          {/* Botones de login/registro o icono de usuario a la derecha */}
+          {/* Botones de login/registro o menú de usuario a la derecha */}
           <div className="header-actions">
             {!auth ? (
               <>
@@ -199,17 +166,47 @@ export function Header() {
                 </Link>
               </>
             ) : (
-              <div className="header-user-icon-container">
+              <div className="header-user-dropdown-container">
                 <button
-                  className="header-user-icon-button"
-                  onClick={() => router.push(isAdmin ? "/admin" : "/cuenta")}
+                  className="header-user-dropdown-button"
+                  onClick={() => setUserMenuOpen((v) => !v)}
                   aria-label={isAdmin ? "Panel de administración" : "Mi cuenta"}
-                  title={displayName}
                 >
                   <span className="header-user-icon">
                     {isAdmin ? "👑" : "👤"}
                   </span>
+                  <span className="header-user-name">{displayName}</span>
+                  <span className="header-dropdown-arrow">{userMenuOpen ? "▲" : "▼"}</span>
                 </button>
+                {userMenuOpen && (
+                  <div className="header-user-dropdown">
+                    {currentMenu.map((item, index) => {
+                      if (item.href === "#") {
+                        return (
+                          <button
+                            key={index}
+                            onClick={logout}
+                            className="header-dropdown-item header-dropdown-logout"
+                          >
+                            {item.icon && <span>{item.icon}</span>}
+                            <span>{item.label}</span>
+                          </button>
+                        );
+                      }
+                      return (
+                        <Link
+                          key={index}
+                          href={item.href}
+                          onClick={() => setUserMenuOpen(false)}
+                          className={`header-dropdown-item ${item.divider ? "header-dropdown-divider" : ""}`}
+                        >
+                          {item.icon && <span>{item.icon}</span>}
+                          <span>{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>

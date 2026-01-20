@@ -33,7 +33,8 @@ export async function GET(request: Request) {
           select: {
             id: true,
             title: true,
-            type: true
+            type: true,
+            pricePerSlot: true
           }
         }
       },
@@ -44,7 +45,33 @@ export async function GET(request: Request) {
       }
     });
 
-    return NextResponse.json(pendingItems);
+    // Agrupar por ticketId para mostrar compras completas
+    const groupedByTicket: Record<string, {
+      ticketId: string;
+      items: Array<{ id: string; value: string }>;
+      ticket: any;
+      raffle: any;
+    }> = {};
+
+    for (const item of pendingItems) {
+      const ticketId = item.ticket.id;
+      if (!groupedByTicket[ticketId]) {
+        groupedByTicket[ticketId] = {
+          ticketId,
+          items: [],
+          ticket: item.ticket,
+          raffle: item.raffle
+        };
+      }
+      groupedByTicket[ticketId].items.push({ id: item.id, value: item.value });
+    }
+
+    // Convertir a array y ordenar por fecha
+    const grouped = Object.values(groupedByTicket).sort((a, b) => 
+      new Date(b.ticket.purchasedAt).getTime() - new Date(a.ticket.purchasedAt).getTime()
+    );
+
+    return NextResponse.json(grouped);
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
