@@ -112,20 +112,7 @@ function TemplatesPageContent() {
       return { error: "El 2° ganador no puede ganar un monto mayor que el 1° ganador", invalidIndex: 1 };
     }
     
-    // Validar que la suma de premios no exceda el 50% de las ganancias totales
-    const pricePerSlot = parseFloat(formData.pricePerSlot) || 0;
-    const slots = parseInt(formData.slots) || 0;
-    const totalIncome = pricePerSlot * slots;
-    const maxPrizeTotal = totalIncome * 0.5; // 50% máximo
-    const totalPrizes = prizes.reduce((sum, p) => sum + p, 0);
-    
-    if (totalPrizes > maxPrizeTotal && totalIncome > 0) {
-      return { 
-        error: `La suma de premios (Bs. ${totalPrizes.toFixed(2)}) excede el 50% de las ganancias totales (Bs. ${maxPrizeTotal.toFixed(2)})`, 
-        invalidIndex: 0 
-      };
-    }
-    
+    // Los premios son totalmente personalizables - sin restricción del 50%
     return { error: null, invalidIndex: null };
   }
 
@@ -473,12 +460,9 @@ function TemplatesPageContent() {
             })}
             <small style={{ color: "var(--text-primary)", opacity: 0.7 }}>
               Los premios deben estar ordenados de mayor a menor (1° ganador ≥ 2° ganador ≥ 3° ganador).
-              <br />
-              <strong style={{ color: "#f59e0b" }}>⚠️ Regla: La suma total de premios no puede exceder el 50% de las ganancias del sorteo.</strong>
               {formData.pricePerSlot && formData.slots && (
                 <span style={{ display: "block", marginTop: "0.25rem" }}>
-                  Ganancias totales: Bs. {(parseFloat(formData.pricePerSlot) * parseInt(formData.slots || "0")).toFixed(2)} | 
-                  Máximo premios: Bs. {((parseFloat(formData.pricePerSlot) * parseInt(formData.slots || "0")) * 0.5).toFixed(2)}
+                  Ganancias totales estimadas: Bs. {(parseFloat(formData.pricePerSlot) * parseInt(formData.slots || "0")).toFixed(2)}
                 </span>
               )}
             </small>

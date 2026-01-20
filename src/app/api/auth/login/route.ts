@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../../../../lib/prisma";
 import { loginSchema } from "../../../../lib/validators";
 import { Role } from "@prisma/client";
+import crypto from "crypto";
 
 const JWT_SECRET = process.env.JWT_SECRET || "insecure-secret";
 
@@ -25,7 +26,10 @@ export async function POST(request: Request) {
     }
 
     const { email, password } = parsed.data;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ 
+      where: { email },
+      include: { twoFactorAuth: true }
+    });
     if (!user) {
       return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
     }
@@ -45,10 +49,36 @@ export async function POST(request: Request) {
       }, { status: 403 });
     }
 
+    // Verificar si el administrador tiene 2FA habilitado
+    const isAdmin = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER].includes(user.role);
+    if (isAdmin && user.twoFactorAuth?.enabled) {
+      // Generar token temporal para 2FA (válido por 5 minutos)
+      const tempToken = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutos
+      
+      // Guardar token temporal en la base de datos o en memoria
+      // Usamos un token JWT corto para pasar al frontend
+      const twoFactorToken = jwt.sign(
+        { sub: user.id, type: "2fa_pending", role: user.role },
+        JWT_SECRET,
+        { expiresIn: "5m" }
+      );
+
+      return NextResponse.json({
+        requires2FA: true,
+        twoFactorToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role
+        }
+      }, { status: 200 });
+    }
+
     const token = jwt.sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: "12h" });
     
     // Registrar log de inicio de sesión para administradores
-    if (user.role === Role.AGENT || user.role === Role.SUPERADMIN || user.role === Role.MASTER) {
+    if (isAdmin) {
       try {
         const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
         await prisma.auditLog.create({
