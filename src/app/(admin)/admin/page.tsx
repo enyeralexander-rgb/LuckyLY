@@ -76,10 +76,6 @@ function AdminHomePageContent() {
                   <p style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Genera links de referidos para atraer clientes y rastrea ingresos por cada link generado.</p>
                 </Link>
 
-                <Link href="/admin/roles/agentes" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>Gestionar Agentes</h3>
-                  <p style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Crea nuevas cuentas de agentes y suspende o reactiva cuentas existentes.</p>
-                </Link>
 
                 <Link href="/admin/templates" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
                   <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>Plantillas de Sorteos</h3>

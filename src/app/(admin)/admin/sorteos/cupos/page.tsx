@@ -62,8 +62,12 @@ function ConfirmarCuposPageContent() {
       });
   }
 
-  async function handleConfirmAll(ticketId: string, itemIds: string[]) {
+  async function handleConfirmAll(ticketId: string, itemIds: string[], userName: string, amount: number) {
     if (!auth?.token || processing) return;
+
+    if (!confirm(`¿Estás seguro de CONFIRMAR este pago?\n\nUsuario: ${userName}\nMonto: Bs. ${amount.toFixed(2)}\nCupos: ${itemIds.length}\n\nEsta acción no se puede deshacer.`)) {
+      return;
+    }
 
     setProcessing(ticketId);
     try {
@@ -87,10 +91,10 @@ function ConfirmarCuposPageContent() {
     }
   }
 
-  async function handleRejectAll(ticketId: string, itemIds: string[]) {
+  async function handleRejectAll(ticketId: string, itemIds: string[], userName: string, amount: number) {
     if (!auth?.token || processing) return;
 
-    if (!confirm("¿Estás seguro de rechazar esta compra? Todos los cupos volverán a estar disponibles.")) {
+    if (!confirm(`¿Estás seguro de RECHAZAR este pago?\n\nUsuario: ${userName}\nMonto: Bs. ${amount.toFixed(2)}\nCupos: ${itemIds.length}\n\n⚠️ Todos los cupos volverán a estar disponibles.\nEsta acción no se puede deshacer.`)) {
       return;
     }
 
@@ -268,7 +272,7 @@ function ConfirmarCuposPageContent() {
                   {/* Botones de acción */}
                   <div style={{ display: "flex", gap: ".75rem" }}>
                     <button
-                      onClick={() => handleConfirmAll(group.ticketId, itemIds)}
+                      onClick={() => handleConfirmAll(group.ticketId, itemIds, group.ticket.user.name, Number(group.ticket.totalPaid))}
                       disabled={isProcessing}
                       style={{
                         flex: 1,
@@ -285,7 +289,7 @@ function ConfirmarCuposPageContent() {
                       {isProcessing ? "Procesando..." : "✓ Confirmar Pago"}
                     </button>
                     <button
-                      onClick={() => handleRejectAll(group.ticketId, itemIds)}
+                      onClick={() => handleRejectAll(group.ticketId, itemIds, group.ticket.user.name, Number(group.ticket.totalPaid))}
                       disabled={isProcessing}
                       style={{
                         flex: 1,

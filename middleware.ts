@@ -12,8 +12,7 @@ const AUTH_ROUTES = ["/auth/login", "/auth/register"];
 const SUPERADMIN_MASTER_ROUTES = [
   "/admin/usuarios",
   "/admin/historial",
-  "/admin/referidos",
-  "/admin/roles/agentes"
+  "/admin/referidos"
 ];
 
 const MASTER_ONLY_ROUTES = [
