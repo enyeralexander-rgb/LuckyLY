@@ -14,6 +14,10 @@ type Payment = {
   metodoPago: string;
   monto: number;
   referenciaPago: string | null;
+  cuposComprados: string;
+  cantidadCupos: number;
+  tituloSorteo: string;
+  tipoSorteo: string;
 };
 
 type ReferralVisit = {
@@ -686,12 +690,14 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
       ) : payments.length > 0 ? (
         <>
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "900px" }}>
               <thead>
                 <tr style={{ background: "#f3f4f6" }}>
                   <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Fecha</th>
                   <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Nombre del Usuario</th>
                   <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Método de Pago</th>
+                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Cupos Comprados</th>
+                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Referencia Bancaria</th>
                   <th style={{ padding: "0.75rem", textAlign: "right", fontSize: "0.875rem", fontWeight: 600 }}>Monto</th>
                 </tr>
               </thead>
@@ -701,8 +707,21 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
                     <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
                       {new Date(payment.fecha).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}
                     </td>
-                    <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{payment.nombreUsuario}</td>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
+                      <div>{payment.nombreUsuario}</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>{payment.emailUsuario}</div>
+                    </td>
                     <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{payment.metodoPago}</td>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
+                      <div style={{ fontWeight: 600, color: "#85BB65" }}>{payment.tipoSorteo}</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                        {payment.cuposComprados || "N/A"} ({payment.cantidadCupos} cupo{payment.cantidadCupos !== 1 ? "s" : ""})
+                      </div>
+                      <div style={{ fontSize: "0.7rem", color: "var(--text-tertiary)" }}>{payment.tituloSorteo}</div>
+                    </td>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", fontFamily: "monospace" }}>
+                      {payment.referenciaPago || "N/A"}
+                    </td>
                     <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "right", fontWeight: 600, color: "var(--color-primary)" }}>
                       {payment.monto.toFixed(2)} Bs.
                     </td>
