@@ -34,37 +34,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ error: "Debes proporcionar el número de referencia del pago móvil" }, { status: 400 });
     }
 
-    // Validar límite de 2 cupos por usuario (solo contar cupos confirmados y pendientes)
-    const userTickets = await prisma.ticket.findMany({
-      where: { 
-        raffleId, 
-        userId: auth.userId,
-        status: { in: ["CONFIRMED", "PENDING"] } // Incluir pendientes también
-      },
-      include: { 
-        ticketItems: {
-          where: {
-            status: { in: ["CONFIRMED", "PENDING"] } // Solo contar confirmados y pendientes
-          }
-        }
-      }
-    });
-    
-    const totalUserSlots = userTickets.reduce((sum, t) => {
-      // Contar los ticketItems confirmados o pendientes
-      return sum + t.ticketItems.length;
-    }, 0);
-    
-    if (totalUserSlots >= 2) {
-      return NextResponse.json({ error: "Ya has alcanzado el límite de 2 cupos por sorteo" }, { status: 400 });
-    }
-    
-    if (totalUserSlots + items.length > 2) {
-      return NextResponse.json({ 
-        error: `Solo puedes comprar un máximo de 2 cupos por sorteo. Ya tienes ${totalUserSlots} cupo(s) comprado(s).` 
-      }, { status: 400 });
-    }
-
     const ticket = await prisma.$transaction(async (tx) => {
       // Para pago móvil, verificar cupos pendientes pero no confirmados
       const takenCount = await tx.ticketItem.count({ 

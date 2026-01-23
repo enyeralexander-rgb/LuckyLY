@@ -14,6 +14,7 @@ export async function GET(request: Request) {
     const endDate = searchParams.get("endDate");
     const userId = searchParams.get("userId");
     const paymentMethod = searchParams.get("paymentMethod");
+    const raffleId = searchParams.get("raffleId");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "50", 10);
     const skip = (page - 1) * limit;
@@ -46,7 +47,12 @@ export async function GET(request: Request) {
       where.paymentMethod = paymentMethod;
     }
 
-    // Obtener tickets con información del usuario
+    // Filtro por sorteo (nombre de dinámica)
+    if (raffleId) {
+      where.raffleId = raffleId;
+    }
+
+    // Obtener tickets con información del usuario y sorteo
     const [tickets, total] = await Promise.all([
       prisma.ticket.findMany({
         where,
@@ -56,6 +62,13 @@ export async function GET(request: Request) {
               id: true,
               name: true,
               email: true
+            }
+          },
+          raffle: {
+            select: {
+              id: true,
+              title: true,
+              type: true
             }
           }
         },
@@ -68,16 +81,36 @@ export async function GET(request: Request) {
       prisma.ticket.count({ where })
     ]);
 
-    // Formatear datos
-    const payments = tickets.map(ticket => ({
-      id: ticket.id,
-      fecha: ticket.purchasedAt.toISOString(),
-      nombreUsuario: ticket.user.name,
-      emailUsuario: ticket.user.email,
-      metodoPago: ticket.paymentMethod || "N/A",
-      monto: Number(ticket.totalPaid),
-      referenciaPago: ticket.paymentMobileRef || null
-    }));
+    // Helper para obtener label del tipo de sorteo
+    const getTypeLabel = (type: string): string => {
+      const labels: Record<string, string> = {
+        NUMBERS: "Números",
+        ANIMALS: "Animales",
+        STATES: "Estados",
+        FLAGS: "Banderas",
+        ZODIAC: "Signos Zodiacales"
+      };
+      return labels[type] || type;
+    };
+
+    // Formatear datos con información ampliada
+    const payments = tickets.map(ticket => {
+      const items = Array.isArray(ticket.items) ? ticket.items : [];
+      return {
+        id: ticket.id,
+        fecha: ticket.purchasedAt.toISOString(),
+        nombreUsuario: ticket.user.name,
+        emailUsuario: ticket.user.email,
+        metodoPago: ticket.paymentMethod || "N/A",
+        monto: Number(ticket.totalPaid),
+        referenciaPago: ticket.paymentMobileRef || null,
+        // Nuevos campos
+        cuposComprados: items.join(", "),
+        cantidadCupos: items.length,
+        tituloSorteo: ticket.raffle.title,
+        tipoSorteo: getTypeLabel(ticket.raffle.type)
+      };
+    });
 
     return NextResponse.json({
       payments,

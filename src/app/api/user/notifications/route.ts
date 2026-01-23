@@ -36,6 +36,11 @@ export async function GET(request: Request) {
       skip
     });
 
+    // Si solo se quiere contar las no leídas (para el badge del header), devolver array directo
+    if (unreadOnly) {
+      return NextResponse.json(notifications);
+    }
+
     return NextResponse.json({
       notifications,
       pagination: {

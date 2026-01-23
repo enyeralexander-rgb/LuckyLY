@@ -3,8 +3,8 @@ export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { Role } from "@prisma/client";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export async function GET(request: Request) {
   try {
@@ -178,7 +178,7 @@ export async function GET(request: Request) {
         `Bs. ${Number(ticket.totalPaid).toFixed(2)}`
       ]);
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         head: [["#", "Fecha", "Usuario", "Sorteo", "Método Pago", "Monto"]],
         body: incomeData,
         startY: yPos,
@@ -215,7 +215,7 @@ export async function GET(request: Request) {
         `Bs. ${Number(claim.ticket.totalPaid).toFixed(2)}`
       ]);
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         head: [["#", "Fecha Pago", "Ganador", "Sorteo", "Referencia", "Monto"]],
         body: expenseData,
         startY: yPos,

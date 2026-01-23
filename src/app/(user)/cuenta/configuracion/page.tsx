@@ -24,6 +24,7 @@ export default function ConfiguracionPage() {
   const [activeTab, setActiveTab] = useState<"verification" | "email" | "username" | "password" | "delete">("verification");
   const [sendingVerification, setSendingVerification] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [formData, setFormData] = useState({
     email: "",
     username: "",
@@ -39,6 +40,37 @@ export default function ConfiguracionPage() {
     const storedAuth = getStoredAuth();
     if (storedAuth) {
       setAuth(storedAuth);
+    }
+  }, []);
+
+  // Efecto para el contador regresivo de 5 minutos
+  useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setInterval(() => {
+        setCooldownSeconds((prev) => {
+          if (prev <= 1) {
+            setVerificationSent(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [cooldownSeconds]);
+
+  // Verificar si hay un cooldown guardado en localStorage al cargar
+  useEffect(() => {
+    const savedCooldownEnd = localStorage.getItem("emailVerificationCooldownEnd");
+    if (savedCooldownEnd) {
+      const endTime = parseInt(savedCooldownEnd);
+      const remaining = Math.floor((endTime - Date.now()) / 1000);
+      if (remaining > 0) {
+        setCooldownSeconds(remaining);
+        setVerificationSent(true);
+      } else {
+        localStorage.removeItem("emailVerificationCooldownEnd");
+      }
     }
   }, []);
 
@@ -385,6 +417,11 @@ export default function ConfiguracionPage() {
                         <p style={{ margin: "0.5rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
                           Revisa tu bandeja de entrada y sigue las instrucciones del correo.
                         </p>
+                        {cooldownSeconds > 0 && (
+                          <p style={{ margin: "0.5rem 0 0", color: "var(--text-tertiary)", fontSize: "0.875rem" }}>
+                            Podrás reenviar en: <strong>{Math.floor(cooldownSeconds / 60)}:{String(cooldownSeconds % 60).padStart(2, "0")}</strong>
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <p style={{ margin: "0 0 1rem", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
@@ -394,7 +431,7 @@ export default function ConfiguracionPage() {
                     
                     <button
                       onClick={async () => {
-                        if (!auth?.token || sendingVerification) return;
+                        if (!auth?.token || sendingVerification || cooldownSeconds > 0) return;
                         setSendingVerification(true);
                         try {
                           const res = await fetch("/api/auth/send-verification-email", {
@@ -407,6 +444,11 @@ export default function ConfiguracionPage() {
                           const data = await res.json();
                           if (res.ok) {
                             setVerificationSent(true);
+                            // Iniciar contador de 5 minutos (300 segundos)
+                            const cooldownTime = 300;
+                            setCooldownSeconds(cooldownTime);
+                            // Guardar en localStorage para persistir el cooldown
+                            localStorage.setItem("emailVerificationCooldownEnd", String(Date.now() + cooldownTime * 1000));
                           } else {
                             alert(data.error || "Error al enviar email de verificación");
                           }
@@ -417,18 +459,22 @@ export default function ConfiguracionPage() {
                           setSendingVerification(false);
                         }
                       }}
-                      disabled={sendingVerification || verificationSent}
+                      disabled={sendingVerification || cooldownSeconds > 0}
                       style={{
                         padding: ".75rem 1.5rem",
-                        background: sendingVerification || verificationSent ? "#6b7280" : "#f59e0b",
+                        background: sendingVerification || cooldownSeconds > 0 ? "#6b7280" : "#f59e0b",
                         color: "#ffffff",
                         border: "none",
                         borderRadius: "8px",
                         fontWeight: 700,
-                        cursor: sendingVerification || verificationSent ? "not-allowed" : "pointer"
+                        cursor: sendingVerification || cooldownSeconds > 0 ? "not-allowed" : "pointer"
                       }}
                     >
-                      {sendingVerification ? "Enviando..." : verificationSent ? "Email Enviado" : "📧 Enviar Email de Verificación"}
+                      {sendingVerification 
+                        ? "Enviando..." 
+                        : cooldownSeconds > 0 
+                        ? `Reenviar en ${Math.floor(cooldownSeconds / 60)}:${String(cooldownSeconds % 60).padStart(2, "0")}`
+                        : "📧 Enviar Email de Verificación"}
                     </button>
                   </>
                 )}

@@ -3,6 +3,13 @@ import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { Role } from "@prisma/client";
 
+// Función para obtener la URL base
+function getAppUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
+}
+
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const auth = requireAuth(request, [Role.USER]);
@@ -26,121 +33,231 @@ export async function GET(request: Request, { params }: { params: { id: string }
       prisma.rules.findFirst()
     ]);
 
-    // Generar HTML del PDF
+    // Obtener URL del logo
+    const logoUrl = `${getAppUrl()}/images/LuckyLy-Logo.png`;
+
+    // Generar HTML del ticket con previsualización y opción de imprimir
     const html = `
       <!DOCTYPE html>
-      <html>
+      <html lang="es">
         <head>
           <meta charset="UTF-8">
-          <title>Ticket #${ticket.id}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Ticket - ${ticket.raffle.title}</title>
           <style>
+            * { box-sizing: border-box; }
             body {
-              font-family: Arial, sans-serif;
-              padding: 20px;
+              font-family: 'Segoe UI', Arial, sans-serif;
+              padding: 0;
+              margin: 0;
+              background: #f5f5f5;
+            }
+            .toolbar {
+              position: fixed;
+              top: 0;
+              left: 0;
+              right: 0;
+              background: #228D57;
+              padding: 15px 20px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              z-index: 1000;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            }
+            .toolbar h2 {
+              color: #fff;
+              margin: 0;
+              font-size: 1.2rem;
+            }
+            .toolbar-buttons {
+              display: flex;
+              gap: 10px;
+            }
+            .toolbar button {
+              padding: 10px 20px;
+              border: none;
+              border-radius: 6px;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 0.9rem;
+            }
+            .btn-print {
+              background: #85BB65;
+              color: #fff;
+            }
+            .btn-close {
+              background: #fff;
+              color: #228D57;
+            }
+            .container {
               max-width: 800px;
-              margin: 0 auto;
+              margin: 80px auto 40px;
+              padding: 20px;
+            }
+            .ticket {
+              background: #fff;
+              border-radius: 12px;
+              box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+              padding: 30px;
             }
             .header {
               text-align: center;
-              border-bottom: 2px solid #000;
+              border-bottom: 3px solid #228D57;
               padding-bottom: 20px;
-              margin-bottom: 20px;
+              margin-bottom: 25px;
             }
-            .ticket-info {
-              margin-bottom: 30px;
+            .logo {
+              max-width: 180px;
+              height: auto;
+              margin-bottom: 15px;
+            }
+            .header h1 {
+              color: #228D57;
+              margin: 10px 0 5px;
+              font-size: 1.8rem;
+            }
+            .header p {
+              color: #666;
+              margin: 5px 0;
             }
             .section {
-              margin-bottom: 20px;
+              margin-bottom: 25px;
             }
             .section h3 {
-              border-bottom: 1px solid #ccc;
-              padding-bottom: 5px;
+              color: #228D57;
+              border-bottom: 2px solid #e5e5e5;
+              padding-bottom: 8px;
+              margin-bottom: 15px;
+              font-size: 1.1rem;
             }
             table {
               width: 100%;
               border-collapse: collapse;
-              margin-top: 10px;
             }
             table td {
-              padding: 8px;
-              border-bottom: 1px solid #eee;
+              padding: 10px 0;
+              border-bottom: 1px solid #f0f0f0;
+            }
+            table td:first-child {
+              color: #666;
+              width: 40%;
+            }
+            table td:last-child {
+              font-weight: 600;
+              color: #333;
+            }
+            .cupos {
+              display: flex;
+              gap: 8px;
+              flex-wrap: wrap;
+            }
+            .cupo {
+              background: #85BB65;
+              color: #fff;
+              padding: 8px 15px;
+              border-radius: 6px;
+              font-weight: 600;
             }
             .footer {
-              margin-top: 40px;
+              margin-top: 30px;
               padding-top: 20px;
-              border-top: 2px solid #000;
-              font-size: 12px;
+              border-top: 3px solid #228D57;
+              font-size: 0.85rem;
+              color: #888;
+              text-align: center;
+            }
+            .terms-rules {
+              margin-top: 25px;
+              padding: 15px;
+              background: #f9f9f9;
+              border-radius: 8px;
+              font-size: 0.85rem;
               color: #666;
+            }
+            @media print {
+              .toolbar { display: none !important; }
+              .container { margin-top: 0; }
+              body { background: #fff; }
+              .ticket { box-shadow: none; }
             }
           </style>
         </head>
         <body>
-          <div class="header">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <img src="/images/LuckyLy-Logo.png" alt="LuckyLY Logo" style="max-width: 200px; height: auto; margin: 0 auto;" />
-            </div>
-            <h1>TICKET DE COMPRA</h1>
-            <p>ID: ${ticket.id}</p>
-            <p>Fecha: ${new Date(ticket.purchasedAt).toLocaleString()}</p>
-          </div>
-
-          <div class="ticket-info">
-            <div class="section">
-              <h3>Información del Sorteo</h3>
-              <table>
-                <tr><td><strong>Título:</strong></td><td>${ticket.raffle.title}</td></tr>
-                <tr><td><strong>Tipo:</strong></td><td>${ticket.raffle.type}</td></tr>
-                <tr><td><strong>Precio por cupo:</strong></td><td>${Number(ticket.raffle.pricePerSlot).toFixed(2)} Bs</td></tr>
-                <tr><td><strong>Cupos comprados:</strong></td><td>${Array.isArray(ticket.items) ? ticket.items.join(", ") : "N/A"}</td></tr>
-                <tr><td><strong>Total pagado:</strong></td><td>${Number(ticket.totalPaid).toFixed(2)} Bs</td></tr>
-                ${ticket.raffle.prizes && Array.isArray(ticket.raffle.prizes) ? `
-                <tr><td><strong>Premios:</strong></td><td>${ticket.raffle.prizes.join(", ")}</td></tr>
-                ` : ""}
-              </table>
-            </div>
-
-            <div class="section">
-              <h3>Información del Usuario</h3>
-              <table>
-                <tr><td><strong>Nombre:</strong></td><td>${ticket.user.name}</td></tr>
-                <tr><td><strong>Email:</strong></td><td>${ticket.user.email}</td></tr>
-              </table>
+          <div class="toolbar">
+            <h2>Vista Previa del Ticket</h2>
+            <div class="toolbar-buttons">
+              <button class="btn-print" onclick="window.print()">📄 Imprimir / Guardar PDF</button>
+              <button class="btn-close" onclick="window.close()">✕ Cerrar</button>
             </div>
           </div>
 
-          ${terms ? `
-          <div class="section">
-            <h3>Términos y Condiciones</h3>
-            <div>${terms.content.replace(/\n/g, "<br>")}</div>
-          </div>
-          ` : ""}
+          <div class="container">
+            <div class="ticket">
+              <div class="header">
+                <img src="${logoUrl}" alt="LuckyLY Logo" class="logo" onerror="this.style.display='none'" />
+                <h1>TICKET DE COMPRA</h1>
+                <p><strong>ID:</strong> ${ticket.id.slice(0, 8).toUpperCase()}</p>
+                <p><strong>Fecha:</strong> ${new Date(ticket.purchasedAt).toLocaleString("es-ES")}</p>
+              </div>
 
-          ${rules ? `
-          <div class="section">
-            <h3>Reglas</h3>
-            <div>${rules.content.replace(/\n/g, "<br>")}</div>
-          </div>
-          ` : ""}
+              <div class="section">
+                <h3>📋 Información del Sorteo</h3>
+                <table>
+                  <tr><td>Título:</td><td>${ticket.raffle.title}</td></tr>
+                  <tr><td>Tipo:</td><td>${ticket.raffle.type}</td></tr>
+                  <tr><td>Precio por cupo:</td><td>Bs. ${Number(ticket.raffle.pricePerSlot).toFixed(2)}</td></tr>
+                  <tr><td>Total pagado:</td><td style="color: #228D57; font-size: 1.2rem;">Bs. ${Number(ticket.totalPaid).toFixed(2)}</td></tr>
+                  ${ticket.raffle.prizes && Array.isArray(ticket.raffle.prizes) ? `
+                  <tr><td>Premios:</td><td>${ticket.raffle.prizes.join(", ")}</td></tr>
+                  ` : ""}
+                </table>
+              </div>
 
-          <div class="footer">
-            <p>Este ticket es válido únicamente para el sorteo indicado.</p>
-            <p>Conserve este documento como comprobante de compra.</p>
+              <div class="section">
+                <h3>🎲 Cupos Comprados</h3>
+                <div class="cupos">
+                  ${Array.isArray(ticket.items) ? ticket.items.map((item) => `<span class="cupo">${String(item)}</span>`).join("") : "N/A"}
+                </div>
+              </div>
+
+              <div class="section">
+                <h3>👤 Información del Usuario</h3>
+                <table>
+                  <tr><td>Nombre:</td><td>${ticket.user.name}</td></tr>
+                  <tr><td>Email:</td><td>${ticket.user.email}</td></tr>
+                </table>
+              </div>
+
+              ${(terms?.content || rules?.content) ? `
+              <div class="terms-rules">
+                ${terms?.content ? `<p><strong>Términos:</strong> ${terms.content.substring(0, 300)}${terms.content.length > 300 ? '...' : ''}</p>` : ""}
+                ${rules?.content ? `<p><strong>Reglas:</strong> ${rules.content.substring(0, 300)}${rules.content.length > 300 ? '...' : ''}</p>` : ""}
+              </div>
+              ` : ""}
+
+              <div class="footer">
+                <p>Este ticket es válido únicamente para el sorteo indicado.</p>
+                <p>Conserve este documento como comprobante de compra.</p>
+                <p style="margin-top: 10px;">© ${new Date().getFullYear()} LuckyLY - Todos los derechos reservados</p>
+              </div>
+            </div>
           </div>
         </body>
       </html>
     `;
 
-    // Retornar HTML (en producción, usar una librería como puppeteer o jsPDF para generar PDF real)
+    // Retornar HTML para previsualización (se abre en nueva pestaña)
     return new NextResponse(html, {
       headers: {
-        "Content-Type": "text/html",
-        "Content-Disposition": `attachment; filename="ticket-${ticket.id}.html"`
+        "Content-Type": "text/html; charset=utf-8"
       }
     });
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
+    console.error("Error al generar ticket:", err);
     return NextResponse.json({ error: "Error al generar ticket" }, { status: 500 });
   }
 }

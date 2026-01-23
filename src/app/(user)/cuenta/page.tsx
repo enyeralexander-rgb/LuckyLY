@@ -222,7 +222,7 @@ export default function CuentaPage() {
           </Link>
 
           <Link
-            href="/cuenta/mis-jugadas"
+            href="/cuenta/historial"
             className="card"
             style={{
               padding: "1.5rem",
@@ -245,75 +245,9 @@ export default function CuentaPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               <div style={{ fontSize: "2rem" }}>🎲</div>
               <div>
-                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>TICKETS Y NOTIFICACIONES</h3>
+                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>HISTORIAL DE APUESTAS</h3>
                 <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-                  Ver notificaciones y tickets de compra
-                </p>
-              </div>
-            </div>
-            <div style={{ fontSize: "1.5rem", color: "#85BB65" }}>→</div>
-          </Link>
-
-          <Link
-            href="/cuenta/pagos"
-            className="card"
-            style={{
-              padding: "1.5rem",
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              transition: "transform 0.2s, box-shadow 0.2s",
-              cursor: "pointer"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 10px 25px rgba(0,0,0,0.15)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "";
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <div style={{ fontSize: "2rem" }}>💳</div>
-              <div>
-                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>HISTORIAL DE PAGOS</h3>
-                <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-                  Ver historial completo de pagos y compras
-                </p>
-              </div>
-            </div>
-            <div style={{ fontSize: "1.5rem", color: "#85BB65" }}>→</div>
-          </Link>
-
-          <Link
-            href="/cuenta/historial"
-            className="card"
-            style={{
-              padding: "1.5rem",
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              transition: "transform 0.2s, box-shadow 0.2s",
-              cursor: "pointer"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 10px 25px rgba(0,0,0,0.15)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "";
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <div style={{ fontSize: "2rem" }}>📜</div>
-              <div>
-                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>HISTORIAL</h3>
-                <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-                  Ver historial completo de todas tus compras
+                  Ver tus tickets, compras y resultados de sorteos
                 </p>
               </div>
             </div>
