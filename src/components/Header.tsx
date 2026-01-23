@@ -20,7 +20,7 @@ export function Header() {
   const [userData, setUserData] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -37,13 +37,24 @@ export function Header() {
           }
         })
         .catch(() => {});
+      
+      // Cargar notificaciones no leídas (solo para usuarios regulares)
+      if (storedAuth.user?.role === "USER") {
+        fetch("/api/user/notifications?unreadOnly=true", { headers: { Authorization: `Bearer ${storedAuth.token}` } })
+          .then((r) => r.json())
+          .then((data) => {
+            if (!data.error && Array.isArray(data)) {
+              setUnreadNotifications(data.length);
+            }
+          })
+          .catch(() => {});
+      }
     }
   }, []);
 
   // Cerrar menús al cambiar de ruta
   useEffect(() => {
     setUserMenuOpen(false);
-    setMobileMenuOpen(false);
   }, [pathname]);
 
   async function logout() {
@@ -70,8 +81,13 @@ export function Header() {
   const isAdmin = role && ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"].includes(role);
   const isClient = role === "USER" || !role;
 
-  // Menú para clientes (USER)
+  // Menú para clientes (USER) - Incluye navegación y opciones de cuenta
   const clientMenu: UserMenu[] = [
+    { label: "NAVEGACIÓN", href: "#section", icon: "🧭", divider: true },
+    { label: "Inicio", href: "/", icon: "🏠" },
+    { label: "Sorteos", href: "/raffles", icon: "🎲" },
+    { label: "En Vivo", href: "/live", icon: "📺" },
+    { label: "Resultados", href: "/results", icon: "🏆" },
     { label: "MI CUENTA", href: "/cuenta", icon: "👤", divider: true },
     { label: "Configuración", href: "/cuenta/configuracion", icon: "⚙️" },
     { label: "Historial de Apuestas", href: "/cuenta/historial", icon: "🎲" },
@@ -79,9 +95,13 @@ export function Header() {
     { label: "Cerrar Sesión", href: "#", icon: "🚪" },
   ];
 
-  // Menú para administradores
+  // Menú para administradores - Incluye navegación y opciones de admin
   const getAdminMenu = (): UserMenu[] => {
     const menu: UserMenu[] = [
+      { label: "NAVEGACIÓN", href: "#section", icon: "🧭", divider: true },
+      { label: "Inicio", href: "/", icon: "🏠" },
+      { label: "En Vivo", href: "/live", icon: "📺" },
+      { label: "Resultados", href: "/results", icon: "🏆" },
       { label: "DASHBOARD", href: "/admin", icon: "📊", divider: true },
     ];
 
@@ -123,31 +143,13 @@ export function Header() {
   const displayName = userData?.username || auth?.user?.username || auth?.user?.email?.split("@")[0] || "Usuario";
   const currentMenu = isAdmin ? getAdminMenu() : clientMenu;
 
-  // Menú público para usuarios no logueados
-  const publicMenu: UserMenu[] = [
-    { label: "NAVEGACIÓN", href: "/", icon: "🏠", divider: true },
-    { label: "Inicio", href: "/", icon: "🏠" },
-    { label: "Sorteos", href: "/raffles", icon: "🎲" },
-    { label: "En Vivo", href: "/live", icon: "📺" },
-    { label: "Resultados", href: "/results", icon: "🏆" },
-  ];
-
-  // Menú principal según estado de autenticación
-  const mainMenu = !auth ? publicMenu : currentMenu;
 
   return (
     <header className="header-responsive">
       <div className="header-container">
-        <div className="header-grid">
-          {/* Navegación principal a la izquierda */}
-          <nav className="header-nav-left">
-            <Link href="/" className="header-nav-link">Inicio</Link>
-            <Link href="/live" className="header-nav-link">En Vivo</Link>
-            <Link href="/results" className="header-nav-link">Resultados</Link>
-          </nav>
-
-          {/* Logo centrado */}
-          <div className="header-logo-center" onClick={() => router.push("/")}>
+        <div className="header-grid-simple">
+          {/* Logo a la izquierda */}
+          <div className="header-logo-left" onClick={() => router.push("/")}>
             <img 
               src="/images/LuckyLy-Logo.png" 
               alt="LuckyLY Logo"
@@ -155,7 +157,7 @@ export function Header() {
             />
           </div>
 
-          {/* Botones de login/registro o menú de usuario a la derecha */}
+          {/* Botón de usuario a la derecha con menú desplegable */}
           <div className="header-actions">
             {!auth ? (
               <>
@@ -175,11 +177,26 @@ export function Header() {
                     {isAdmin ? "👑" : "👤"}
                   </span>
                   <span className="header-user-name">{displayName}</span>
+                  {/* Indicador de notificaciones */}
+                  {!isAdmin && unreadNotifications > 0 && (
+                    <span className="header-notification-badge">
+                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                    </span>
+                  )}
                   <span className="header-dropdown-arrow">{userMenuOpen ? "▲" : "▼"}</span>
                 </button>
                 {userMenuOpen && (
                   <div className="header-user-dropdown">
                     {currentMenu.map((item, index) => {
+                      // Ignorar items de sección
+                      if (item.href === "#section") {
+                        return (
+                          <div key={index} className="header-dropdown-section">
+                            {item.icon && <span>{item.icon}</span>}
+                            <span>{item.label}</span>
+                          </div>
+                        );
+                      }
                       if (item.href === "#") {
                         return (
                           <button
@@ -192,6 +209,8 @@ export function Header() {
                           </button>
                         );
                       }
+                      // Mostrar badge de notificación en Historial de Apuestas
+                      const showNotificationBadge = item.href === "/cuenta/historial" && !isAdmin && unreadNotifications > 0;
                       return (
                         <Link
                           key={index}
@@ -201,6 +220,11 @@ export function Header() {
                         >
                           {item.icon && <span>{item.icon}</span>}
                           <span>{item.label}</span>
+                          {showNotificationBadge && (
+                            <span className="header-menu-notification-badge">
+                              {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                            </span>
+                          )}
                         </Link>
                       );
                     })}
@@ -209,46 +233,6 @@ export function Header() {
               </div>
             )}
           </div>
-
-          {/* Menú móvil hamburguesa (solo para móviles) */}
-          <button
-            className="header-mobile-menu"
-            onClick={() => setMobileMenuOpen((v) => !v)}
-            aria-label="Menú móvil"
-          >
-            {mobileMenuOpen ? "✕" : "☰"}
-          </button>
-
-          {/* Navegación móvil */}
-          {mobileMenuOpen && (
-            <nav className="header-nav-mobile">
-              {mainMenu.map((item, index) => {
-                if (item.href === "#") {
-                  return (
-                    <button
-                      key={index}
-                      onClick={logout}
-                      className="header-mobile-item header-mobile-button"
-                    >
-                      {item.icon && <span>{item.icon}</span>}
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                }
-                return (
-                  <Link
-                    key={index}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="header-mobile-item"
-                  >
-                    {item.icon && <span>{item.icon}</span>}
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
         </div>
       </div>
     </header>
