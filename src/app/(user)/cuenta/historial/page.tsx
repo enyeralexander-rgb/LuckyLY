@@ -195,22 +195,38 @@ export default function HistorialPage() {
                         </span>
                       </div>
                     )}
-                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-                      <button
-                        onClick={() => downloadTicketPDF(ticket.id)}
-                        style={{
+                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem", alignItems: "center" }}>
+                      {ticket.status === "CONFIRMED" || ticket.status === "WIN" ? (
+                        <button
+                          onClick={() => downloadTicketPDF(ticket.id)}
+                          style={{
+                            padding: ".5rem 1rem",
+                            background: "#85BB65",
+                            color: "var(--text-primary)",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontSize: "0.875rem"
+                          }}
+                        >
+                          📄 Descargar Ticket PDF
+                        </button>
+                      ) : (
+                        <span style={{
                           padding: ".5rem 1rem",
-                          background: "#85BB65",
-                          color: "var(--text-primary)",
-                          border: "none",
+                          background: "rgba(251, 191, 36, 0.2)",
+                          color: "#d97706",
                           borderRadius: "6px",
                           fontWeight: 600,
-                          cursor: "pointer",
-                          fontSize: "0.875rem"
-                        }}
-                      >
-                        📄 Descargar Ticket PDF
-                      </button>
+                          fontSize: "0.875rem",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.5rem"
+                        }}>
+                          ⏳ Pendiente de confirmación por administrador
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
