@@ -133,11 +133,8 @@ export function NavBar() {
                     <Link href="/cuenta/configuracion" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem" }} onClick={() => setMenuOpen(false)}>
                       ⚙️ Configuración
                     </Link>
-                    <Link href="/cuenta/mis-jugadas" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem" }} onClick={() => setMenuOpen(false)}>
-                      🎲 Tickets y Notificaciones
-                    </Link>
                     <Link href="/cuenta/historial" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem" }} onClick={() => setMenuOpen(false)}>
-                      📜 Historial
+                      🎲 Historial de Apuestas
                     </Link>
                     <Link href="/cuenta/datos-bancarios" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem", borderBottom: "1px solid #d0fdd7" }} onClick={() => setMenuOpen(false)}>
                       🏦 Datos Bancarios

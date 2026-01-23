@@ -29,6 +29,8 @@ type UserProfile = {
   emailVerified: boolean;
   bank: string | null;
   phoneNumber: string | null;
+  nationalId: string | null;
+  nationalIdType: string | null;
 };
 
 export default function RaffleDetailPage({ params }: Props) {
@@ -57,7 +59,9 @@ export default function RaffleDetailPage({ params }: Props) {
             setUserProfile({
               emailVerified: data.emailVerified || false,
               bank: data.bank || null,
-              phoneNumber: data.phoneNumber || null
+              phoneNumber: data.phoneNumber || null,
+              nationalId: data.nationalId || null,
+              nationalIdType: data.nationalIdType || null
             });
           }
         })
@@ -233,20 +237,15 @@ export default function RaffleDetailPage({ params }: Props) {
   function toggleSlot(value: string) {
     if (isSlotPurchased(value) || buying) return;
     
-    // Verificar si ya alcanzó el límite de 2 cupos
-    if (userPurchasedSlots >= 2) {
-      alert("Ya has alcanzado el límite de 2 cupos por sorteo. No puedes comprar más cupos en este sorteo.");
-      return;
-    }
-    
     const newSelected = new Set(selectedSlots);
     if (newSelected.has(value)) {
       newSelected.delete(value);
     } else {
-      // Limitar considerando los cupos ya comprados (máximo 2 por sorteo)
-      const maxSelectable = 2 - userPurchasedSlots;
-      if (newSelected.size >= maxSelectable) {
-        alert(`Solo puedes seleccionar un máximo de ${maxSelectable} cupo(s) más. Ya tienes ${userPurchasedSlots} cupo(s) comprado(s).`);
+      // Verificar que no seleccione más cupos de los disponibles
+      const confirmedSlots = raffle?.ticketItems.filter((t: any) => t.status === "CONFIRMED").length || 0;
+      const availableSlots = (raffle?.slots || 0) - confirmedSlots;
+      if (newSelected.size >= availableSlots) {
+        alert(`No hay más cupos disponibles. Solo quedan ${availableSlots} cupo(s) disponible(s).`);
         return;
       }
       newSelected.add(value);
@@ -274,10 +273,16 @@ export default function RaffleDetailPage({ params }: Props) {
       return;
     }
     
-    // Verificar si el usuario tiene datos bancarios completos
-    if (!userProfile?.bank || !userProfile?.phoneNumber || userProfile.phoneNumber.length < 11) {
+    // Verificar si el usuario tiene datos bancarios completos (Documento, Banco y Teléfono)
+    const hasBankData = userProfile?.bank && userProfile?.phoneNumber && userProfile.phoneNumber.length >= 11 && userProfile?.nationalId && userProfile?.nationalIdType;
+    if (!hasBankData) {
+      const missingFields = [];
+      if (!userProfile?.nationalId || !userProfile?.nationalIdType) missingFields.push("Documento de Identidad");
+      if (!userProfile?.bank) missingFields.push("Banco");
+      if (!userProfile?.phoneNumber || userProfile.phoneNumber.length < 11) missingFields.push("Teléfono (Pago Móvil)");
+      
       const confirmBank = confirm(
-        "⚠️ Debes completar tus datos bancarios antes de realizar una compra.\n\n¿Deseas ir a completar tus datos bancarios ahora?"
+        `⚠️ Debes completar tus datos bancarios antes de realizar una compra.\n\nFaltan los siguientes datos:\n• ${missingFields.join("\n• ")}\n\n¿Deseas ir a completar tus datos bancarios ahora?`
       );
       if (confirmBank) {
         // Guardar la URL de retorno para después de completar datos
@@ -325,7 +330,7 @@ export default function RaffleDetailPage({ params }: Props) {
   const confirmedSlots = raffle.ticketItems.filter((t: any) => t.status === "CONFIRMED").length;
   const availableSlots = raffle.slots - confirmedSlots;
   const totalPrice = Number(raffle.pricePerSlot) * selectedSlots.size;
-  const canBuy = selectedSlots.size > 0 && !buying && auth?.token && raffle.status === "ACTIVE" && availableSlots > 0 && userPurchasedSlots < 3;
+  const canBuy = selectedSlots.size > 0 && !buying && auth?.token && raffle.status === "ACTIVE" && availableSlots > 0;
 
   return (
     <AuthGuard requiredRole={["USER"]}>
@@ -405,7 +410,7 @@ export default function RaffleDetailPage({ params }: Props) {
                   <strong>⚠️ Límite alcanzado:</strong> Ya has comprado {userPurchasedSlots} cupo(s) en este sorteo. El máximo permitido es 2 cupos por sorteo.
                 </div>
               )}
-              <div style={{ display: "grid", gap: ".75rem", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))" }}>
+              <div style={{ display: "grid", gap: ".75rem", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))" }}>
                 {allSlots.map((slot) => {
                   const purchased = isSlotPurchased(slot);
                   const pending = isSlotPending(slot);
@@ -417,7 +422,7 @@ export default function RaffleDetailPage({ params }: Props) {
                       onClick={() => toggleSlot(slot)}
                       disabled={purchased || pending || buying || userPurchasedSlots >= 3}
                       style={{
-                        padding: "1rem",
+                        padding: "0.75rem 0.5rem",
                         borderRadius: "10px",
                         textAlign: "center",
                         border: selected ? "2px solid #85BB65" : pending ? "2px solid #f59e0b" : userPurchasedSlots >= 3 ? "1px solid #6b7280" : "1px solid #1f2937",
@@ -434,8 +439,17 @@ export default function RaffleDetailPage({ params }: Props) {
                         fontWeight: selected || pending ? 700 : 600,
                         cursor: purchased || pending || buying || userPurchasedSlots >= 3 ? "not-allowed" : "pointer",
                         opacity: purchased || pending || userPurchasedSlots >= 3 ? 0.6 : 1,
-                        transition: "all 0.2s"
+                        transition: "all 0.2s",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        fontSize: "0.85rem",
+                        minHeight: "48px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
                       }}
+                      title={getItemWithEmoji(slot, raffle?.type || "")}
                     >
                       {purchased ? "✕" : pending ? "⏳" : selected ? "✓" : ""} {getItemWithEmoji(slot, raffle?.type || "")}
                     </button>

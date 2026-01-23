@@ -21,12 +21,21 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Token inválido o expirado" }, { status: 400 });
     }
 
+    // Si el token ya fue usado, verificar si el email ya está verificado
     if (verificationToken.used) {
-      return NextResponse.json({ error: "Este email ya fue verificado" }, { status: 400 });
+      // Verificar si el usuario ya tiene el email verificado
+      if (verificationToken.user?.emailVerified) {
+        return NextResponse.json({ 
+          success: true, 
+          message: "Email ya verificado previamente",
+          alreadyVerified: true 
+        }, { status: 200 });
+      }
+      return NextResponse.json({ error: "Este enlace ya fue utilizado" }, { status: 400 });
     }
 
     if (new Date() > verificationToken.expiresAt) {
-      return NextResponse.json({ error: "Token expirado" }, { status: 400 });
+      return NextResponse.json({ error: "El enlace ha expirado. Solicita uno nuevo." }, { status: 400 });
     }
 
     // Verificar email y marcar token como usado
@@ -41,10 +50,10 @@ export async function GET(request: Request) {
       }),
     ]);
 
-    // Redirigir a la página de verificación exitosa
-    const verifyUrl = new URL("/auth/verify-email", request.url);
-    verifyUrl.searchParams.set("token", token);
-    return NextResponse.redirect(verifyUrl);
+    return NextResponse.json({ 
+      success: true, 
+      message: "Email verificado exitosamente" 
+    }, { status: 200 });
   } catch (error) {
     console.error("Error en verify-email:", error);
     return NextResponse.json({ error: "Error al verificar email" }, { status: 500 });
