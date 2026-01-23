@@ -990,6 +990,99 @@ video {
   position: relative;
 }
 
+/* Header simplificado - Solo logo y botón de usuario */
+.header-grid-simple {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0 0.5rem;
+}
+
+.header-logo-left {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.header-logo-left:hover {
+  transform: scale(1.05);
+}
+
+/* Badge de notificaciones en el header */
+.header-notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid var(--header-bg);
+  animation: notification-pulse 2s ease-in-out infinite;
+}
+
+@keyframes notification-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Badge de notificación en items del menú */
+.header-menu-notification-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  margin-left: auto;
+}
+
+/* Sección del menú desplegable */
+.header-dropdown-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Icono del menú simplificado */
+.header-menu-icon-simple {
+  font-size: 1.25rem;
+  color: var(--header-text);
+}
+
+/* Estilos para el botón de registro en el dropdown */
+.header-dropdown-register {
+  background: rgba(133, 187, 101, 0.1);
+  color: #85BB65 !important;
+  font-weight: 600;
+}
+
+.header-dropdown-register:hover {
+  background: rgba(133, 187, 101, 0.2) !important;
+}
+
 /* Menú desplegable a la izquierda */
 .header-menu-left {
   position: relative;
@@ -1190,6 +1283,7 @@ video {
 }
 
 .header-user-dropdown-button {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.5rem;
