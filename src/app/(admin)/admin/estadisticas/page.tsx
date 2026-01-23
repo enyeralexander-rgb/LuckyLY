@@ -520,10 +520,28 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
     startDate: customStartDate || "",
     endDate: customEndDate || "",
     userSearch: "",
-    paymentMethod: ""
+    paymentMethod: "",
+    raffleName: ""
   });
   const [userSuggestions, setUserSuggestions] = useState<Array<{ id: string; name: string; email: string }>>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [raffles, setRaffles] = useState<Array<{ id: string; title: string }>>([]);
+
+  // Cargar lista de sorteos al inicio
+  useEffect(() => {
+    if (auth?.token) {
+      fetch("/api/raffles?includeNotApproved=true", {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setRaffles(data.map((r: any) => ({ id: r.id, title: r.title })));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [auth]);
 
   useEffect(() => {
     if (auth?.token) {
@@ -567,6 +585,7 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
     if (filters.endDate) params.append("endDate", filters.endDate);
     if (selectedUserId) params.append("userId", selectedUserId);
     if (filters.paymentMethod) params.append("paymentMethod", filters.paymentMethod);
+    if (filters.raffleName) params.append("raffleId", filters.raffleName);
 
     fetch(`/api/admin/estadisticas/payments?${params.toString()}`, {
       headers: { Authorization: `Bearer ${auth.token}` }
@@ -596,32 +615,32 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
       {/* Filtros */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <div>
-          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600 }}>Fecha Inicio</label>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Fecha Inicio</label>
           <input
             type="date"
             value={filters.startDate}
             onChange={(e) => handleFilterChange("startDate", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
           />
         </div>
         <div>
-          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600 }}>Fecha Fin</label>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Fecha Fin</label>
           <input
             type="date"
             value={filters.endDate}
             onChange={(e) => handleFilterChange("endDate", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
           />
         </div>
         <div>
-          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600 }}>Usuario</label>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Usuario</label>
           <div style={{ position: "relative" }}>
             <input
               type="text"
               value={filters.userSearch}
               onChange={(e) => handleFilterChange("userSearch", e.target.value)}
               placeholder="Buscar por nombre o email..."
-              style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
+              style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
             />
             {userSuggestions.length > 0 && (
               <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--card-bg)", border: "1px solid var(--border-color)", borderRadius: "4px", marginTop: "0.25rem", maxHeight: "200px", overflowY: "auto", zIndex: 10, boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
@@ -633,11 +652,11 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
                       setFilters({ ...filters, userSearch: `${user.name} (${user.email})` });
                       setUserSuggestions([]);
                     }}
-                    style={{ padding: "0.5rem", cursor: "pointer", borderBottom: "1px solid #e5e7eb" }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "#f3f4f6"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}
+                    style={{ padding: "0.5rem", cursor: "pointer", borderBottom: "1px solid var(--border-color)", color: "var(--text-primary)" }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "var(--hover-bg)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                   >
-                    <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{user.name}</div>
+                    <div style={{ fontWeight: 600, fontSize: "0.875rem", color: "var(--text-primary)" }}>{user.name}</div>
                     <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>{user.email}</div>
                   </div>
                 ))}
@@ -657,11 +676,11 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
           )}
         </div>
         <div>
-          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600 }}>Método de Pago</label>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Método de Pago</label>
           <select
             value={filters.paymentMethod}
             onChange={(e) => handleFilterChange("paymentMethod", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
           >
             <option value="">Todos</option>
             <option value="BANESCO">Banesco</option>
@@ -669,10 +688,23 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
             <option value="MOBILE">Pago Móvil</option>
           </select>
         </div>
+        <div>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Nombre de Dinámica</label>
+          <select
+            value={filters.raffleName}
+            onChange={(e) => handleFilterChange("raffleName", e.target.value)}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
+          >
+            <option value="">Todos</option>
+            {raffles.map((raffle) => (
+              <option key={raffle.id} value={raffle.id}>{raffle.title}</option>
+            ))}
+          </select>
+        </div>
         <div style={{ display: "flex", alignItems: "flex-end" }}>
           <button
             onClick={() => {
-              setFilters({ startDate: "", endDate: "", userSearch: "", paymentMethod: "" });
+              setFilters({ startDate: "", endDate: "", userSearch: "", paymentMethod: "", raffleName: "" });
               setSelectedUserId("");
               setUserSuggestions([]);
               setPage(1);
@@ -692,26 +724,26 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "900px" }}>
               <thead>
-                <tr style={{ background: "#f3f4f6" }}>
-                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Fecha</th>
-                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Nombre del Usuario</th>
-                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Método de Pago</th>
-                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Cupos Comprados</th>
-                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Referencia Bancaria</th>
-                  <th style={{ padding: "0.75rem", textAlign: "right", fontSize: "0.875rem", fontWeight: 600 }}>Monto</th>
+                <tr style={{ background: "var(--table-header-bg, #f3f4f6)" }}>
+                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Fecha</th>
+                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Nombre del Usuario</th>
+                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Método de Pago</th>
+                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Cupos Comprados</th>
+                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Referencia Bancaria</th>
+                  <th style={{ padding: "0.75rem", textAlign: "right", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Monto</th>
                 </tr>
               </thead>
               <tbody>
                 {payments.map((payment) => (
-                  <tr key={payment.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                    <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
+                  <tr key={payment.id} style={{ borderBottom: "1px solid var(--border-color, #e5e7eb)" }}>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", color: "var(--text-primary)" }}>
                       {new Date(payment.fecha).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}
                     </td>
-                    <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", color: "var(--text-primary)" }}>
                       <div>{payment.nombreUsuario}</div>
                       <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>{payment.emailUsuario}</div>
                     </td>
-                    <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{payment.metodoPago}</td>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", color: "var(--text-primary)" }}>{payment.metodoPago}</td>
                     <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
                       <div style={{ fontWeight: 600, color: "#85BB65" }}>{payment.tipoSorteo}</div>
                       <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
@@ -719,10 +751,10 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
                       </div>
                       <div style={{ fontSize: "0.7rem", color: "var(--text-tertiary)" }}>{payment.tituloSorteo}</div>
                     </td>
-                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", fontFamily: "monospace" }}>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", fontFamily: "monospace", color: "var(--text-primary)" }}>
                       {payment.referenciaPago || "N/A"}
                     </td>
-                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "right", fontWeight: 600, color: "var(--color-primary)" }}>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "right", fontWeight: 600, color: "#85BB65" }}>
                       {payment.monto.toFixed(2)} Bs.
                     </td>
                   </tr>

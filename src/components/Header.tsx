@@ -101,7 +101,6 @@ export function Header() {
       menu.push({ label: "Usuarios", href: "/admin/usuarios", icon: "👥" });
       menu.push({ label: "Historial", href: "/admin/historial", icon: "📜" });
       menu.push({ label: "Referidos", href: "/admin/referidos", icon: "🔗" });
-      menu.push({ label: "Agentes", href: "/admin/roles/agentes", icon: "👨‍💼" });
     }
 
     // Solo MASTER puede ver:
