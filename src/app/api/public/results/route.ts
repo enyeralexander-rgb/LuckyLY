@@ -1,21 +1,40 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 
-// GET - Obtener los últimos 10 resultados de sorteos finalizados (público)
-export async function GET() {
+// GET - Obtener resultados públicos de sorteos finalizados/ejecutados
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const rawLimit = Number(searchParams.get("limit") || "10");
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 10;
+    const approvedOnly = searchParams.get("approved") === "true";
+
+    const where: any = {
+      OR: [
+        { executedAt: { not: null } },
+        { status: "FINISHED" },
+        { status: "EXECUTED" },
+        { status: "COMPLETED" }
+      ]
+    };
+
+    if (approvedOnly) {
+      where.approved = true;
+    }
+
     const results = await prisma.raffle.findMany({
-      where: {
-        status: "FINISHED",
-        executedAt: { not: null },
-        winningItem: { not: null }
-      },
-      orderBy: { executedAt: "desc" },
-      take: 10,
+      where,
+      orderBy: [
+        { executedAt: "desc" },
+        { updatedAt: "desc" }
+      ],
+      take: limit,
       select: {
         id: true,
         title: true,
         type: true,
+        status: true,
+        approved: true,
         executedAt: true,
         winningItem: true,
         prizes: true,
@@ -27,6 +46,8 @@ export async function GET() {
       id: raffle.id,
       title: raffle.title,
       type: raffle.type,
+      status: raffle.status || "ACTIVE",
+      approved: raffle.approved ?? false,
       executedAt: raffle.executedAt ? raffle.executedAt.toISOString() : null,
       winningItem: raffle.winningItem,
       prizes: Array.isArray(raffle.prizes) ? raffle.prizes : [],
