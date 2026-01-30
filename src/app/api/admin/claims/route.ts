@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
 import { Role } from "@prisma/client";
+import { isDatabaseConnectionError } from "../../../../lib/dbErrors";
 
 export async function GET(request: Request) {
   try {
@@ -41,6 +42,10 @@ export async function GET(request: Request) {
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    if (isDatabaseConnectionError(err)) {
+      console.info("ℹ️ [Admin Claims API] DB no disponible, devolviendo vacío");
+      return NextResponse.json([], { status: 200, headers: { "x-fallback": "db-unavailable" } });
     }
     return NextResponse.json({ error: "Error al obtener reclamos" }, { status: 500 });
   }
