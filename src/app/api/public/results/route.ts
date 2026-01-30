@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 // GET - Obtener resultados públicos de sorteos finalizados/ejecutados
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const rawLimit = Number(searchParams.get("limit") || "10");
     const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 10;
     const approvedOnly = searchParams.get("approved") === "true";
