@@ -1,6 +1,38 @@
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../lib/prisma";
+import { isDatabaseConnectionError } from "../../../../lib/dbErrors";
+
+const DEFAULT_PUBLIC_CONFIG = {
+  heroImages: ["/images/ruleta-fortuna-hero.jpg"],
+  heroTitle: "Participa en la ruleta en vivo",
+  heroSubtitle: "Cinco categorías: Números, Animales, Estados, Banderas y Signos Zodiacales. Compra cupos, mira la ruleta y cobra tu premio.",
+  heroEffect: "fade",
+  heroEffectParams: {},
+  heroAutoSlide: false,
+  heroAutoSlideMode: "linear",
+  heroAutoSlideInterval: 5000,
+  heroPauseOnHover: false,
+  heroScrollFade: true,
+  heroOpacity: 0.8,
+  heroBlur: 4.0,
+  heroTextColor: null,
+  heroSubtitleColor: null,
+  heroOverlayColor: null,
+  heroOverlayOpacity: 0.7,
+  heroImageSize: "contain",
+  instagramVideoUrl: "/images/RULETA FONDO REDES.mp4",
+  headerConfig: null,
+  contactConfig: null,
+  footerConfig: null,
+  sectionOrder: ["hero", "raffles", "live", "footer"],
+  sectionVisibility: {
+    hero: true,
+    raffles: true,
+    live: true,
+    footer: true
+  }
+};
 
 export async function GET(request: Request) {
   try {
@@ -43,36 +75,7 @@ export async function GET(request: Request) {
 
     // Configuración por defecto si no existe
     if (!config) {
-      return NextResponse.json({
-        heroImages: ["/images/ruleta-fortuna-hero.jpg"],
-        heroTitle: "Participa en la ruleta en vivo",
-        heroSubtitle: "Cinco categorías: Números, Animales, Estados, Banderas y Signos Zodiacales. Compra cupos, mira la ruleta y cobra tu premio.",
-        heroEffect: "fade",
-        heroEffectParams: {},
-        heroAutoSlide: false,
-        heroAutoSlideMode: "linear",
-        heroAutoSlideInterval: 5000,
-        heroPauseOnHover: false,
-        heroScrollFade: true,
-        heroOpacity: 0.8,
-        heroBlur: 4.0,
-        heroTextColor: null,
-        heroSubtitleColor: null,
-        heroOverlayColor: null,
-        heroOverlayOpacity: 0.7,
-        heroImageSize: "contain",
-        instagramVideoUrl: "/images/RULETA FONDO REDES.mp4",
-        headerConfig: null,
-        contactConfig: null,
-        footerConfig: null,
-        sectionOrder: ["hero", "raffles", "live", "footer"],
-        sectionVisibility: {
-          hero: true,
-          raffles: true,
-          live: true,
-          footer: true
-        }
-      });
+      return NextResponse.json(DEFAULT_PUBLIC_CONFIG);
     }
 
     // Limitar imágenes a 5
@@ -82,6 +85,11 @@ export async function GET(request: Request) {
 
     return NextResponse.json(config);
   } catch (err) {
+    if (isDatabaseConnectionError(err)) {
+      console.info("ℹ️ [Public Homepage API] DB no disponible, usando fallback");
+      return NextResponse.json(DEFAULT_PUBLIC_CONFIG, { status: 200, headers: { "x-fallback": "db-unavailable" } });
+    }
+
     console.error("Error al obtener configuración pública:", err);
     return NextResponse.json({ error: "Error al obtener configuración" }, { status: 500 });
   }

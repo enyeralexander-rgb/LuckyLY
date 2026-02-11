@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { raffleCreateSchema } from "../../../lib/validators";
-import { requireAuth, AuthError } from "../../../lib/auth";
+import { requireAuth, AuthError, getTokenFromRequest } from "../../../lib/auth";
+import { isDatabaseConnectionError } from "../../../lib/dbErrors";
 import { Role } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -69,6 +70,15 @@ export async function GET(request: Request) {
     
     return NextResponse.json(formattedRaffles);
   } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      const token = getTokenFromRequest(request);
+      const isPublic = !token;
+      if (isPublic) {
+        console.info("ℹ️ [Raffles API] DB no disponible, devolviendo vacío");
+        return NextResponse.json([], { status: 200, headers: { "x-fallback": "db-unavailable" } });
+      }
+      return NextResponse.json({ error: "Base de datos no disponible" }, { status: 503 });
+    }
     console.error("Error al obtener sorteos:", error);
     return NextResponse.json({ error: "Error al obtener sorteos" }, { status: 500 });
   }

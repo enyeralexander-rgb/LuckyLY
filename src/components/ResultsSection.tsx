@@ -6,18 +6,26 @@ type Result = {
   id: string;
   title: string;
   type: string;
+  status?: string;
+  approved?: boolean;
   executedAt: string | null;
   winningItem: string | null;
   prizes: string[];
   winnersCount: number;
 };
 
-export function ResultsSection() {
+type ResultsSectionProps = {
+  limit?: number;
+  showFooter?: boolean;
+};
+
+export function ResultsSection({ limit = 10, showFooter = true }: ResultsSectionProps) {
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/public/results")
+    const query = typeof limit === "number" ? `?limit=${limit}` : "";
+    fetch(`/api/public/results${query}`)
       .then((r) => {
         if (!r.ok) {
           throw new Error("Error al cargar resultados");
@@ -157,11 +165,13 @@ export function ResultsSection() {
           ))}
         </div>
         
-        <div className="results-footer">
-          <Link href="/results" className="results-button">
-            VER TODOS LOS RESULTADOS
-          </Link>
-        </div>
+        {showFooter && (
+          <div className="results-footer">
+            <Link href="/results" className="results-button">
+              VER TODOS LOS RESULTADOS
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );

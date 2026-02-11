@@ -72,11 +72,12 @@ function createPrismaClient(): PrismaClient {
 
   const adapter = new PrismaPg(globalForPrisma.pool);
 
+  const shouldLogPrisma =
+    process.env.NODE_ENV === "development" || process.env.PRISMA_LOG === "true";
+
   return new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === "development"
-      ? ["warn", "error"]
-      : ["error"],
+    log: shouldLogPrisma ? ["warn", "error"] : [],
     transactionOptions: {
       maxWait: 30000,
       timeout: 20000,
