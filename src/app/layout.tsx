@@ -2,6 +2,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Fredoka, Oswald } from "next/font/google";
 import { ThemeProvider } from "../components/providers/ThemeProvider";
+import { TutorialProvider } from "../contexts/TutorialContext";
+import { TutorialOverlay } from "../components/TutorialOverlay";
 import { Header } from "../components/ui/Header";
 
 // Usar Fredoka en lugar de Cherry Bomb One (más confiable en Vercel)
@@ -36,8 +38,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`${fredoka.variable} ${oswald.variable}`} suppressHydrationWarning>
       <body className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
         <ThemeProvider>
-          <Header />
-          {children}
+          <TutorialProvider>
+            <Header />
+            {children}
+            <TutorialOverlay />
+          </TutorialProvider>
         </ThemeProvider>
       </body>
     </html>
