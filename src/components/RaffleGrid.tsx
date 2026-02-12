@@ -29,7 +29,6 @@ export function RaffleGrid() {
         return r.json();
       })
       .then((data) => {
-        // Verificar que data es un array y no hay error
         if (data.error) {
           console.error("Error en la respuesta:", data.error);
           setRaffles([]);
@@ -44,10 +43,8 @@ export function RaffleGrid() {
           return;
         }
         
-        // Filtrar solo sorteos activos
         let activeRaffles = data.filter((r: any) => r && typeof r === "object" && r.status === "ACTIVE");
         
-        // Ordenar por fecha de inicio (los más cercanos primero)
         activeRaffles.sort((a: Raffle, b: Raffle) => {
           const dateA = a.startsAt ? new Date(a.startsAt).getTime() : Infinity;
           const dateB = b.startsAt ? new Date(b.startsAt).getTime() : Infinity;
@@ -76,7 +73,6 @@ export function RaffleGrid() {
   }
 
   function getAvailableSlots(raffle: Raffle): number {
-    // Contar solo cupos confirmados (excluir pendientes y rechazados)
     if (!raffle.ticketItems || !Array.isArray(raffle.ticketItems)) {
       return raffle.slots;
     }
@@ -90,7 +86,6 @@ export function RaffleGrid() {
     return prizes.map((prize, index) => {
       if (!prize || typeof prize !== "string") return "";
       
-      // Extraer número del premio (puede venir como "Bs. 1000.00", "1000 Bs", etc.)
       const match = prize.match(/(\d+(?:\.\d+)?)\s*Bs?/i);
       let amount = 0;
       if (match) {
@@ -102,31 +97,12 @@ export function RaffleGrid() {
         }
       }
       
-      // Validar que amount sea un número válido
-      if (isNaN(amount) || amount <= 0) {
-        return "";
-      }
-      
       const ordinal = index === 0 ? "1°" : index === 1 ? "2°" : "3°";
+      // Si no se pudo parsear un monto válido, mostrar el texto original
+      if (amount <= 0 && prize.trim().length > 0) return `${ordinal} Ganador: ${prize}`;
+      
       return `${ordinal} Ganador: Bs. ${amount.toFixed(2)}`;
     }).filter(line => line !== "").join("\n");
-  }
-
-  function formatPrize(prize: string): string {
-    // Extraer número del premio (puede venir como "1000 Bs", "1500 Bs", "1000.50 Bs", etc.)
-    const match = prize.match(/(\d+(?:\.\d+)?)\s*Bs?/i);
-    if (match) {
-      const amount = parseFloat(match[1]);
-      return `Bs. ${amount.toFixed(2)}`;
-    }
-    // Si no tiene formato de "X Bs", intentar extraer número y formatear
-    const numberMatch = prize.match(/(\d+(?:\.\d+)?)/);
-    if (numberMatch) {
-      const amount = parseFloat(numberMatch[1]);
-      return `Bs. ${amount.toFixed(2)}`;
-    }
-    // Si no se puede parsear, retornar como está pero con "Bs." al inicio
-    return prize.includes("Bs") ? prize : `Bs. ${prize}`;
   }
 
   if (loading) {
@@ -149,7 +125,6 @@ export function RaffleGrid() {
     );
   }
 
-  // Mostrar solo los primeros 3 sorteos
   const displayedRaffles = raffles.slice(0, 3);
 
   return (
@@ -174,75 +149,81 @@ export function RaffleGrid() {
           
           return (
             <article key={raffle.id} className="card" style={{ display: "grid", gap: "1rem", padding: "1.5rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span style={{ fontSize: "1.5rem" }}>
-                    {raffle.type === "NUMBERS" ? "🔢" : 
-                     raffle.type === "ANIMALS" ? "🐾" : 
-                     raffle.type === "STATES" ? "🗺️" : 
-                     raffle.type === "FLAGS" ? "🏴" : "🎰"}
+              <div style={{ display: "grid", gap: ".5rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                  <span style={{ padding: ".25rem .75rem", background: "#85BB65", borderRadius: "6px", fontSize: ".75rem", color: "#ffffff", fontWeight: 600 }}>
+                    {getTypeLabel(raffle.type)}
                   </span>
-                  <span style={{ fontWeight: 700, color: "var(--text-secondary)" }}>{getTypeLabel(raffle.type)}</span>
+                  <span style={{ padding: ".25rem .75rem", background: isAvailable ? "#85BB65" : "#6b7280", borderRadius: "6px", fontSize: ".75rem", color: "#3E3E3C", fontWeight: 700 }}>
+                    {isAvailable ? "Disponible" : "Agotado"}
+                  </span>
                 </div>
-                <span className={`px-2 py-1 rounded text-xs font-bold ${isAvailable ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                  {isAvailable ? "DISPONIBLE" : "AGOTADO"}
-                </span>
-              </div>
-              
-              <div>
-                <h3 style={{ margin: 0, fontSize: "1.25rem", color: "var(--text-primary)" }}>{raffle.title}</h3>
-              </div>
-
-              <div style={{ display: "grid", gap: "0.5rem" }}>
-                <div className="flex justify-between items-center text-sm">
-                  <span style={{ color: "var(--text-secondary)" }}>Precio:</span>
-                  <strong style={{ color: "var(--text-primary)", fontSize: "1.125rem" }}>Bs. {Number(raffle.pricePerSlot).toFixed(2)}</strong>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span style={{ color: "var(--text-secondary)" }}>Disponibles:</span>
-                  <strong className={isAvailable ? "text-green-600" : "text-red-500"}>
-                    {availableSlots}/{raffle.slots}
-                  </strong>
-                </div>
-              </div>
-
-              {raffle.startsAt && (
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", color: "var(--text-secondary)", marginTop: "auto" }}>
-                  <span>📅</span>
-                  <span>
+                <h3 style={{ margin: 0, fontSize: "1.125rem" }}>{raffle.title}</h3>
+                {raffle.startsAt && (
+                  <div style={{ fontSize: ".875rem", color: "#3E3E3C", marginTop: ".5rem" }}>
                     {(() => {
                       const date = new Date(raffle.startsAt);
                       const day = String(date.getDate()).padStart(2, "0");
                       const month = String(date.getMonth() + 1).padStart(2, "0");
                       const year = date.getFullYear();
-                      return `${day}/${month}/${year}`;
-                    })()}
-                  </span>
-                  <span style={{ background: "var(--bg-primary)", padding: "0.25rem 0.5rem", borderRadius: "6px", marginLeft: "auto" }}>
-                    {(() => {
-                      const date = new Date(raffle.startsAt);
                       const hours = date.getHours();
                       const minutes = String(date.getMinutes()).padStart(2, "0");
-                      const period = hours >= 12 ? "PM" : "AM";
-                      return `${hours % 12 || 12}:${minutes} ${period}`;
+                      const period = hours >= 12 ? "P.M." : "A.M.";
+                      const displayHours = hours % 12 || 12;
+                      return `FECHA: ${day}/${month}/${year} ${String(displayHours).padStart(2, "0")}:${minutes} ${period}`;
                     })()}
-                  </span>
-                </div>
-              )}
-              
-              <div>
-                <Link
-                  href={`/raffles/${raffle.id}`}
-                  className={`w-full p-3 border-0 rounded-lg font-bold text-center no-underline flex items-center justify-center uppercase ${isAvailable ? "cursor-pointer" : "cursor-not-allowed"}`}
-                  style={{ 
-                    background: isAvailable ? "var(--button-primary)" : "var(--bg-hover)",
-                    color: isAvailable ? "var(--button-text)" : "var(--text-muted)",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {isAvailable ? "JUGAR AHORA" : "AGOTADO"}
-                </Link>
+                  </div>
+                )}
               </div>
+              
+              <div style={{ display: "grid", gap: ".75rem", padding: "1rem", background: "#f5f5e6", borderRadius: "8px", border: "1px solid #d4d4c4" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "#3E3E3C", fontSize: ".875rem", opacity: 0.8 }}>Precio por cupo</span>
+                  <strong style={{ fontSize: "1rem", color: "#228D57" }}>Bs. {Number(raffle.pricePerSlot).toFixed(2)}</strong>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "#3E3E3C", fontSize: ".875rem", opacity: 0.8 }}>Cupos disponibles</span>
+                  <strong style={{ color: isAvailable ? "#85BB65" : "#ef4444", fontSize: ".875rem" }}>
+                    {availableSlots}/{raffle.slots}
+                  </strong>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "#3E3E3C", fontSize: ".875rem", opacity: 0.8 }}>Ganadores</span>
+                  <strong style={{ fontSize: ".875rem", color: "#3E3E3C" }}>{raffle.winnersCount}</strong>
+                </div>
+                {raffle.prizes && Array.isArray(raffle.prizes) && raffle.prizes.length > 0 && (
+                  <div style={{ marginTop: ".5rem", paddingTop: ".75rem", borderTop: "1px solid #d4d4c4" }}>
+                    <span style={{ color: "#3E3E3C", fontSize: ".75rem", opacity: 0.8 }}>Premios:</span>
+                    <div style={{ marginTop: ".25rem", color: "#228D57", fontWeight: 700, fontSize: "1.125rem", fontFamily: "var(--font-oswald), sans-serif", whiteSpace: "pre-line" }}>
+                      {formatPrizesList(raffle.prizes)}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <Link
+                href={`/raffles/${raffle.id}`}
+                style={{
+                  width: "100%",
+                  padding: ".75rem",
+                  background: isAvailable ? "#85BB65" : "#6b7280",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontWeight: 700,
+                  textAlign: "center",
+                  textDecoration: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: isAvailable ? "pointer" : "not-allowed",
+                  opacity: isAvailable ? 1 : 0.6,
+                  fontSize: ".875rem",
+                  textTransform: "uppercase"
+                }}
+              >
+                {isAvailable ? "VER Y COMPRAR" : "AGOTADO"}
+              </Link>
             </article>
           );
         })}
