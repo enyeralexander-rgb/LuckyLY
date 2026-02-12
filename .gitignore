@@ -52,3 +52,6 @@ LUCKYLYV01.tar.gz
 !README.md
 !DEPLOYMENT_GUIDE.md
 !GUIA_RECONFIGURACION_VERCEL.md
+.env
+.env
+.env.local

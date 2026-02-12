@@ -65,7 +65,16 @@ function createPool(): Pool {
 
 // Función para crear PrismaClient
 function createPrismaClient(): PrismaClient {
-  // Reutilizar o crear pool
+  const databaseUrl = process.env.DATABASE_URL;
+
+  // Si usamos Prisma Accelerate (prisma+postgres://), no usar adapter-pg
+  if (databaseUrl && databaseUrl.startsWith("prisma+")) {
+    return new PrismaClient({
+      accelerateUrl: databaseUrl,
+    });
+  }
+
+  // Reutilizar o crear pool para conexiones estándar (Neon, RDS, etc)
   if (!globalForPrisma.pool) {
     globalForPrisma.pool = createPool();
   }
