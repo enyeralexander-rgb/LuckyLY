@@ -278,7 +278,6 @@ function RegisterPageContent() {
         <div className="card" style={{ display: "grid", gap: "1rem" }}>
           <h1 style={{ margin: 0 }}>Crear cuenta</h1>
           <form style={{ display: "grid", gap: ".75rem" }} onSubmit={handleSubmit}>
-            <div style={{ display: "grid", gap: ".75rem" }} data-tutorial-form>
             <label style={{ display: "grid", gap: ".35rem" }}>
               <span>Nombre completo</span>
               <input
@@ -587,9 +586,8 @@ function RegisterPageContent() {
                 <small style={{ color: "#ef4444", fontSize: "0.75rem" }}>{confirmPasswordError}</small>
               )}
             </label>
-            </div>
 
-            <label style={{ display: "flex", gap: ".5rem", alignItems: "start", cursor: "pointer" }} data-tutorial-terms>
+            <label style={{ display: "flex", gap: ".5rem", alignItems: "start", cursor: "pointer" }}>
               <input
                 type="checkbox"
                 checked={acceptTerms}
@@ -621,7 +619,6 @@ function RegisterPageContent() {
             <button 
               type="submit" 
               disabled={!canSubmit || loading} 
-              data-tutorial-submit
               style={{ 
                 padding: ".75rem", 
                 background: !canSubmit || loading ? "#6b7280" : "#85BB65", 
