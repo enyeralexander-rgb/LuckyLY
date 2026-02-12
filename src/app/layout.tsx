@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Fredoka, Oswald } from "next/font/google";
 import { ThemeProvider } from "../components/providers/ThemeProvider";
 import { Header } from "../components/ui/Header";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Usar Fredoka en lugar de Cherry Bomb One (más confiable en Vercel)
 const fredoka = Fredoka({ 
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Header />
           {children}
         </ThemeProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
