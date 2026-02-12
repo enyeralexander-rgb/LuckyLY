@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { getStoredAuth, clearStoredAuth } from "../../lib/clientAuth";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "../../hooks/useTheme";
+import { useTutorial } from "../../contexts/TutorialContext";
 
 type UserRole = "USER" | "AGENT" | "CONTABLE" | "SUPERADMIN" | "MASTER";
 
@@ -19,6 +20,7 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const { isDark, toggleTheme } = useTheme();
+  const tutorial = useTutorial();
   const [auth, setAuth] = useState<any>(null);
   const [userData, setUserData] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
@@ -61,9 +63,10 @@ export function Header() {
     setUserMenuOpen(false);
   }, [pathname]);
 
-  // Cerrar menú desplegable al hacer clic fuera
+  // Cerrar menú desplegable al hacer clic fuera (no cerrar en paso 2 del tutorial para que pueda hacer clic en Registrarse)
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      if (tutorial?.step === 2) return;
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setUserMenuOpen(false);
       }
@@ -75,7 +78,12 @@ export function Header() {
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }
-  }, [userMenuOpen]);
+  }, [userMenuOpen, tutorial?.step]);
+
+  // Tutorial: notificar cuando se abre/cierra el menú (paso 1 → 2)
+  useEffect(() => {
+    tutorial?.onMenuOpenChange(userMenuOpen);
+  }, [userMenuOpen, tutorial]);
 
   // Ocultar header en rutas de administración
   if (pathname?.startsWith("/admin")) {
@@ -196,7 +204,8 @@ export function Header() {
             {!auth ? (
               <div className="header-user-dropdown-container" ref={menuRef}>
                 <button
-                  className="header-user-dropdown-button"
+                  ref={tutorial?.menuButtonRef as React.RefObject<HTMLButtonElement | null>}
+                  className={`header-user-dropdown-button ${tutorial?.step === 1 ? "tutorial-highlight-menu" : ""}`}
                   onClick={() => setUserMenuOpen((v) => !v)}
                   aria-label="Menú"
                 >
@@ -252,9 +261,10 @@ export function Header() {
                       <span>Ingresar</span>
                     </Link>
                     <Link
+                      ref={tutorial?.registerLinkRef as React.RefObject<HTMLAnchorElement | null>}
                       href="/auth/register"
                       onClick={() => setUserMenuOpen(false)}
-                      className="header-dropdown-item header-dropdown-register"
+                      className={`header-dropdown-item header-dropdown-register ${tutorial?.step === 2 ? "tutorial-highlight-register" : ""}`}
                     >
                       <span>📝</span>
                       <span>Registrarse</span>
