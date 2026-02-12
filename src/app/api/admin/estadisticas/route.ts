@@ -68,6 +68,9 @@ export async function GET(request: Request) {
       const totalIncome = tickets.reduce((sum, t) => sum + Number(t.totalPaid), 0);
 
       // Calcular premios pagados (egresos)
+      // NOTA: Como PrizeClaim no guarda el monto exacto y no sabemos la posición ganadora (1°, 2°, 3°),
+      // estimamos el pago basado en la regla del 70% dividida equitativamente o el promedio de premios.
+      // Mejor aproximación: (Slots * Precio * 0.70) / WinnersCount
       const paidClaims = await prisma.prizeClaim.findMany({
         where: {
           status: "PAID",
@@ -79,13 +82,34 @@ export async function GET(request: Request) {
         include: {
           ticket: {
             select: {
-              totalPaid: true
+              raffle: {
+                select: {
+                  pricePerSlot: true,
+                  slots: true,
+                  winnersCount: true
+                }
+              }
             }
           }
         }
       });
 
-      const totalPrizesPaid = paidClaims.reduce((sum, claim) => sum + Number(claim.ticket.totalPaid), 0);
+      const totalPrizesPaid = paidClaims.reduce((sum, claim) => {
+        // Uso de monto real si existe (Nueva implementación)
+        if (claim.paidAmount) {
+          return sum + Number(claim.paidAmount);
+        }
+        
+        // Lógica legacy (estimación del 70%)
+        const raffle = claim.ticket.raffle;
+        if (!raffle) return sum;
+        
+        const totalRaffleValue = Number(raffle.pricePerSlot) * raffle.slots;
+        const totalPrizePool = totalRaffleValue * 0.70;
+        const estimatedPrizeValue = totalPrizePool / (raffle.winnersCount || 1);
+        
+        return sum + estimatedPrizeValue;
+      }, 0);
 
       // Calcular ganancias netas (ingresos - premios pagados)
       const netIncome = totalIncome - totalPrizesPaid;
@@ -126,14 +150,35 @@ export async function GET(request: Request) {
         include: {
           ticket: {
             select: {
-              totalPaid: true
+              raffle: {
+                select: {
+                  pricePerSlot: true,
+                  slots: true,
+                  winnersCount: true
+                }
+              }
             }
           }
         }
       });
 
       const previousIncome = previousTickets.reduce((sum, t) => sum + Number(t.totalPaid), 0);
-      const previousPrizesPaid = previousPaidClaims.reduce((sum, claim) => sum + Number(claim.ticket.totalPaid), 0);
+      
+      const previousPrizesPaid = previousPaidClaims.reduce((sum, claim) => {
+        if (claim.paidAmount) {
+          return sum + Number(claim.paidAmount);
+        }
+
+        const raffle = claim.ticket.raffle;
+        if (!raffle) return sum;
+        
+        const totalRaffleValue = Number(raffle.pricePerSlot) * raffle.slots;
+        const totalPrizePool = totalRaffleValue * 0.70;
+        const estimatedPrizeValue = totalPrizePool / (raffle.winnersCount || 1);
+        
+        return sum + estimatedPrizeValue;
+      }, 0);
+      
       const previousNetIncome = previousIncome - previousPrizesPaid;
 
       const growthPercentage = previousIncome > 0 

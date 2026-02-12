@@ -5,10 +5,14 @@ import { clearStoredAuth, getStoredAuth } from "../lib/clientAuth";
 import { useEffect, useState } from "react";
 import { useTheme } from "../hooks/useTheme";
 
+import { NotificationBadge } from "@/components/ui/NotificationBadge";
+import { useNotificationStats } from "@/hooks/useNotificationStats";
+
 export function AdminNavBar() {
   const router = useRouter();
   const { isDark, toggleTheme } = useTheme();
   const [role, setRole] = useState<string | null>(null);
+  const { stats } = useNotificationStats();
 
   useEffect(() => {
     const auth = getStoredAuth();
@@ -41,22 +45,23 @@ export function AdminNavBar() {
           <div 
             className="navbar-logo" 
             onClick={() => {
-              // Abrir la página principal en una nueva pestaña para no perder la sesión de admin
-              window.open("/", "_blank");
+              router.push("/");
             }}
-            title="Ver página principal (nueva pestaña)"
+            title="Ir a página principal"
             style={{ cursor: "pointer" }}
           >
             <img 
-              src="/images/LuckyLy-Logo.png" 
+              src={isDark ? "/images/LuckyLy-Logo-BLANCO-SIN-FONDO.png" : "/images/LuckyLy-Logo-VERDE-SIN-FONDO.png"} 
               alt="LuckyLY Logo"
             />
           </div>
           <nav className="navbar-nav">
-            <Link href="/admin" style={{ padding: ".5rem 1rem", borderRadius: "8px", background: "var(--color-primary)", color: "#ffffff", fontWeight: 700, textDecoration: "none", textTransform: "uppercase" }}>
+            <Link href="/admin" style={{ padding: ".5rem 1rem", borderRadius: "8px", background: "var(--color-primary)", color: "#ffffff", fontWeight: 700, textDecoration: "none", textTransform: "uppercase", position: "relative" }}>
               Dashboard
+              {(stats?.total ?? 0) > 0 && <NotificationBadge count={stats!.total} className="-top-2 -right-2" />}
             </Link>
           </nav>
+          
           <div className="navbar-actions">
             <button
               onClick={toggleTheme}

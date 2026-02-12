@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const JWT_SECRET = process.env.JWT_SECRET || "insecure-secret";
-const secretKey = new TextEncoder().encode(JWT_SECRET);
-
 const ADMIN_ROUTES = ["/admin"];
 const USER_PROTECTED_ROUTES = ["/dashboard", "/perfil", "/payment"];
 const AUTH_ROUTES = ["/auth/login", "/auth/register"];
@@ -40,9 +37,9 @@ const AGENT_SUPERADMIN_MASTER_ROUTES = [
   "/admin/pagina-principal"
 ];
 
-async function verifyToken(token: string) {
+async function verifyToken(token: string, key: Uint8Array) {
   try {
-    const { payload } = await jwtVerify(token, secretKey);
+    const { payload } = await jwtVerify(token, key);
     return payload as { sub?: string; role?: string };
   } catch {
     return null;
@@ -55,8 +52,16 @@ export async function middleware(req: NextRequest) {
   // Rate limiting se implementará en las APIs individuales
   // (no se puede usar imports dinámicos en middleware de Next.js)
 
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    // Permitir pasar si no hay secret, pero loguear error (o redirigir a error page)
+    // En producción esto debería ser fatal, pero para build puede ser necesario
+    console.error("CRITICAL: JWT_SECRET is missing in middleware");
+  }
+  
   const token = req.cookies.get("auth_token")?.value;
-  const payload = token ? await verifyToken(token) : null;
+  // Solo verificar si hay secret y token
+  const payload = (token && secret) ? await verifyToken(token, new TextEncoder().encode(secret)) : null;
 
   // REGLA: Redirigir administradores desde la página principal (/) al dashboard
   if (pathname === "/" && payload?.role) {

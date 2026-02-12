@@ -107,6 +107,8 @@ export async function POST(request: Request) {
       }
     });
 
+
+
     return NextResponse.json({ id: claim.id, status: claim.status }, { status: 201 });
   } catch (err) {
     if (err instanceof AuthError) {

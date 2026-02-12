@@ -7,7 +7,6 @@ type Raffle = {
   id: string;
   title: string;
   type: string;
-  status: string;
   executedAt: string | null;
   winningItem: string | null;
 };
@@ -28,23 +27,25 @@ export default function ResultsPage() {
   }, []);
 
   useEffect(() => {
-    // Cargar sorteos finalizados
-    fetch("/api/raffles")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) {
-          console.error("Error:", data.error);
-          setRaffles([]);
-          setLoading(false);
-          return;
+    // Cargar sorteos ejecutados (públicos)
+    fetch("/api/public/results?limit=100")
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error("Error al cargar resultados");
         }
-        const finished = Array.isArray(data) 
-          ? data.filter((r: Raffle) => r.status === "FINISHED" && r.executedAt) 
-          : [];
-        setRaffles(finished);
+        return r.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setRaffles(data);
+        } else {
+          console.error("Error: formato de resultados inválido", data);
+          setRaffles([]);
+        }
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("Error al cargar resultados:", err);
         setRaffles([]);
         setLoading(false);
       });
@@ -97,22 +98,22 @@ export default function ResultsPage() {
   return (
     <>
       <main className="container" style={{ paddingTop: "2rem" }}>
-        <h1 style={{ color: "#3E3E3C" }}>Resultados</h1>
+        <h1 style={{ color: "var(--text-primary)" }}>Resultados</h1>
         {loading ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#3E3E3C" }}>Cargando resultados...</div>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>Cargando resultados...</div>
         ) : raffles.length === 0 ? (
-          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#3E3E3C" }}>
+          <div className="card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>
             No hay resultados disponibles
           </div>
         ) : (
           <div className="card" style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead style={{ textAlign: "left" }}>
-                <tr style={{ borderBottom: "2px solid #d4d4c4" }}>
-                  <th style={{ padding: ".75rem", color: "#3E3E3C", fontWeight: 700 }}>Fecha</th>
-                  <th style={{ padding: ".75rem", color: "#3E3E3C", fontWeight: 700 }}>Hora</th>
-                  <th style={{ padding: ".75rem", color: "#3E3E3C", fontWeight: 700 }}>Tipo de Sorteo</th>
-                  <th style={{ padding: ".75rem", color: "#3E3E3C", fontWeight: 700 }}>Ítem Ganador</th>
+                <tr style={{ borderBottom: "2px solid var(--border-color)" }}>
+                  <th style={{ padding: ".75rem", color: "var(--text-primary)", fontWeight: 700 }}>Fecha</th>
+                  <th style={{ padding: ".75rem", color: "var(--text-primary)", fontWeight: 700 }}>Hora</th>
+                  <th style={{ padding: ".75rem", color: "var(--text-primary)", fontWeight: 700 }}>Tipo de Sorteo</th>
+                  <th style={{ padding: ".75rem", color: "var(--text-primary)", fontWeight: 700 }}>Ítem Ganador</th>
                 </tr>
               </thead>
               <tbody>
@@ -128,7 +129,7 @@ export default function ResultsPage() {
                         borderLeft: status === "win" ? "4px solid #85BB65" : status === "lose" ? "4px solid #ef4444" : "4px solid transparent"
                       }}
                     >
-                      <td style={{ padding: ".75rem", borderTop: "1px solid #d4d4c4", color: "#3E3E3C" }}>
+                      <td style={{ padding: ".75rem", borderTop: "1px solid var(--border-color)", color: "var(--text-primary)" }}>
                         {executedDate ? (() => {
                           const day = String(executedDate.getDate()).padStart(2, "0");
                           const month = String(executedDate.getMonth() + 1).padStart(2, "0");
@@ -136,7 +137,7 @@ export default function ResultsPage() {
                           return `${day}/${month}/${year}`;
                         })() : "N/A"}
                       </td>
-                      <td style={{ padding: ".75rem", borderTop: "1px solid #d4d4c4", color: "#3E3E3C" }}>
+                      <td style={{ padding: ".75rem", borderTop: "1px solid var(--border-color)", color: "var(--text-primary)" }}>
                         {executedDate ? (() => {
                           const hours = executedDate.getHours();
                           const minutes = String(executedDate.getMinutes()).padStart(2, "0");
@@ -145,12 +146,12 @@ export default function ResultsPage() {
                           return `${String(displayHours).padStart(2, "0")}:${minutes} ${period}`;
                         })() : "N/A"}
                       </td>
-                      <td style={{ padding: ".75rem", borderTop: "1px solid #d4d4c4", color: "#3E3E3C" }}>
+                      <td style={{ padding: ".75rem", borderTop: "1px solid var(--border-color)", color: "var(--text-primary)" }}>
                         <span style={{ padding: ".25rem .75rem", background: "#85BB65", borderRadius: "6px", fontSize: ".875rem", fontWeight: 600, color: "#ffffff", display: "inline-block" }}>
                           {getTypeLabel(raffle.type)}
                         </span>
                       </td>
-                      <td style={{ padding: ".75rem", borderTop: "1px solid #d4d4c4", fontWeight: status === "win" ? 700 : 400, color: status === "win" ? "#228D57" : status === "lose" ? "#ef4444" : "#3E3E3C" }}>
+                      <td style={{ padding: ".75rem", borderTop: "1px solid var(--border-color)", fontWeight: status === "win" ? 700 : 400, color: status === "win" ? "#228D57" : status === "lose" ? "#ef4444" : "var(--text-primary)" }}>
                         {raffle.winningItem || "N/A"}
                       </td>
                     </tr>

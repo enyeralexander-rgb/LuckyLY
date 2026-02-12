@@ -29,17 +29,18 @@ export function Header() {
     
     // Cargar datos del usuario si está autenticado
     if (storedAuth?.token) {
-      fetch("/api/user/profile", { headers: { Authorization: `Bearer ${storedAuth.token}` } })
-        .then((r) => r.json())
-        .then((data) => {
-          if (!data.error) {
-            setUserData(data);
-          }
-        })
-        .catch(() => {});
-      
-      // Cargar notificaciones no leídas (solo para usuarios regulares)
-      if (storedAuth.user?.role === "USER") {
+      const role = storedAuth.user?.role;
+      if (role === "USER") {
+        fetch("/api/user/profile", { headers: { Authorization: `Bearer ${storedAuth.token}` } })
+          .then((r) => r.json())
+          .then((data) => {
+            if (!data.error) {
+              setUserData(data);
+            }
+          })
+          .catch(() => {});
+
+        // Cargar notificaciones no leídas (solo para usuarios regulares)
         fetch("/api/user/notifications?unreadOnly=true", { headers: { Authorization: `Bearer ${storedAuth.token}` } })
           .then((r) => r.json())
           .then((data) => {
@@ -48,6 +49,8 @@ export function Header() {
             }
           })
           .catch(() => {});
+      } else {
+        setUserData(storedAuth.user || null);
       }
     }
   }, []);

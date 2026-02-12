@@ -150,17 +150,30 @@ function CrearSorteosPageContent() {
   }
 
   function validatePrizes(): { error: string | null, invalidIndex: number | null } {
-    // Validar que el 3° ganador no puede ganar más que el 2°, y el 2° no puede ganar más que el 1°
-    const prizes = formData.prizes.slice(0, formData.winnersCount).map(p => parseFloat(p) || 0);
-    
-    if (prizes.length >= 3 && prizes[2] > prizes[1]) {
+    const slots = parseInt(formData.slots) || 0;
+    const pricePerSlot = parseFloat(formData.pricePerSlot) || 0;
+    const totalIncome = slots * pricePerSlot;
+    const requiredTotalPrize = totalIncome * 0.70;
+
+    const currentPrizes = formData.prizes.slice(0, formData.winnersCount).map(p => parseFloat(p) || 0);
+    const currentTotalPrize = currentPrizes.reduce((a, b) => a + b, 0);
+
+    // Validar orden descendente
+    if (currentPrizes.length >= 3 && currentPrizes[2] > currentPrizes[1]) {
       return { error: "El 3° ganador no puede ganar un monto mayor que el 2° ganador", invalidIndex: 2 };
     }
-    if (prizes.length >= 2 && prizes[1] > prizes[0]) {
+    if (currentPrizes.length >= 2 && currentPrizes[1] > currentPrizes[0]) {
       return { error: "El 2° ganador no puede ganar un monto mayor que el 1° ganador", invalidIndex: 1 };
     }
+
+    // Validar regla del 70% (con margen de error de 0.1)
+    if (Math.abs(currentTotalPrize - requiredTotalPrize) > 0.1) {
+      return { 
+        error: `El total de premios (Bs. ${currentTotalPrize.toFixed(2)}) debe ser el 70% del ingreso total (Bs. ${requiredTotalPrize.toFixed(2)})`, 
+        invalidIndex: -1 
+      };
+    }
     
-    // Los premios son totalmente personalizables - sin restricción del 50%
     return { error: null, invalidIndex: null };
   }
 
@@ -463,12 +476,50 @@ function CrearSorteosPageContent() {
             })}
             <small style={{ color: "var(--text-primary)", opacity: 0.7 }}>
               Los premios deben estar ordenados de mayor a menor (1° ganador ≥ 2° ganador ≥ 3° ganador).
-              {formData.pricePerSlot && formData.slots && (
-                <span style={{ display: "block", marginTop: "0.25rem" }}>
-                  Ganancias totales estimadas: Bs. {(parseFloat(formData.pricePerSlot) * parseInt(formData.slots || "0")).toFixed(2)}
-                </span>
-              )}
             </small>
+            
+            {/* Validación en tiempo real del 70% */}
+            {formData.pricePerSlot && formData.slots && (
+              <div style={{ 
+                marginTop: "0.5rem", 
+                padding: "0.75rem", 
+                borderRadius: "8px", 
+                background: "var(--input-bg)",
+                border: "1px solid var(--border-color)"
+              }}>
+                {(() => {
+                  const slots = parseInt(formData.slots) || 0;
+                  const price = parseFloat(formData.pricePerSlot) || 0;
+                  const required = slots * price * 0.70;
+                  const current = formData.prizes.slice(0, formData.winnersCount).reduce((sum, p) => sum + (parseFloat(p) || 0), 0);
+                  const diff = current - required;
+                  const isCorrect = Math.abs(diff) < 0.1;
+
+                  return (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+                        <span style={{ color: "var(--text-secondary)" }}>Total requerido (70%):</span>
+                        <strong style={{ color: "var(--text-primary)" }}>Bs. {required.toFixed(2)}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+                        <span style={{ color: "var(--text-secondary)" }}>Total actual:</span>
+                        <strong style={{ color: isCorrect ? "#85BB65" : "#ef4444" }}>Bs. {current.toFixed(2)}</strong>
+                      </div>
+                      {!isCorrect && (
+                        <div style={{ marginTop: "0.5rem", color: "#ef4444", fontSize: "0.875rem", fontWeight: 600 }}>
+                          ⚠️ Ajuste necesario: {diff > 0 ? `Sobran Bs. ${diff.toFixed(2)}` : `Faltan Bs. ${Math.abs(diff).toFixed(2)}`}
+                        </div>
+                      )}
+                      {isCorrect && (
+                        <div style={{ marginTop: "0.5rem", color: "#85BB65", fontSize: "0.875rem", fontWeight: 600 }}>
+                          ✅ ¡Perfecto! El total de premios es exactamente el 70%.
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
           </div>
 
           <label style={{ display: "flex", gap: ".5rem", alignItems: "center", cursor: "pointer" }}>

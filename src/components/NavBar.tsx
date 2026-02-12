@@ -1,11 +1,15 @@
- "use client";
+"use client";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { clearStoredAuth, getStoredAuth } from "../lib/clientAuth";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
+import Image from "next/image";
 
 export function NavBar() {
   const router = useRouter();
+  const { theme, resolvedTheme } = useTheme();
   const [auth, setAuth] = useState<any>(null);
   const [userData, setUserData] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
@@ -73,85 +77,96 @@ export function NavBar() {
     }
   }
 
+  // Determine logo source based on theme
+  const logoSrc = mounted && (theme === 'dark' || resolvedTheme === 'dark')
+    ? "/images/LuckyLy-Logo-BLANCO-SIN-FONDO.png"
+    : "/images/LuckyLy-Logo-VERDE-SIN-FONDO.png";
+
   return (
-    <header className="navbar-responsive">
-      <div className="container" style={{ display: "flex", alignItems: "center", gap: "1rem", justifyContent: "center", padding: "1rem 0" }}>
-        <div className="navbar-grid">
-          <div className="navbar-logo" onClick={() => router.push("/")}>
-            <img 
-              src="/images/LuckyLy-Logo.png" 
-              alt="LuckyLY Logo"
-            />
+    <header className="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 transition-colors z-50 relative">
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center justify-between">
+          
+          {/* Logo Section */}
+          <div className="flex-shrink-0 cursor-pointer" onClick={() => router.push("/")}>
+            <div className="relative h-10 w-32 md:w-40">
+              {mounted && (
+                <Image 
+                  src={logoSrc}
+                  alt="LuckyLY Logo"
+                  fill
+                  className="object-contain object-left"
+                  priority
+                />
+              )}
+            </div>
           </div>
-          <nav className="navbar-nav">
-            <Link href="/">Inicio</Link>
-            <Link href="/live">En Vivo</Link>
-            <Link href="/results">Resultados</Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-6 absolute left-1/2 transform -translate-x-1/2">
+            <Link href="/" className="text-brand-dark dark:text-brand-light font-medium uppercase hover:text-brand transition-colors">Inicio</Link>
+            <Link href="/live" className="text-brand-dark dark:text-brand-light font-medium uppercase hover:text-brand transition-colors">En Vivo</Link>
+            <Link href="/results" className="text-brand-dark dark:text-brand-light font-medium uppercase hover:text-brand transition-colors">Resultados</Link>
           </nav>
-          <div className="navbar-actions">
-            {!mounted || !auth ? (
+
+          {/* User Actions Section */}
+          <div className="flex items-center gap-3">
+            {!mounted ? (
+               // Placeholder to prevent hydration mismatch layout shift
+               <div className="w-24 h-10"></div>
+            ) : !auth ? (
               <>
-                <Link href="/auth/login" style={{ textDecoration: "none", color: "#1a5c2e", fontWeight: 500, textTransform: "uppercase" }}>Ingresar</Link>
-                <Link href="/auth/register" style={{ padding: ".5rem .75rem", background: "#2a8c4a", color: "#ffffff", borderRadius: "8px", fontWeight: 700, textDecoration: "none", textTransform: "uppercase", transition: "background 0.2s" }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "#3a9c5a"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "#2a8c4a"}>
+                <Link href="/auth/login" className="hidden sm:block text-brand-dark dark:text-brand-light font-medium uppercase hover:underline">
+                  Ingresar
+                </Link>
+                <Link href="/auth/register" className="px-4 py-2 bg-brand text-white rounded-lg font-bold uppercase hover:bg-brand-accent transition-colors text-sm">
                   Registrarse
                 </Link>
               </>
             ) : (
-              <div style={{ position: "relative" }}>
+              <div className="relative">
                 <button
                   onClick={() => setMenuOpen((v) => !v)}
-                  style={{
-                    padding: ".5rem .75rem",
-                    borderRadius: "999px",
-                    border: "1px solid #d0fdd7",
-                    background: "#e8f5eb",
-                    color: "#1a5c2e",
-                    cursor: "pointer"
-                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-full border border-brand-border bg-brand-bg dark:bg-gray-800 dark:border-gray-700 text-brand-dark dark:text-brand-light font-bold hover:shadow-md transition-shadow"
                 >
-                  👤 {userData?.username || auth.user.username || auth.user.email.split("@")[0]}
+                  <span>👤</span>
+                  <span className="max-w-[100px] truncate hidden sm:inline">
+                    {userData?.username || auth.user.username || auth.user.email.split("@")[0]}
+                  </span>
                 </button>
+                
+                {/* Dropdown Menu */}
                 {menuOpen && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: 0,
-                      marginTop: ".5rem",
-                      background: "#ffffff",
-                      border: "1px solid #d0fdd7",
-                      boxShadow: "0 4px 12px rgba(42, 140, 74, 0.15)",
-                      borderRadius: "10px",
-                      minWidth: "200px",
-                      zIndex: 10
-                    }}
-                  >
-                    <Link href="/cuenta" style={{ display: "block", padding: ".75rem 1rem", color: "#1a5c2e", textTransform: "uppercase", borderBottom: "1px solid #d0fdd7" }} onClick={() => setMenuOpen(false)}>
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl rounded-xl overflow-hidden z-50">
+                    <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Bienvenido</p>
+                      <p className="font-bold text-brand-dark dark:text-brand-light truncate">
+                        {userData?.username || auth.user.username || auth.user.email.split("@")[0]}
+                      </p>
+                    </div>
+                    
+                    {/* Mobile Nav Links inside Dropdown */}
+                    <div className="md:hidden border-b border-gray-100 dark:border-gray-700">
+                      <Link href="/" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Inicio</Link>
+                      <Link href="/live" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">En Vivo</Link>
+                      <Link href="/results" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Resultados</Link>
+                    </div>
+
+                    <Link href="/cuenta" className="block px-4 py-3 text-brand-dark dark:text-brand-light hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700" onClick={() => setMenuOpen(false)}>
                       MI CUENTA
                     </Link>
-                    <Link href="/cuenta/configuracion" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem" }} onClick={() => setMenuOpen(false)}>
+                    <Link href="/cuenta/configuracion" className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" onClick={() => setMenuOpen(false)}>
                       ⚙️ Configuración
                     </Link>
-                    <Link href="/cuenta/historial" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem" }} onClick={() => setMenuOpen(false)}>
+                    <Link href="/cuenta/historial" className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" onClick={() => setMenuOpen(false)}>
                       🎲 Historial de Apuestas
                     </Link>
-                    <Link href="/cuenta/datos-bancarios" style={{ display: "block", padding: ".75rem 1rem", color: "#2a8c4a", fontSize: "0.875rem", borderBottom: "1px solid #d0fdd7" }} onClick={() => setMenuOpen(false)}>
+                    <Link href="/cuenta/datos-bancarios" className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700" onClick={() => setMenuOpen(false)}>
                       🏦 Datos Bancarios
                     </Link>
                     <button
                       onClick={logout}
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        padding: ".75rem 1rem",
-                        border: "none",
-                        background: "transparent",
-                        color: "#1a5c2e",
-                        textAlign: "left",
-                        cursor: "pointer",
-                        textTransform: "uppercase"
-                      }}
+                      className="block w-full px-4 py-3 text-left hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors uppercase text-sm font-bold"
                     >
                       Cerrar sesión
                     </button>
@@ -165,4 +180,3 @@ export function NavBar() {
     </header>
   );
 }
-
