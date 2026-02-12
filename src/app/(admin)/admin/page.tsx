@@ -6,8 +6,12 @@ import { AuthGuard } from "../../../components/AuthGuard";
 import { getStoredAuth } from "../../../lib/clientAuth";
 import Link from "next/link";
 
+import { NotificationBadge } from "../../../components/ui/NotificationBadge";
+import { useNotificationStats } from "../../../hooks/useNotificationStats";
+
 function AdminHomePageContent() {
   const [role, setRole] = useState<string | null>(null);
+  const { stats } = useNotificationStats();
 
   useEffect(() => {
     const auth = getStoredAuth();
@@ -35,12 +39,13 @@ function AdminHomePageContent() {
             {/* Módulos Operativos - Todos los roles excepto CONTABLE */}
             {!isContable && (
               <>
-                <Link href="/admin/sorteos/crear" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+                <Link href="/admin/sorteos/crear" className="card relative" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
                   <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>Crear Sorteos</h3>
                   <p style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Configura y abre nuevos sorteos con diferentes tipos de ruletas, precios, premios y fechas de ejecución.</p>
                 </Link>
 
-                <Link href="/admin/sorteos/ejecutar" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+                <Link href="/admin/sorteos/ejecutar" className="card relative" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+                  <NotificationBadge count={stats?.readyToExecute || 0} />
                   <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>Ejecutar Sorteos</h3>
                   <p style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Gira la ruleta animada para determinar los ganadores de sorteos con todos los cupos comprados.</p>
                 </Link>
@@ -48,12 +53,14 @@ function AdminHomePageContent() {
             )}
 
             {/* Módulos Operativos - Confirmar Cupos y Pagar Premios (todos los roles incluyendo CONTABLE) */}
-            <Link href="/admin/sorteos/cupos" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+            <Link href="/admin/sorteos/cupos" className="card relative" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+              <NotificationBadge count={stats?.pendingSlots || 0} />
               <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>Confirmar Cupos</h3>
               <p style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Revisa y confirma o rechaza cupos pendientes de pago móvil de forma individual.</p>
             </Link>
 
-            <Link href="/admin/pagos" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+            <Link href="/admin/pagos" className="card relative" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+              <NotificationBadge count={stats?.pendingClaims || 0} />
               <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>Pagar Premios</h3>
               <p style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Procesa reclamos de premios, revisa datos bancarios y confirma pagos realizados.</p>
             </Link>
