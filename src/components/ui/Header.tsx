@@ -63,7 +63,7 @@ export function Header() {
     setUserMenuOpen(false);
   }, [pathname]);
 
-  // Cerrar menú desplegable al hacer clic fuera (no cerrar en paso 2 del tutorial para que pueda hacer clic en Registrarse)
+  // Cerrar menú desplegable al hacer clic fuera (no cerrar en paso 2 del tutorial)
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (tutorial?.step === 2) return;
@@ -80,7 +80,6 @@ export function Header() {
     }
   }, [userMenuOpen, tutorial?.step]);
 
-  // Tutorial: notificar cuando se abre/cierra el menú (paso 1 → 2)
   useEffect(() => {
     tutorial?.onMenuOpenChange(userMenuOpen);
   }, [userMenuOpen, tutorial]);
