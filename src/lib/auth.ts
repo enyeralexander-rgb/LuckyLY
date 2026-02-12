@@ -1,7 +1,14 @@
 import jwt from "jsonwebtoken";
 import { Role } from "@prisma/client";
 
-const JWT_SECRET = process.env.JWT_SECRET || "insecure-secret";
+// Helper to get secret lazily
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("CRITICAL: JWT_SECRET environment variable is not defined.");
+  }
+  return secret;
+}
 
 export type AuthContext = {
   userId: string;
@@ -29,7 +36,7 @@ function parseCookie(cookieHeader?: string | null): Record<string, string> {
     cookieHeader.split(";").map((c) => {
       const [k, ...rest] = c.trim().split("=");
       return [k, rest.join("=")];
-    })
+    }),
   );
 }
 
@@ -40,21 +47,28 @@ export function getTokenFromRequest(request: Request): string | null {
   return cookies["auth_token"] ?? null;
 }
 
-export function requireAuth(request: Request, allowedRoles?: Role[]): AuthContext {
+export function requireAuth(
+  request: Request,
+  allowedRoles?: Role[],
+): AuthContext {
   const token = getTokenFromRequest(request);
   if (!token) {
     throw new AuthError("No autenticado", 401);
   }
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { sub: string; role: Role };
-    if (!payload?.sub || !payload.role) throw new AuthError("Token inválido", 401);
-    if (allowedRoles && !allowedRoles.includes(payload.role)) {
+    const secret = getJwtSecret();
+    const payload = jwt.verify(token, secret) as jwt.JwtPayload;
+    
+    if (!payload.sub || !payload.role) throw new AuthError("Token inválido", 401);
+    
+    const role = payload.role as Role;
+    
+    if (allowedRoles && !allowedRoles.includes(role)) {
       throw new AuthError("Sin permisos", 403);
     }
-    return { userId: payload.sub, role: payload.role };
+    return { userId: payload.sub as string, role: role };
   } catch (err) {
     if (err instanceof AuthError) throw err;
     throw new AuthError("Token inválido", 401);
   }
 }
-

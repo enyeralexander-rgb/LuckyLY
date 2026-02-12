@@ -3,15 +3,36 @@ import { prisma } from "../../../lib/prisma";
 import { raffleCreateSchema } from "../../../lib/validators";
 import { requireAuth, AuthError, getTokenFromRequest } from "../../../lib/auth";
 import { isDatabaseConnectionError } from "../../../lib/dbErrors";
-import { Role } from "@prisma/client";
+import { Role, Prisma } from "@prisma/client";
+
+// Definir el tipo específico que retorna la consulta con sus relaciones
+type RaffleWithRelations = Prisma.RaffleGetPayload<{
+  include: {
+    createdBy: { select: { name: true } };
+    ticketItems: {
+      select: {
+        id: true;
+        value: true;
+        status: true;
+        ticket: {
+          select: {
+            user: {
+              select: { name: true; email: true };
+            };
+          };
+        };
+      };
+    };
+  };
+}>;
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const includeNotApproved = searchParams.get("includeNotApproved") === "true";
 
-    // Construir el filtro WHERE
-    const whereClause: any = {};
+    // Construir el filtro WHERE con tipos correctos
+    const whereClause: Prisma.RaffleWhereInput = {};
     
     // Por defecto, solo mostrar sorteos aprobados a usuarios públicos
     // Los administradores pueden ver todos pasando includeNotApproved=true
@@ -43,7 +64,7 @@ export async function GET(request: Request) {
     });
     
     // Formatear los datos para asegurar consistencia
-    const formattedRaffles = raffles.map((raffle) => ({
+    const formattedRaffles = raffles.map((raffle: RaffleWithRelations) => ({
       id: raffle.id,
       title: raffle.title,
       description: raffle.description,
@@ -53,7 +74,7 @@ export async function GET(request: Request) {
       status: raffle.status || "ACTIVE",
       approved: raffle.approved ?? false,
       mirrorMode: raffle.mirrorMode ?? false,
-      ticketItems: (raffle.ticketItems || []).map((item: any) => ({
+      ticketItems: (raffle.ticketItems || []).map((item) => ({
         id: item.id,
         value: item.value || "",
         status: item.status || null,

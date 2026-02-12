@@ -6,10 +6,14 @@ import { Role } from "@prisma/client";
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const auth = requireAuth(request, [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER]);
-    const { paymentRef } = await request.json();
+    const { paymentRef, paidAmount } = await request.json();
 
     if (!paymentRef) {
       return NextResponse.json({ error: "Referencia de pago requerida" }, { status: 400 });
+    }
+
+    if (!paidAmount) {
+      return NextResponse.json({ error: "El monto pagado es requerido para auditoría" }, { status: 400 });
     }
 
     const claim = await prisma.prizeClaim.findUnique({
@@ -31,6 +35,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       data: {
         status: "PAID",
         paymentRef,
+        paidAmount: parseFloat(paidAmount),
         processedAt: new Date(),
         processedById: auth.userId
       }
