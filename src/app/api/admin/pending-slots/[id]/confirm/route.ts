@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
-import { Role, NotificationType } from "@prisma/client";
+import { Role } from "@prisma/client";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -41,30 +41,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
           where: { id: item.ticketId },
           data: { status: "CONFIRMED" }
         });
-
-        // Crear notificación de confirmación
-        const ticket = await tx.ticket.findUnique({
-          where: { id: item.ticketId },
-          include: { raffle: true }
-        });
-
-        if (ticket) {
-          const ticketItems = Array.isArray(ticket.items) ? ticket.items : [];
-          await tx.notification.create({
-            data: {
-              userId: ticket.userId,
-              type: NotificationType.TICKET_CONFIRMED,
-              title: "Cupos confirmados",
-              message: `Tus ${ticketItems.length} cupo(s) (${ticketItems.join(", ")}) para "${ticket.raffle.title}" han sido confirmados exitosamente.`,
-              data: {
-                ticketId: ticket.id,
-                raffleId: ticket.raffleId,
-                items: ticketItems,
-                totalPaid: Number(ticket.totalPaid)
-              }
-            }
-          });
-        }
       }
     });
 

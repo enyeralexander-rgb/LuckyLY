@@ -41,6 +41,34 @@ export const raffleCreateSchema = z.object({
   startsAt: z.coerce.date().nullable().optional(),
   closesAt: z.coerce.date().nullable().optional(),
   prizes: z.array(z.string()).min(1)
+}).refine((data) => {
+  // Regla de Orden: Premios de mayor a menor
+  // Convertimos a números para comparar
+  const values = data.prizes.map((p) => parseFloat(p) || 0);
+  for (let i = 0; i < values.length - 1; i++) {
+    if (values[i] < values[i + 1]) {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: "Los premios deben estar ordenados de mayor a menor (1° >= 2° >= 3°...)",
+  path: ["prizes"]
+}).refine((data) => {
+  // Regla del 70%: El total de premios debe ser EXÁCTAMENTE el 70% del ingreso total
+  const totalIncome = data.slots * data.pricePerSlot;
+  const requiredPrizePool = totalIncome * 0.70;
+  
+  const currentPrizePool = data.prizes.reduce((acc, curr) => {
+    const val = parseFloat(curr) || 0;
+    return acc + val;
+  }, 0);
+  
+  // Usamos una pequeña tolerancia para errores de punto flotante, aunque en moneda debería ser exacto
+  return Math.abs(currentPrizePool - requiredPrizePool) < 0.1;
+}, {
+  message: "El valor total de los premios debe ser exactamente el 70% del valor total del sorteo (Cupos * Precio)",
+  path: ["prizes"]
 });
 
 export const ticketPurchaseSchema = z.object({
