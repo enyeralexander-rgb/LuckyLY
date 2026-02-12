@@ -1573,7 +1573,7 @@ video {
     justify-self: end;
   }
   
-  /* No ocultar .header-actions en móvil: el menú hamburguesa vive ahí (header-grid-simple) */
+  /* No ocultar .header-actions en móvil: el menú hamburguesa vive ahí */
   
   .header-menu-dropdown {
     left: 0;
@@ -2840,7 +2840,18 @@ video {
   text-align: center;
 }
 
-/* Tutorial responsive: móviles */
+.tutorial-highlight-menu,
+.tutorial-highlight-register {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px transparent;
+}
+
+.tutorial-highlight-register {
+  outline-color: var(--color-primary-dark);
+}
+
 @media (max-width: 768px) {
   .tutorial-backdrop {
     padding: 0.75rem;
@@ -2911,18 +2922,6 @@ video {
   .tutorial-spotlight-text {
     font-size: 0.875rem;
   }
-}
-
-.tutorial-highlight-menu,
-.tutorial-highlight-register {
-  outline: 3px solid var(--color-primary);
-  outline-offset: 2px;
-  border-radius: 8px;
-  box-shadow: 0 0 0 9999px transparent;
-}
-
-.tutorial-highlight-register {
-  outline-color: var(--color-primary-dark);
 }
 
 @keyframes tutorial-fade-in {

@@ -70,7 +70,6 @@ export function TutorialOverlay() {
     };
   }, [step, registerLinkRef]);
 
-  // Pasos 3, 4, 5: elementos en la página de registro (por data attributes)
   useEffect(() => {
     const stepVal = step;
     const selector =
@@ -111,7 +110,6 @@ export function TutorialOverlay() {
 
   const currentStepLabel = step + 1;
 
-  // Paso 0: modal de bienvenida
   if (step === 0) {
     return (
       <div className="tutorial-backdrop" role="dialog" aria-modal="true" aria-labelledby="tutorial-welcome-title">
@@ -126,18 +124,10 @@ export function TutorialOverlay() {
             ¿Deseas seguir un breve tutorial para registrarte en la página y poder comenzar a jugar las ruletas?
           </p>
           <div className="tutorial-actions">
-            <button
-              type="button"
-              className="tutorial-btn tutorial-btn-skip"
-              onClick={skipTutorial}
-            >
+            <button type="button" className="tutorial-btn tutorial-btn-skip" onClick={skipTutorial}>
               Omitir
             </button>
-            <button
-              type="button"
-              className="tutorial-btn tutorial-btn-primary"
-              onClick={confirmWelcome}
-            >
+            <button type="button" className="tutorial-btn tutorial-btn-primary" onClick={confirmWelcome}>
               Siguiente
             </button>
           </div>
@@ -146,7 +136,6 @@ export function TutorialOverlay() {
     );
   }
 
-  // Pasos 1–5: overlay con blur y spotlight
   const spotlightRect =
     step === 1 ? menuRect : step === 2 ? registerRect : step >= 3 && step <= 5 ? registerPageRect : null;
   const message =
@@ -173,28 +162,56 @@ export function TutorialOverlay() {
       }
     : null;
 
+  const safe = 20;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 600;
+  const minTop = safe + MESSAGE_HEIGHT_ESTIMATE;
+  const maxTop = vh - safe - MESSAGE_HEIGHT_ESTIMATE;
+
+  let messageStyle: React.CSSProperties;
+  let messageClass = "";
+
+  if (!spotlightRect) {
+    messageStyle = { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
+  } else if (isMobile) {
+    const above = step >= 3;
+    const roomAbove = spotlightRect.top - 24 >= MESSAGE_HEIGHT_ESTIMATE + safe;
+    const useAbove = above && roomAbove;
+    const topAbove = Math.max(minTop, spotlightRect.top - 24);
+    const topBelow = Math.min(maxTop, spotlightRect.bottom + 16);
+    messageStyle = {
+      left: "50%",
+      top: useAbove ? topAbove : topBelow,
+      transform: useAbove ? "translate(-50%, -100%)" : "translate(-50%, 0)",
+    };
+    messageClass = useAbove ? "tutorial-message-mobile-above" : "tutorial-message-mobile-below";
+  } else {
+    messageStyle =
+      step >= 3
+        ? {
+            top: spotlightRect.top - 24,
+            left: spotlightRect.left + spotlightRect.width / 2,
+            transform: "translate(-50%, -100%)",
+          }
+        : {
+            top: spotlightRect.bottom + 24,
+            left: spotlightRect.left + spotlightRect.width / 2,
+            transform: "translateX(-50%)",
+          };
+  }
+
   return (
     <div className="tutorial-backdrop tutorial-backdrop-blur" role="dialog" aria-modal="true">
-      {/* Overlay visual: no bloquea clics (pointer-events: none) */}
       <svg className="tutorial-spotlight-svg" aria-hidden="true">
         <defs>
           <mask id="tutorial-spotlight-mask">
             <rect width="100%" height="100%" fill="white" />
             {hole && (
-              <rect
-                x={hole.x}
-                y={hole.y}
-                width={hole.w}
-                height={hole.h}
-                rx="12"
-                fill="black"
-              />
+              <rect x={hole.x} y={hole.y} width={hole.w} height={hole.h} rx="12" fill="black" />
             )}
           </mask>
         </defs>
         <rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#tutorial-spotlight-mask)" />
       </svg>
-      {/* Bloques que capturan clics solo fuera del agujero para que el menú sea clickeable */}
       {hole && (
         <>
           <div className="tutorial-spotlight-blocker" style={{ top: 0, left: 0, right: 0, height: hole.y }} />
@@ -203,50 +220,8 @@ export function TutorialOverlay() {
           <div className="tutorial-spotlight-blocker" style={{ top: hole.y + hole.h, left: 0, right: 0, bottom: 0 }} />
         </>
       )}
-      {(spotlightRect || (step >= 1 && step <= 5)) && (() => {
-        const safe = 20;
-        const vh = typeof window !== "undefined" ? window.innerHeight : 600;
-        const minTop = safe + MESSAGE_HEIGHT_ESTIMATE;
-        const maxTop = vh - safe - MESSAGE_HEIGHT_ESTIMATE;
-
-        let style: React.CSSProperties;
-        let messageClass = "";
-
-        if (!spotlightRect) {
-          style = { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
-        } else if (isMobile) {
-          const above = step >= 3;
-          const roomAbove = spotlightRect.top - 24 >= MESSAGE_HEIGHT_ESTIMATE + safe;
-          const useAbove = above && roomAbove;
-          const topAbove = Math.max(minTop, spotlightRect.top - 24);
-          const topBelow = Math.min(maxTop, spotlightRect.bottom + 16);
-
-          style = {
-            left: "50%",
-            top: useAbove ? topAbove : topBelow,
-            transform: useAbove ? "translate(-50%, -100%)" : "translate(-50%, 0)",
-          };
-          messageClass = useAbove ? "tutorial-message-mobile-above" : "tutorial-message-mobile-below";
-        } else {
-          style =
-            step >= 3
-              ? {
-                  top: spotlightRect.top - 24,
-                  left: spotlightRect.left + spotlightRect.width / 2,
-                  transform: "translate(-50%, -100%)",
-                }
-              : {
-                  top: spotlightRect.bottom + 24,
-                  left: spotlightRect.left + spotlightRect.width / 2,
-                  transform: "translateX(-50%)",
-                };
-        }
-
-        return (
-        <div
-          className={`tutorial-spotlight-message ${messageClass}`.trim()}
-          style={style}
-        >
+      {(spotlightRect || (step >= 1 && step <= 5)) && (
+        <div className={`tutorial-spotlight-message ${messageClass}`.trim()} style={messageStyle}>
           <div className="tutorial-step-badge">
             Paso {currentStepLabel} de {TUTORIAL_TOTAL_STEPS}
           </div>
@@ -262,18 +237,13 @@ export function TutorialOverlay() {
               </button>
             )}
             {step >= 3 && step <= 5 && (
-              <button
-                type="button"
-                className="tutorial-btn tutorial-btn-primary"
-                onClick={nextStep}
-              >
+              <button type="button" className="tutorial-btn tutorial-btn-primary" onClick={nextStep}>
                 {step === 5 ? "Finalizar tutorial" : "Siguiente"}
               </button>
             )}
           </div>
         </div>
-        );
-      })()}
+      )}
     </div>
   );
 }
