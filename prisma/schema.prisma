@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
@@ -122,6 +122,7 @@ model PrizeClaim {
   paymentProof  String? // URL o path del comprobante de pago
   processedAt   DateTime?
   processedById String?
+  paidAmount    Decimal?    @db.Decimal(10, 2) // Monto exacto pagado
   createdAt     DateTime    @default(now())
   ticket        Ticket      @relation(fields: [ticketId], references: [id])
   user          User        @relation(fields: [userId], references: [id])
@@ -242,7 +243,7 @@ model ReferralVisit {
   user           User?        @relation("ReferralUser", fields: [userId], references: [id])
   ip             String?
   userAgent      String?
-  country        String?      // País obtenido por geolocalización
+  country        String? // País obtenido por geolocalización
   registered     Boolean      @default(false)
   purchased      Boolean      @default(false)
   createdAt      DateTime     @default(now())
@@ -308,6 +309,8 @@ enum NotificationType {
   SYSTEM
   RAFFLE_CLOSING_SOON
   FAVORITE_RAFFLE_UPDATED
+  ADMIN_PAYMENT_ALERT
+  ADMIN_PRIZE_ALERT
 }
 
 model FavoriteRaffle {
@@ -405,46 +408,46 @@ enum AutomationType {
 }
 
 model HomePageConfig {
-  id                    String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Hero Section
-  heroImages            Json?    // Array de URLs de imágenes del hero (máx 5)
+  heroImages            Json? // Array de URLs de imágenes del hero (máx 5)
   heroTitle             String?
   heroSubtitle          String?
-  heroEffect            String?  // "fade", "slide", "parallax", "fade-in-reveal", "zoom-in-out", "horizontal-scroll", "text-animation", "carousel", "none"
-  heroEffectParams      Json?    // Parámetros específicos de cada efecto
-  heroAutoSlide         Boolean  @default(false)
-  heroAutoSlideMode     String?  // "none", "linear", "reverse", "fade", "zoom", "slide-up", "slide-down"
-  heroAutoSlideInterval Int      @default(5000)
-  heroPauseOnHover      Boolean  @default(false) // Pausar deslizamiento al pasar el mouse
-  heroScrollFade        Boolean  @default(true)
-  heroOpacity           Float    @default(0.8)
-  heroBlur              Float    @default(4.0)
-  heroTextColor         String?  // Color del texto del título
-  heroSubtitleColor     String?  // Color del texto del subtítulo
-  heroOverlayColor      String?  // Color del overlay oscuro
-  heroOverlayOpacity    Float    @default(0.7)
-  heroImageSize         String?  // "cover" | "contain" - Tamaño de la imagen
-  
+  heroEffect            String? // "fade", "slide", "parallax", "fade-in-reveal", "zoom-in-out", "horizontal-scroll", "text-animation", "carousel", "none"
+  heroEffectParams      Json? // Parámetros específicos de cada efecto
+  heroAutoSlide         Boolean @default(false)
+  heroAutoSlideMode     String? // "none", "linear", "reverse", "fade", "zoom", "slide-up", "slide-down"
+  heroAutoSlideInterval Int     @default(5000)
+  heroPauseOnHover      Boolean @default(false) // Pausar deslizamiento al pasar el mouse
+  heroScrollFade        Boolean @default(true)
+  heroOpacity           Float   @default(0.8)
+  heroBlur              Float   @default(4.0)
+  heroTextColor         String? // Color del texto del título
+  heroSubtitleColor     String? // Color del texto del subtítulo
+  heroOverlayColor      String? // Color del overlay oscuro
+  heroOverlayOpacity    Float   @default(0.7)
+  heroImageSize         String? // "cover" | "contain" - Tamaño de la imagen
+
   // Video Instagram
-  instagramVideoUrl     String?
-  
+  instagramVideoUrl String?
+
   // Header
-  headerConfig          Json?    // Configuración del header
-  
+  headerConfig Json? // Configuración del header
+
   // Contacto
-  contactConfig         Json?    // Configuración de contacto
-  
+  contactConfig Json? // Configuración de contacto
+
   // Footer
-  footerConfig          Json?    // Configuración del footer
-  
+  footerConfig Json? // Configuración del footer
+
   // Orden y Visibilidad
-  sectionOrder          Json?    // Array con orden de todas las secciones
-  sectionVisibility     Json?    // Objeto con visibilidad de cada sección
-  
-  updatedById           String?
-  updatedAt             DateTime @updatedAt
-  createdAt             DateTime @default(now())
+  sectionOrder      Json? // Array con orden de todas las secciones
+  sectionVisibility Json? // Objeto con visibilidad de cada sección
+
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
 
   @@index([updatedById])
 }

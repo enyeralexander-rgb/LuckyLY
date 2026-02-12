@@ -2,8 +2,9 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Fredoka, Oswald } from "next/font/google";
 import { ThemeProvider } from "../components/providers/ThemeProvider";
+import { TutorialProvider } from "../contexts/TutorialContext";
+import { TutorialOverlay } from "../components/TutorialOverlay";
 import { Header } from "../components/ui/Header";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Usar Fredoka en lugar de Cherry Bomb One (más confiable en Vercel)
 const fredoka = Fredoka({ 
@@ -26,9 +27,12 @@ export const metadata: Metadata = {
   title: "LuckyLY",
   description: "Plataforma de sorteos con ruleta, recargas y panel administrativo",
   icons: {
-    icon: "/images/LuckyLy-Isotipo.png",
+    icon: [
+      { url: "/images/LuckyLy-Logo-BLANCO-SIN-FONDO.png", media: "(prefers-color-scheme: dark)" },
+      { url: "/images/LuckyLy-Logo-VERDE-SIN-FONDO.png", media: "(prefers-color-scheme: light)" },
+    ],
+    shortcut: "/images/LuckyLy-Isotipo.png",
     apple: "/images/LuckyLy-Isotipo.png",
-    shortcut: "/images/LuckyLy-Isotipo.png"
   }
 };
 
@@ -37,10 +41,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`${fredoka.variable} ${oswald.variable}`} suppressHydrationWarning>
       <body className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
         <ThemeProvider>
-          <Header />
-          {children}
+          <TutorialProvider>
+            <Header />
+            {children}
+            <TutorialOverlay />
+          </TutorialProvider>
         </ThemeProvider>
-        <SpeedInsights />
       </body>
     </html>
   );

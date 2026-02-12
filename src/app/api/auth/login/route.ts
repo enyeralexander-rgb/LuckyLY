@@ -6,7 +6,12 @@ import { loginSchema } from "../../../../lib/validators";
 import { Role } from "@prisma/client";
 import crypto from "crypto";
 
-const JWT_SECRET = process.env.JWT_SECRET || "insecure-secret";
+// Helper to get secret lazily (duplicated here to avoid circular deps if auth.ts imports prisma, though it doesn't seem to)
+// Actually, it's safer to just check process.env.JWT_SECRET consistent with middleware/auth
+const JWT_SECRET = process.env.JWT_SECRET || "";
+if (!process.env.JWT_SECRET) {
+  throw new Error("CRITICAL: JWT_SECRET is not defined in login route");
+}
 
 export async function POST(request: Request) {
   try {

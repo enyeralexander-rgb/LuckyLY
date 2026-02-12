@@ -29,7 +29,6 @@ export function RaffleGrid() {
         return r.json();
       })
       .then((data) => {
-        // Verificar que data es un array y no hay error
         if (data.error) {
           console.error("Error en la respuesta:", data.error);
           setRaffles([]);
@@ -44,10 +43,8 @@ export function RaffleGrid() {
           return;
         }
         
-        // Filtrar solo sorteos activos
         let activeRaffles = data.filter((r: any) => r && typeof r === "object" && r.status === "ACTIVE");
         
-        // Ordenar por fecha de inicio (los más cercanos primero)
         activeRaffles.sort((a: Raffle, b: Raffle) => {
           const dateA = a.startsAt ? new Date(a.startsAt).getTime() : Infinity;
           const dateB = b.startsAt ? new Date(b.startsAt).getTime() : Infinity;
@@ -76,7 +73,6 @@ export function RaffleGrid() {
   }
 
   function getAvailableSlots(raffle: Raffle): number {
-    // Contar solo cupos confirmados (excluir pendientes y rechazados)
     if (!raffle.ticketItems || !Array.isArray(raffle.ticketItems)) {
       return raffle.slots;
     }
@@ -90,7 +86,6 @@ export function RaffleGrid() {
     return prizes.map((prize, index) => {
       if (!prize || typeof prize !== "string") return "";
       
-      // Extraer número del premio (puede venir como "Bs. 1000.00", "1000 Bs", etc.)
       const match = prize.match(/(\d+(?:\.\d+)?)\s*Bs?/i);
       let amount = 0;
       if (match) {
@@ -102,37 +97,18 @@ export function RaffleGrid() {
         }
       }
       
-      // Validar que amount sea un número válido
-      if (isNaN(amount) || amount <= 0) {
-        return "";
-      }
-      
       const ordinal = index === 0 ? "1°" : index === 1 ? "2°" : "3°";
+      // Si no se pudo parsear un monto válido, mostrar el texto original
+      if (amount <= 0 && prize.trim().length > 0) return `${ordinal} Ganador: ${prize}`;
+      
       return `${ordinal} Ganador: Bs. ${amount.toFixed(2)}`;
     }).filter(line => line !== "").join("\n");
   }
 
-  function formatPrize(prize: string): string {
-    // Extraer número del premio (puede venir como "1000 Bs", "1500 Bs", "1000.50 Bs", etc.)
-    const match = prize.match(/(\d+(?:\.\d+)?)\s*Bs?/i);
-    if (match) {
-      const amount = parseFloat(match[1]);
-      return `Bs. ${amount.toFixed(2)}`;
-    }
-    // Si no tiene formato de "X Bs", intentar extraer número y formatear
-    const numberMatch = prize.match(/(\d+(?:\.\d+)?)/);
-    if (numberMatch) {
-      const amount = parseFloat(numberMatch[1]);
-      return `Bs. ${amount.toFixed(2)}`;
-    }
-    // Si no se puede parsear, retornar como está pero con "Bs." al inicio
-    return prize.includes("Bs") ? prize : `Bs. ${prize}`;
-  }
-
   if (loading) {
     return (
-      <section className="container" style={{ display: "grid", gap: "1rem", padding: "2rem 0" }}>
-        <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#3E3E3C" }}>
+      <section className="container grid gap-4 py-8">
+        <div className="card text-center p-8 text-brand-text">
           Cargando sorteos...
         </div>
       </section>
@@ -141,39 +117,32 @@ export function RaffleGrid() {
 
   if (raffles.length === 0) {
     return (
-      <section className="container" style={{ display: "grid", gap: "1rem", padding: "2rem 0" }}>
-        <div className="card" style={{ padding: "2rem", textAlign: "center", color: "#3E3E3C" }}>
+      <section className="container grid gap-4 py-8">
+        <div className="card text-center p-8 text-brand-text">
           No hay sorteos activos en este momento
         </div>
       </section>
     );
   }
 
-  // Mostrar solo los primeros 3 sorteos
   const displayedRaffles = raffles.slice(0, 3);
 
   return (
-    <section className="container" style={{ display: "grid", gap: "1.5rem", padding: "2rem 0" }}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
+    <section className="container grid gap-6 py-8">
+      <div className="flex flex-col items-center gap-4">
         <Link 
           href="/raffles" 
+          className="px-8 py-3 rounded-xl font-normal text-lg text-center uppercase font-[family-name:var(--font-cherry-bomb)] transition-transform hover:scale-105 active:scale-95"
           style={{ 
-            padding: ".75rem 2rem", 
-            background: "#85BB65", 
-            color: "#ffffff", 
-            borderRadius: "10px", 
-            fontWeight: 400, 
-            fontSize: "1.125rem",
-            textDecoration: "none",
-            textAlign: "center",
-            fontFamily: "var(--font-cherry-bomb), cursive, system-ui, sans-serif",
-            textTransform: "uppercase"
+            background: "var(--button-secondary)", 
+            color: "var(--button-text)",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.1)"
           }}
         >
           VER TODOS LOS SORTEOS ACTIVOS
         </Link>
       </div>
-      <div style={{ display: "grid", gap: "1.5rem", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {displayedRaffles.map((raffle) => {
           const availableSlots = getAvailableSlots(raffle);
           const isAvailable = availableSlots > 0;
@@ -185,53 +154,52 @@ export function RaffleGrid() {
                   <span style={{ padding: ".25rem .75rem", background: "#85BB65", borderRadius: "6px", fontSize: ".75rem", color: "#ffffff", fontWeight: 600 }}>
                     {getTypeLabel(raffle.type)}
                   </span>
-                  <span style={{ padding: ".25rem .75rem", background: isAvailable ? "#85BB65" : "#6b7280", borderRadius: "6px", fontSize: ".75rem", color: "#ffffff", fontWeight: 700 }}>
+                  <span style={{ padding: ".25rem .75rem", background: isAvailable ? "#85BB65" : "#6b7280", borderRadius: "6px", fontSize: ".75rem", color: "#3E3E3C", fontWeight: 700 }}>
                     {isAvailable ? "Disponible" : "Agotado"}
                   </span>
                 </div>
-                <h3 style={{ margin: 0, fontSize: "1.25rem" }}>{raffle.title}</h3>
+                <h3 style={{ margin: 0, fontSize: "1.125rem" }}>{raffle.title}</h3>
+                {raffle.startsAt && (
+                  <div style={{ fontSize: ".875rem", color: "#3E3E3C", marginTop: ".5rem" }}>
+                    {(() => {
+                      const date = new Date(raffle.startsAt);
+                      const day = String(date.getDate()).padStart(2, "0");
+                      const month = String(date.getMonth() + 1).padStart(2, "0");
+                      const year = date.getFullYear();
+                      const hours = date.getHours();
+                      const minutes = String(date.getMinutes()).padStart(2, "0");
+                      const period = hours >= 12 ? "P.M." : "A.M.";
+                      const displayHours = hours % 12 || 12;
+                      return `FECHA: ${day}/${month}/${year} ${String(displayHours).padStart(2, "0")}:${minutes} ${period}`;
+                    })()}
+                  </div>
+                )}
               </div>
               
               <div style={{ display: "grid", gap: ".75rem", padding: "1rem", background: "#f5f5e6", borderRadius: "8px", border: "1px solid #d4d4c4" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ color: "#3E3E3C", fontSize: ".875rem", opacity: 0.8 }}>Precio por cupo</span>
-                  <strong style={{ fontSize: "1.125rem", color: "#228D57", fontWeight: 700 }}>Bs. {Number(raffle.pricePerSlot).toFixed(2)}</strong>
+                  <strong style={{ fontSize: "1rem", color: "#228D57" }}>Bs. {Number(raffle.pricePerSlot).toFixed(2)}</strong>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ color: "#3E3E3C", fontSize: ".875rem", opacity: 0.8 }}>Cupos disponibles</span>
-                  <strong style={{ color: isAvailable ? "#85BB65" : "#ef4444" }}>
+                  <strong style={{ color: isAvailable ? "#85BB65" : "#ef4444", fontSize: ".875rem" }}>
                     {availableSlots}/{raffle.slots}
                   </strong>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ color: "#3E3E3C", fontSize: ".875rem", opacity: 0.8 }}>Ganadores</span>
-                  <strong style={{ color: "#3E3E3C" }}>{raffle.winnersCount}</strong>
+                  <strong style={{ fontSize: ".875rem", color: "#3E3E3C" }}>{raffle.winnersCount}</strong>
                 </div>
                 {raffle.prizes && Array.isArray(raffle.prizes) && raffle.prizes.length > 0 && (
                   <div style={{ marginTop: ".5rem", paddingTop: ".75rem", borderTop: "1px solid #d4d4c4" }}>
-                    <span style={{ color: "#3E3E3C", fontSize: ".875rem", opacity: 0.8 }}>Premios:</span>
-                    <div style={{ marginTop: ".25rem", color: "#228D57", fontWeight: 700, fontSize: "1.3125rem", fontFamily: "var(--font-oswald), sans-serif", whiteSpace: "pre-line" }}>
+                    <span style={{ color: "#3E3E3C", fontSize: ".75rem", opacity: 0.8 }}>Premios:</span>
+                    <div style={{ marginTop: ".25rem", color: "#228D57", fontWeight: 700, fontSize: "1.125rem", fontFamily: "var(--font-oswald), sans-serif", whiteSpace: "pre-line" }}>
                       {formatPrizesList(raffle.prizes)}
                     </div>
                   </div>
                 )}
               </div>
-              
-              {raffle.startsAt && (
-                <div style={{ fontSize: ".875rem", color: "#3E3E3C", marginTop: ".5rem" }}>
-                  {(() => {
-                    const date = new Date(raffle.startsAt);
-                    const day = String(date.getDate()).padStart(2, "0");
-                    const month = String(date.getMonth() + 1).padStart(2, "0");
-                    const year = date.getFullYear();
-                    const hours = date.getHours();
-                    const minutes = String(date.getMinutes()).padStart(2, "0");
-                    const period = hours >= 12 ? "P.M." : "A.M.";
-                    const displayHours = hours % 12 || 12;
-                    return `FECHA: ${day}/${month}/${year} ${String(displayHours).padStart(2, "0")}:${minutes} ${period}`;
-                  })()}
-                </div>
-              )}
               
               <Link
                 href={`/raffles/${raffle.id}`}
@@ -250,6 +218,7 @@ export function RaffleGrid() {
                   justifyContent: "center",
                   cursor: isAvailable ? "pointer" : "not-allowed",
                   opacity: isAvailable ? 1 : 0.6,
+                  fontSize: ".875rem",
                   textTransform: "uppercase"
                 }}
               >
