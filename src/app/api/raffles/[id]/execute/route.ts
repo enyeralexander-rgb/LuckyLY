@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
-import { Role, NotificationType } from "@prisma/client";
+import { Role } from "@prisma/client";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -116,28 +116,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
             }
           });
         }
-
-        // Crear notificación de victoria
-        const prizes = Array.isArray(ticket.raffle.prizes) ? ticket.raffle.prizes : [];
-        const prizeAmount = prizes.length > 0 ? prizes[0] : "Premio del sorteo";
-        
-        await prisma.notification.create({
-          data: {
-            userId: ticket.userId,
-            type: NotificationType.RAFFLE_WON,
-            title: "🎉 ¡Felicidades! Has ganado el sorteo",
-            message: `Has ganado el sorteo "${ticket.raffle.title}" con el cupo ganador: ${ticketItems.filter(item => winningItemsSet.has(item)).join(", ")}. Premio: ${prizeAmount}.`,
-            data: {
-              ticketId: ticket.id,
-              raffleId: params.id,
-              raffleTitle: ticket.raffle.title,
-              raffleType: ticket.raffle.type,
-              winningItems: ticketItems.filter(item => winningItemsSet.has(item)),
-              prizes: prizes,
-              totalPaid: Number(ticket.totalPaid)
-            }
-          }
-        });
       }
     }
 

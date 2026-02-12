@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { ticketPurchaseSchema } from "../../../../../lib/validators";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
-import { Role, NotificationType } from "@prisma/client";
+import { Role } from "@prisma/client";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -87,25 +87,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         }
       });
 
-      // Crear notificación de compra
-      await tx.notification.create({
-        data: {
-          userId: auth.userId,
-          type: paymentMethod === "MOBILE" ? NotificationType.TICKET_PURCHASED : NotificationType.TICKET_CONFIRMED,
-          title: paymentMethod === "MOBILE" 
-            ? "Compra de cupos pendiente de confirmación" 
-            : "Cupos comprados exitosamente",
-          message: paymentMethod === "MOBILE"
-            ? `Has comprado ${items.length} cupo(s) para "${created.raffle.title}". Tu pago está pendiente de confirmación por un administrador.`
-            : `Has comprado ${items.length} cupo(s) (${items.join(", ")}) para "${created.raffle.title}" por un total de ${Number(totalPaid).toFixed(2)} Bs.`,
-          data: {
-            ticketId: created.id,
-            raffleId: raffleId,
-            items: items,
-            totalPaid: Number(totalPaid)
-          }
-        }
-      });
+
 
       // Si el usuario tiene un link de referido asociado, actualizar contadores
       const user = await tx.user.findUnique({

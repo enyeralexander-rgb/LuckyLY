@@ -25,9 +25,12 @@ export const metadata: Metadata = {
   title: "LuckyLY",
   description: "Plataforma de sorteos con ruleta, recargas y panel administrativo",
   icons: {
-    icon: "/images/LuckyLy-Isotipo.png",
+    icon: [
+      { url: "/images/LuckyLy-Logo-BLANCO-SIN-FONDO.png", media: "(prefers-color-scheme: dark)" },
+      { url: "/images/LuckyLy-Logo-VERDE-SIN-FONDO.png", media: "(prefers-color-scheme: light)" },
+    ],
+    shortcut: "/images/LuckyLy-Isotipo.png",
     apple: "/images/LuckyLy-Isotipo.png",
-    shortcut: "/images/LuckyLy-Isotipo.png"
   }
 };
 
