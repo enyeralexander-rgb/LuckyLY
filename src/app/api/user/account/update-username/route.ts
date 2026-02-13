@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
 
 export async function PUT(request: Request) {
@@ -58,7 +59,7 @@ export async function PUT(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al actualizar username:", err);
+    logger.error("Error al actualizar username", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al actualizar nombre de usuario" }, { status: 500 });
   }
 }

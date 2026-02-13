@@ -5,6 +5,7 @@ import { registerSchema } from "../../../../lib/validators";
 import { sendEmailVerificationEmail } from "../../../../lib/email";
 import crypto from "crypto";
 import { getCountryFromIP } from "../../../../lib/geolocation";
+import { logger } from "../../../../lib/logger";
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       const errors = parsed.error.flatten().fieldErrors;
       const errorMessage = Object.values(errors).flat().join(", ");
-      console.error("Error de validación en registro:", errors);
+      logger.error("Error de validación en registro", { errors: Object.keys(errors) });
       return NextResponse.json({ error: errorMessage || "Datos inválidos" }, { status: 400 });
     }
 
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
         }
       } catch (geoError) {
         // Silenciar errores de geolocalización
-        console.warn("Error en geolocalización durante registro (no crítico):", geoError);
+        logger.warn("Error en geolocalización durante registro (no crítico)", { error: geoError instanceof Error ? geoError.message : String(geoError) });
       }
     }
 
@@ -177,7 +178,7 @@ export async function POST(request: Request) {
       message: "Registro exitoso. Por favor verifica tu email." 
     }, { status: 201 });
   } catch (error) {
-    console.error("Error en registro:", error);
+    logger.error("Error en registro", { error: error instanceof Error ? error.message : String(error) });
     
     // Si es un error de Prisma, dar un mensaje más amigable
     if (error && typeof error === 'object' && 'code' in error) {

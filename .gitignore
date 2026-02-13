@@ -54,6 +54,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Contenido generado en runtime (comprobantes de pago, etc.)
+public/uploads/
+
 # Archivos grandes y compilados
 LUCKYLYV01/
 LUCKYLYV01.tar.gz

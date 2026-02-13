@@ -39,7 +39,8 @@ export async function getGeoLocationFromIP(ip: string | null | undefined): Promi
     });
 
     if (!response.ok) {
-      console.warn(`Error en geolocalización para IP ${cleanIP}: ${response.status}`);
+      const { logger } = await import("./logger");
+      logger.warn("Error en geolocalización para IP", { cleanIP, status: response.status });
       return null;
     }
 
@@ -60,7 +61,8 @@ export async function getGeoLocationFromIP(ip: string | null | undefined): Promi
     return null;
   } catch (error) {
     // Silenciar errores de geolocalización (no es crítico)
-    console.warn(`Error al obtener geolocalización para IP ${ip}:`, error);
+    const { logger } = await import("./logger");
+    logger.warn("Error al obtener geolocalización para IP", { ip, error: error instanceof Error ? error.message : String(error) });
     return null;
   }
 }

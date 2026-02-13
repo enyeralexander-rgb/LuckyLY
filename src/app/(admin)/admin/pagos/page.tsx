@@ -12,6 +12,7 @@ type Claim = {
   createdAt: string;
   paymentRef: string | null;
   paymentProof: string | null;
+  suggestedPrize?: number;
   ticket: {
     id: string;
     totalPaid: number;
@@ -97,18 +98,20 @@ function PagosPageContent() {
       return;
     }
 
-    if (!confirm("¿Marcar este reclamo como pagado?")) return;
+    const amount = claim.suggestedPrize != null ? claim.suggestedPrize : Number(claim.ticket.totalPaid);
+    const confirmMsg = `¿Marcar este reclamo como pagado?\n\nMonto del premio: Bs. ${amount.toFixed(2)}\nSorteo: ${claim.ticket.raffle.title}\nGanador: ${claim.ticket.raffle.winningItem || "N/A"}\n\nA continuación se pedirá la referencia de pago.`;
+    if (!confirm(confirmMsg)) return;
     setProcessing(claimId);
     try {
       const paymentRef = prompt("Ingresa la referencia de pago:");
-      if (!paymentRef) {
+      if (!paymentRef || !paymentRef.trim()) {
         setProcessing(null);
         return;
       }
       const res = await fetch(`/api/admin/claims/${claimId}/pay`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
-        body: JSON.stringify({ paymentRef })
+        body: JSON.stringify({ paymentRef: paymentRef.trim(), paidAmount: amount })
       });
       if (res.ok) {
         alert("Reclamo marcado como pagado. El cliente recibirá un email con el comprobante.");
@@ -175,7 +178,7 @@ function PagosPageContent() {
                       {claim.user.email} | Sorteo: {claim.ticket.raffle.title}
                     </p>
                     <p style={{ margin: ".25rem 0", color: "var(--text-secondary)" }}>
-                      Ganador: {claim.ticket.raffle.winningItem || "N/A"} | Monto: {Number(claim.ticket.totalPaid).toFixed(2)} Bs.
+                      Ganador: {claim.ticket.raffle.winningItem || "N/A"} | Premio: {(claim.suggestedPrize != null ? claim.suggestedPrize : Number(claim.ticket.totalPaid)).toFixed(2)} Bs.
                     </p>
                   </div>
                   <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>

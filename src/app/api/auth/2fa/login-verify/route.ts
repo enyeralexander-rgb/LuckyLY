@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../../../../lib/prisma";
+import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
 // @ts-ignore
 import { authenticator } from "otplib";
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
           }
         });
       } catch (logError) {
-        console.error("Error al registrar log de login 2FA:", logError);
+        logger.error("Error al registrar log de login 2FA", { error: logError instanceof Error ? logError.message : String(logError) });
       }
     }
 
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
 
     return res;
   } catch (error) {
-    console.error("Error en verificación 2FA login:", error);
+    logger.error("Error en verificación 2FA login", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

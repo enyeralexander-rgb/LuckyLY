@@ -1,6 +1,7 @@
 // @ts-ignore - nodemailer puede no estar instalado
 import nodemailer from "nodemailer";
 import { join } from "path";
+import { logger } from "./logger";
 
 // Configuración de email (usar variables de entorno en producción)
 const transporter = nodemailer.createTransport({
@@ -17,8 +18,8 @@ export async function sendEmail(to: string, subject: string, html: string, text?
   try {
     // Si no hay configuración de SMTP, solo loguear en desarrollo
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.log("📧 Email (desarrollo):", { to, subject });
-      console.log("📧 Contenido:", text || html);
+      logger.info("Email (desarrollo)", { to, subject });
+      logger.debug("Contenido email (desarrollo)", { hasText: !!text, hasHtml: !!html });
       return { success: true, messageId: "dev-mode" };
     }
 
@@ -38,7 +39,7 @@ export async function sendEmail(to: string, subject: string, html: string, text?
 
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error("Error enviando email:", error);
+    logger.error("Error enviando email", { error: error instanceof Error ? error.message : String(error) });
     return { success: false, error: String(error) };
   }
 }

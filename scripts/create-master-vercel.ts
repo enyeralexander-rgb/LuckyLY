@@ -25,13 +25,22 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("👤 Verificando/creando administrador MASTER...\n");
+  console.log("👤 Verificando/creando administrador MASTER (desde variables de entorno)...\n");
 
-  const email = "enyeralexander@gmail.com";
-  const password = "0995697717";
-  const documentId = "V-0995697717";
-  const nationalId = "0995697717";
-  const nationalIdType = "V";
+  const email = process.env.MASTER_INITIAL_EMAIL?.trim();
+  const password = process.env.MASTER_INITIAL_PASSWORD;
+  const name = process.env.MASTER_INITIAL_NAME?.trim() || "Administrador Master";
+  const documentIdRaw = process.env.MASTER_INITIAL_DOCUMENT_ID?.trim();
+  const documentId = documentIdRaw || `V-MASTER-${Date.now()}`;
+  const nationalId = documentId.includes("-") ? documentId.split("-")[1]! : documentId;
+  const nationalIdType = documentId.toUpperCase().startsWith("E-") ? "E" : "V";
+
+  if (!email || !password) {
+    console.error("❌ Faltan MASTER_INITIAL_EMAIL o MASTER_INITIAL_PASSWORD en el entorno.");
+    console.log("\nEjemplo:");
+    console.log('MASTER_INITIAL_EMAIL="admin@ejemplo.com" MASTER_INITIAL_PASSWORD="tu_password" npx tsx scripts/create-master-vercel.ts');
+    process.exit(1);
+  }
 
   try {
     const existingMaster = await prisma.user.findUnique({
@@ -41,7 +50,6 @@ async function main() {
     const passwordHash = await bcrypt.hash(password, 10);
 
     if (existingMaster) {
-      // Actualizar el usuario existente
       await prisma.user.update({
         where: { email },
         data: {
@@ -57,12 +65,11 @@ async function main() {
       });
       console.log("✅ Administrador MASTER actualizado");
     } else {
-      // Crear nuevo administrador MASTER
       await prisma.user.create({
         data: {
           email,
           passwordHash,
-          name: "Administrador Master",
+          name,
           username: "master",
           role: Role.MASTER,
           emailVerified: true,
@@ -78,9 +85,7 @@ async function main() {
     console.log("\n" + "=".repeat(60));
     console.log("✅ USUARIO MASTER CONFIGURADO");
     console.log("=".repeat(60));
-    console.log("📊 Credenciales:");
-    console.log(`   Email: ${email}`);
-    console.log(`   Password: ${password}`);
+    console.log(`📧 Email: ${email}`);
     console.log("=".repeat(60));
   } catch (error) {
     console.error("❌ Error al crear/actualizar usuario MASTER:", error);

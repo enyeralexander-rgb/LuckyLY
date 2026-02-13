@@ -1,14 +1,14 @@
 -- ============================================
--- SCRIPT DE LIMPIEZA DE BASE DE DATOS - LuckyLY
+-- SCRIPT DE LIMPIEZA OPERATIVA - LuckyLY
 -- ============================================
--- Este script elimina todos los datos de usuarios regulares,
--- sorteos, tickets, estadísticas, etc. para poder lanzar
--- la aplicación desde CERO.
--- 
--- ⚠️ IMPORTANTE: Este script NO elimina administradores
--- (MASTER, SUPERADMIN, CONTABLE, AGENT)
--- 
--- Ejecutar este script en pgAdmin4
+-- Limpia datos de usuarios regulares, sorteos, tickets, etc.
+-- Mantiene administradores (MASTER, SUPERADMIN, CONTABLE, AGENT).
+--
+-- Uso: limpieza operativa (borrar datos de negocio sin tocar admins).
+-- Para un RESET TOTAL "desde cero" (incluyendo todos los usuarios),
+-- usar scripts/reset-database.sql o prisma db push --force-reset.
+--
+-- Ejecutar en pgAdmin o psql.
 -- ============================================
 
 -- Deshabilitar verificación de foreign keys temporalmente

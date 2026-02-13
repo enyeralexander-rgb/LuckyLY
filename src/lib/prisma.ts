@@ -2,6 +2,7 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool, PoolConfig } from "pg";
+import { logger } from "./logger";
 
 // Singleton pattern para evitar múltiples conexiones en desarrollo
 const globalForPrisma = globalThis as unknown as { 
@@ -57,7 +58,7 @@ function createPool(): Pool {
 
   // Manejar errores del pool para evitar crashes
   pool.on('error', (err) => {
-    console.error('🔴 Error inesperado en pool de PostgreSQL:', err.message);
+    logger.error('Error inesperado en pool de PostgreSQL', { message: err.message });
   });
 
   return pool;

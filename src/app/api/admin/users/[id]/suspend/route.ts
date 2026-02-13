@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
+import { logger } from "../../../../../../lib/logger";
 
 export async function PUT(
   req: NextRequest,
@@ -108,7 +109,7 @@ export async function PUT(
       user: updatedUser
     });
   } catch (error) {
-    console.error("Error al suspender/reactivar usuario:", error);
+    logger.error("Error al suspender/reactivar usuario", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 }

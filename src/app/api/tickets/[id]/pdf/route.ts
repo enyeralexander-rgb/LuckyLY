@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
 
 function normalizeBaseUrl(url: string): string {
@@ -263,7 +264,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al generar ticket:", err);
+    logger.error("Error al generar ticket", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al generar ticket" }, { status: 500 });
   }
 }

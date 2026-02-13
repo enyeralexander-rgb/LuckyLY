@@ -3,6 +3,7 @@ import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
 import { Role } from "@prisma/client";
 import { sendEmailVerificationEmail } from "../../../../lib/email";
+import { logger } from "../../../../lib/logger";
 import crypto from "crypto";
 
 export async function POST(request: Request) {
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error en send-verification-email:", err);
+    logger.error("Error en send-verification-email", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al enviar email de verificación" }, { status: 500 });
   }
 }

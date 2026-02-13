@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
+import { logger } from "../../../../../../lib/logger";
 import { Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -98,7 +99,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al actualizar administrador:", err);
+    logger.error("Error al actualizar administrador", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al actualizar administrador" }, { status: 500 });
   }
 }
@@ -152,7 +153,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al eliminar administrador:", err);
+    logger.error("Error al eliminar administrador", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al eliminar administrador" }, { status: 500 });
   }
 }

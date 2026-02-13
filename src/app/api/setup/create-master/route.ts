@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
+import { logger } from "../../../../lib/logger";
 import { Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -14,11 +15,10 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const body = await request.json().catch(() => ({}));
     // En producción, requerir una clave secreta
     if (process.env.NODE_ENV === "production") {
-      const body = await request.json().catch(() => ({}));
       const secret = process.env.MASTER_SETUP_SECRET || "CHANGE_THIS_IN_PRODUCTION";
-      
       if (body.secret !== secret) {
         return NextResponse.json(
           { error: "No autorizado. Se requiere clave secreta." },
@@ -27,13 +27,20 @@ export async function POST(request: Request) {
       }
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // CREDENCIALES DEL ADMINISTRADOR MASTER
-    // ══════════════════════════════════════════════════════════════
-    const email = "enyeralexander@gmail.com";
-    const password = "0995697717";
-    const documentId = "V-00000001";
-    // ══════════════════════════════════════════════════════════════
+    // Credenciales: body primero, luego variables de entorno (nunca valores en código)
+    const email = (body.email && String(body.email).trim()) || process.env.MASTER_INITIAL_EMAIL?.trim();
+    const password = body.password != null ? String(body.password) : process.env.MASTER_INITIAL_PASSWORD;
+    const documentId = (body.documentId && String(body.documentId).trim()) || process.env.MASTER_INITIAL_DOCUMENT_ID?.trim() || null;
+    const name = (body.name && String(body.name).trim()) || process.env.MASTER_INITIAL_NAME?.trim() || "Administrador Master";
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: "Se requieren email y contraseña. Envíalos en el body o define MASTER_INITIAL_EMAIL y MASTER_INITIAL_PASSWORD en el servidor." },
+        { status: 400 }
+      );
+    }
+
+    const finalDocumentId = documentId || `V-MASTER-${Date.now()}`;
 
     const existingMaster = await prisma.user.findUnique({
       where: { email }
@@ -42,7 +49,6 @@ export async function POST(request: Request) {
     const passwordHash = await bcrypt.hash(password, 10);
 
     if (existingMaster) {
-      // Actualizar el usuario existente
       await prisma.user.update({
         where: { email },
         data: {
@@ -51,7 +57,8 @@ export async function POST(request: Request) {
           emailVerified: true,
           emailVerifiedAt: new Date(),
           suspended: false,
-          documentId: existingMaster.documentId || documentId
+          documentId: existingMaster.documentId || finalDocumentId,
+          name: name || existingMaster.name
         }
       });
 
@@ -61,17 +68,16 @@ export async function POST(request: Request) {
         email
       });
     } else {
-      // Crear nuevo administrador MASTER
       await prisma.user.create({
         data: {
           email,
           passwordHash,
-          name: "Administrador Master",
+          name: name || "Administrador Master",
           username: "master",
           role: Role.MASTER,
           emailVerified: true,
           emailVerifiedAt: new Date(),
-          documentId
+          documentId: finalDocumentId
         }
       });
 
@@ -82,7 +88,7 @@ export async function POST(request: Request) {
       });
     }
   } catch (error) {
-    console.error("Error al crear/actualizar usuario MASTER:", error);
+    logger.error("Error al crear/actualizar usuario MASTER", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Error al crear/actualizar usuario MASTER", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
@@ -90,15 +96,13 @@ export async function POST(request: Request) {
   }
 }
 
-// También permitir GET para facilitar la ejecución
+// También permitir GET: credenciales por query o por env
 export async function GET(request: Request) {
   try {
-    // En producción, requerir una clave secreta
+    const url = new URL(request.url);
     if (process.env.NODE_ENV === "production") {
-      const url = new URL(request.url);
       const secret = url.searchParams.get("secret");
       const requiredSecret = process.env.MASTER_SETUP_SECRET || "CHANGE_THIS_IN_PRODUCTION";
-      
       if (secret !== requiredSecret) {
         return NextResponse.json(
           { error: "No autorizado. Se requiere clave secreta en la URL: ?secret=YOUR_SECRET" },
@@ -107,13 +111,19 @@ export async function GET(request: Request) {
       }
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // CREDENCIALES DEL ADMINISTRADOR MASTER
-    // ══════════════════════════════════════════════════════════════
-    const email = "enyeralexander@gmail.com";
-    const password = "0995697717";
-    const documentId = "V-00000001";
-    // ══════════════════════════════════════════════════════════════
+    const email = url.searchParams.get("email")?.trim() || process.env.MASTER_INITIAL_EMAIL?.trim();
+    const password = url.searchParams.get("password") ?? process.env.MASTER_INITIAL_PASSWORD;
+    const documentId = url.searchParams.get("documentId")?.trim() || process.env.MASTER_INITIAL_DOCUMENT_ID?.trim() || null;
+    const name = url.searchParams.get("name")?.trim() || process.env.MASTER_INITIAL_NAME?.trim() || "Administrador Master";
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: "Se requieren email y contraseña (query ?email=...&password=... o variables MASTER_INITIAL_EMAIL y MASTER_INITIAL_PASSWORD)." },
+        { status: 400 }
+      );
+    }
+
+    const finalDocumentId = documentId || `V-MASTER-${Date.now()}`;
 
     const existingMaster = await prisma.user.findUnique({
       where: { email }
@@ -130,7 +140,8 @@ export async function GET(request: Request) {
           emailVerified: true,
           emailVerifiedAt: new Date(),
           suspended: false,
-          documentId: existingMaster.documentId || documentId
+          documentId: existingMaster.documentId || finalDocumentId,
+          name: name || existingMaster.name
         }
       });
 
@@ -144,12 +155,12 @@ export async function GET(request: Request) {
         data: {
           email,
           passwordHash,
-          name: "Administrador Master",
+          name: name || "Administrador Master",
           username: "master",
           role: Role.MASTER,
           emailVerified: true,
           emailVerifiedAt: new Date(),
-          documentId
+          documentId: finalDocumentId
         }
       });
 
@@ -160,7 +171,7 @@ export async function GET(request: Request) {
       });
     }
   } catch (error) {
-    console.error("Error al crear/actualizar usuario MASTER:", error);
+    logger.error("Error al crear/actualizar usuario MASTER", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Error al crear/actualizar usuario MASTER", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }

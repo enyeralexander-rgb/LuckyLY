@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -40,7 +41,7 @@ export async function DELETE(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al eliminar cuenta:", err);
+    logger.error("Error al eliminar cuenta", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al eliminar cuenta" }, { status: 500 });
   }
 }

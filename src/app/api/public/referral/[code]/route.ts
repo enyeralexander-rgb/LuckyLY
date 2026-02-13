@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { getCountryFromIP } from "../../../../../lib/geolocation";
+import { logger } from "../../../../../lib/logger";
 
 // Registrar visita a link de referido
 export async function GET(request: Request, { params }: { params: { code: string } }) {
@@ -30,7 +31,7 @@ export async function GET(request: Request, { params }: { params: { code: string
       }
     } catch (geoError) {
       // Silenciar errores de geolocalización
-      console.warn("Error en geolocalización (no crítico):", geoError);
+      logger.warn("Error en geolocalización (no crítico)", { error: geoError instanceof Error ? geoError.message : String(geoError) });
     }
 
     // Registrar visita
@@ -52,7 +53,7 @@ export async function GET(request: Request, { params }: { params: { code: string
     // Redirigir a la página principal
     return NextResponse.redirect(new URL("/", request.url));
   } catch (err) {
-    console.error("Error al procesar link de referido:", err);
+    logger.error("Error al procesar link de referido", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.redirect(new URL("/", request.url));
   }
 }
