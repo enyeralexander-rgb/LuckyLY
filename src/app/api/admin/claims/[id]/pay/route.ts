@@ -39,6 +39,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ error: "Debe adjuntar un comprobante de pago antes de confirmar" }, { status: 400 });
     }
 
+    // Contabilidad: paidAmount (monto de CREAR SORTEO - Premios Bs.) se registra como EGRESO en lib/accounting (getContabilidadGlobal).
     await prisma.prizeClaim.update({
       where: { id: claimId },
       data: {
