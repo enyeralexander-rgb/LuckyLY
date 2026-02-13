@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const social = await prisma.socialMedia.findFirst();
@@ -14,9 +16,10 @@ export async function GET() {
     if (social.youtubeEnabled && social.youtube) out.youtube = social.youtube;
     if (social.tiktokEnabled && social.tiktok) out.tiktok = social.tiktok;
     if (social.whatsappEnabled && social.whatsapp) out.whatsapp = social.whatsapp;
-    return NextResponse.json(out);
+    const res = NextResponse.json(out);
+    res.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=60");
+    return res;
   } catch {
     return NextResponse.json({});
   }
 }
-
