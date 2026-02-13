@@ -67,21 +67,9 @@ function PagoMovilPageContent() {
     reader.onloadend = () => {
       setPreview(reader.result as string);
       
-      // Validar dimensiones (9:16, máximo 1080x1920)
-      const img = new Image();
-      img.onload = () => {
-        const aspectRatio = img.width / img.height;
-        const expectedRatio = 9 / 16;
-        
-        if (Math.abs(aspectRatio - expectedRatio) > 0.1) {
-          alert(`La imagen debe tener una relación de aspecto 9:16. Actual: ${img.width}x${img.height}`);
-        }
-        
-        if (img.width > 1080 || img.height > 1920) {
-          alert(`La imagen no debe exceder 1080x1920 píxeles. Actual: ${img.width}x${img.height}`);
-        }
-      };
-      img.src = reader.result as string;
+      // Validaciones eliminadas a petición del usuario (aspect ratio y dimensiones)
+      // Solo mantenemos la validación de tamaño (5MB) en la parte superior
+
     };
     reader.readAsDataURL(selectedFile);
   }
@@ -93,6 +81,10 @@ function PagoMovilPageContent() {
     try {
       const formData = new FormData();
       formData.append("image", file);
+      // Enviar también los datos de texto para guardar todo de una vez
+      formData.append("cedula", cedula);
+      formData.append("telefono", telefono);
+      formData.append("destino", destino);
 
       const res = await fetch("/api/admin/payment-mobile", {
         method: "PUT",
@@ -108,7 +100,7 @@ function PagoMovilPageContent() {
         setImageUrl(data.imageUrl);
         setPreview(null);
         setFile(null);
-        alert("Imagen de pago móvil actualizada exitosamente");
+        alert("Imagen y datos de pago móvil actualizados exitosamente");
       } else {
         alert(data.error || "Error al subir imagen");
       }
@@ -202,7 +194,7 @@ function PagoMovilPageContent() {
             <div style={{ display: "grid", gap: "1rem" }}>
               <div>
                 <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontSize: ".875rem" }}>
-                  Seleccionar imagen (Formato 9:16, máximo 1080x1920px)
+                  Seleccionar imagen (Máximo 5MB, cualquier dimensión)
                 </label>
                 <input
                   type="file"
@@ -304,7 +296,7 @@ function PagoMovilPageContent() {
               </div>
               <div>
                 <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontSize: ".875rem", fontWeight: 600 }}>
-                  DESTINO:
+                  BANCO:
                 </label>
                 <input
                   type="text"

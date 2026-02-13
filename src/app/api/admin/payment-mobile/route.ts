@@ -47,12 +47,20 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: "El archivo debe ser una imagen" }, { status: 400 });
       }
 
-      // Subir a Vercel Blob
       const blob = await put(`payment-mobile/${Date.now()}-${file.name}`, file, {
         access: "public",
         addRandomSuffix: true,
       });
       imageUrl = blob.url;
+
+      // Leer también campos de texto del FormData si vienen incluidos
+      const cedulaForm = formData.get("cedula");
+      const telefonoForm = formData.get("telefono");
+      const destinoForm = formData.get("destino");
+      
+      if (cedulaForm !== null) cedula = cedulaForm.toString();
+      if (telefonoForm !== null) telefono = telefonoForm.toString();
+      if (destinoForm !== null) destino = destinoForm.toString();
     } else {
       // ── Guardar datos de texto (cedula, telefono, destino) ──
       const body = await request.json();
