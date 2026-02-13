@@ -128,7 +128,12 @@ export async function GET(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    logger.error("Error al obtener lista de pagos", { error: err instanceof Error ? err.message : String(err) });
-    return NextResponse.json({ error: "Error al obtener lista de pagos" }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    logger.error("Error al obtener lista de pagos", { error: message });
+    const isConnectionError = /connect|upstream|database|ECONNREFUSED|ETIMEDOUT/i.test(message);
+    return NextResponse.json(
+      { error: isConnectionError ? "No se pudo conectar a la base de datos. Reintenta en unos segundos." : "Error al obtener la lista de pagos." },
+      { status: 500 }
+    );
   }
 }

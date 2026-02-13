@@ -128,6 +128,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: issues || "Datos inválidos" }, { status: 400 });
     }
 
+    // Contabilidad: pricePerSlot → INGRESOS (Ticket.totalPaid al comprar); prizes → EGRESOS (PrizeClaim.paidAmount en PAGAR PREMIOS). Ver lib/accounting.
     const raffle = await prisma.raffle.create({
       data: {
         title: parsed.data.title,

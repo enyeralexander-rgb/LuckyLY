@@ -29,15 +29,20 @@ export async function GET(request: Request) {
       role: "USER"
     };
 
-    // Búsqueda general (busca en nombre, email, cédula, teléfono, banco)
+    // Búsqueda general (nombre, email, cédula, teléfono). bank es enum: no admite contains.
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
         { nationalId: { contains: search, mode: "insensitive" } },
-        { phoneNumber: { contains: search, mode: "insensitive" } },
-        { bank: { contains: search, mode: "insensitive" } }
+        { phoneNumber: { contains: search, mode: "insensitive" } }
       ];
+      // Si el término coincide con un valor del enum Bank, incluirlo en la búsqueda
+      const bankValues = ["BANESCO", "VENEZUELA", "MERCANTIL", "BOD", "PROVINCIAL", "BICENTENARIO", "OTRA"];
+      const matchBank = bankValues.find((b) => b.toLowerCase().includes(search.toLowerCase()));
+      if (matchBank) {
+        where.OR = [...(where.OR as object[]), { bank: { equals: matchBank } }];
+      }
     } else {
       // Búsquedas específicas
       if (searchName) {
@@ -53,7 +58,11 @@ export async function GET(request: Request) {
         where.phoneNumber = { contains: searchTelefono, mode: "insensitive" };
       }
       if (searchBanco) {
-        where.bank = { contains: searchBanco, mode: "insensitive" };
+        const bankValues = ["BANESCO", "VENEZUELA", "MERCANTIL", "BOD", "PROVINCIAL", "BICENTENARIO", "OTRA"];
+        const matchBank = bankValues.find((b) => b.toLowerCase().includes(searchBanco.toLowerCase()));
+        if (matchBank) {
+          where.bank = { equals: matchBank };
+        }
       }
       if (searchFecha) {
         // Buscar por fecha de registro (formato: YYYY-MM-DD)

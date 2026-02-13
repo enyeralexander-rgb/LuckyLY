@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { logger } from "../../../../../lib/logger";
-import { getGlobalTotals } from "../../../../../lib/accounting";
+import { getContabilidadGlobal } from "../../../../../lib/accounting";
 import { Role } from "@prisma/client";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -59,11 +59,9 @@ export async function GET(request: Request) {
       select: { name: true, email: true }
     });
 
-    // Totales del período (fuente única: lib/accounting)
-    const totals = await getGlobalTotals({ dateStart, dateEnd });
-    const totalIncome = totals.totalRevenue;
-    const totalPrizesPaid = totals.totalPrizesPaid;
-    const netIncome = totals.companyMargin;
+    // Contabilidad del período (fuente única: lib/accounting)
+    const contabilidad = await getContabilidadGlobal({ dateStart, dateEnd });
+    const { ingresos, egresos, ganancias } = contabilidad;
 
     // Listados para tablas del PDF
     const tickets = await prisma.ticket.findMany({
@@ -134,20 +132,20 @@ export async function GET(request: Request) {
     yPos += 10;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Ingresos Totales:`, 20, yPos);
-    doc.text(`Bs. ${totalIncome.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`Ingresos:`, 20, yPos);
+    doc.text(`Bs. ${ingresos.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
     
     yPos += 7;
-    doc.text(`Premios Pagados:`, 20, yPos);
+    doc.text(`Egresos (Premios pagados):`, 20, yPos);
     doc.setTextColor(220, 38, 38); // Rojo para egresos
-    doc.text(`-Bs. ${totalPrizesPaid.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`-Bs. ${egresos.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
     
     yPos += 7;
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "bold");
-    doc.text(`Ganancias Netas:`, 20, yPos);
+    doc.text(`Ganancias:`, 20, yPos);
     doc.setTextColor(133, 187, 101); // Verde para ganancias
-    doc.text(`Bs. ${netIncome.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`Bs. ${ganancias.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
     
     yPos += 15;
     doc.setTextColor(0, 0, 0);
@@ -234,21 +232,21 @@ export async function GET(request: Request) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.text(`Total Ingresos:`, 20, yPos);
-    doc.text(`Bs. ${totalIncome.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`Bs. ${ingresos.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
     
     yPos += 7;
     doc.text(`Total Egresos:`, 20, yPos);
     doc.setTextColor(220, 38, 38);
-    doc.text(`Bs. ${totalPrizesPaid.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`Bs. ${egresos.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
     
     yPos += 10;
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text(`GANANCIAS NETAS:`, 20, yPos);
+    doc.text(`GANANCIAS:`, 20, yPos);
     doc.setTextColor(133, 187, 101);
     doc.setFontSize(14);
-    doc.text(`Bs. ${netIncome.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`Bs. ${ganancias.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
 
     // Pie de página
     const totalPages = doc.getNumberOfPages();

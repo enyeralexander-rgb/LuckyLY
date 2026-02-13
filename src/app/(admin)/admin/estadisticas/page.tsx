@@ -32,10 +32,11 @@ type ReferralVisit = {
   comprado: boolean;
 };
 
+/** Respuesta contable del módulo Estadísticas (fuente: lib/accounting). */
 type IncomeData = {
-  totalIncome: number;
-  totalPrizesPaid: number;
-  netIncome: number;
+  ingresos: number;
+  egresos: number;
+  ganancias: number;
   growthPercentage: number;
   netGrowthPercentage: number;
   chartData: Array<{ date: string; ingresos: number; egresos: number }>;
@@ -225,7 +226,7 @@ function EstadisticasPageContent() {
       a.href = url;
       
       // Nombre del archivo con fechas
-      const startDate = period === "custom" && customStartDate 
+      const startDate = period === "custom" && customStartDate
         ? new Date(customStartDate).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-")
         : new Date(incomeData.period.start).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
       const endDate = period === "custom" && customEndDate
@@ -357,28 +358,28 @@ function EstadisticasPageContent() {
             ) : incomeData ? (
               <>
                 <p style={{ marginBottom: "1.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
-                  Todos los valores corresponden al <strong>período seleccionado</strong> arriba (fechas de compra para ingresos, fechas de pago para premios).
+                  Contabilidad del <strong>período seleccionado</strong>: ingresos por fecha de compra (purchasedAt), egresos por fecha de pago (processedAt).
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.25rem" }}>Ingresos Totales</h3>
-                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Suma de todas las compras (purchasedAt)</p>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.25rem" }}>Ingresos</h3>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Todos los pagos de usuarios (compras confirmadas)</p>
                     <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "var(--text-primary)" }}>
-                      {incomeData.totalIncome.toFixed(2)} Bs.
+                      {incomeData.ingresos.toFixed(2)} Bs.
                     </p>
                   </div>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.25rem" }}>Premios Pagados</h3>
-                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Egresos (premios pagados a ganadores)</p>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.25rem" }}>Egresos</h3>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Pago de premios a ganadores (Premios Bs. de CREAR SORTEO)</p>
                     <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#ef4444" }}>
-                      -{incomeData.totalPrizesPaid.toFixed(2)} Bs.
+                      -{incomeData.egresos.toFixed(2)} Bs.
                     </p>
                   </div>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center", background: "linear-gradient(135deg, #85BB65 0%, #64c27b 100%)" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#fff", marginBottom: "0.25rem" }}>Ganancias Netas</h3>
-                    <p style={{ margin: 0, fontSize: "0.75rem", color: "rgba(255,255,255,0.9)", marginBottom: "0.5rem" }}>Ingresos − Premios Pagados</p>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#fff", marginBottom: "0.25rem" }}>Ganancias</h3>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "rgba(255,255,255,0.9)", marginBottom: "0.5rem" }}>Ingresos − Egresos (restante)</p>
                     <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#fff" }}>
-                      {incomeData.netIncome.toFixed(2)} Bs.
+                      {incomeData.ganancias.toFixed(2)} Bs.
                     </p>
                   </div>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
@@ -581,6 +582,7 @@ function PaymentList({
 }) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({
@@ -658,18 +660,30 @@ function PaymentList({
     if (filters.paymentMethod) params.append("paymentMethod", filters.paymentMethod);
     if (filters.raffleName) params.append("raffleId", filters.raffleName);
 
+    setPaymentError(null);
     fetch(`/api/admin/estadisticas/payments?${params.toString()}`, {
       headers: { Authorization: `Bearer ${auth.token}` }
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) throw new Error(data.error);
-        setPayments(data.payments || []);
-        setTotalPages(data.pagination?.totalPages || 1);
+      .then((r) => {
+        return r.json().then((data) => ({ ok: r.ok, data }));
+      })
+      .then(({ ok, data }) => {
+        if (!ok || data.error) {
+          setPayments([]);
+          setTotalPages(1);
+          setPaymentError(data?.error || "Error al cargar la lista de pagos.");
+        } else {
+          setPayments(data.payments || []);
+          setTotalPages(data.pagination?.totalPages || 1);
+          setPaymentError(null);
+        }
         setLoading(false);
       })
       .catch((err) => {
         console.error("Error:", err);
+        setPayments([]);
+        setTotalPages(1);
+        setPaymentError("No se pudo cargar la lista. Reintenta más tarde.");
         setLoading(false);
       });
   }
@@ -791,6 +805,15 @@ function PaymentList({
           </button>
         </div>
       </div>
+
+      {paymentError && (
+        <div style={{ marginBottom: "1rem", padding: "1rem", background: "rgba(239, 68, 68, 0.1)", border: "1px solid #ef4444", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+          <span style={{ color: "#ef4444", fontSize: "0.875rem" }}>{paymentError}</span>
+          <button type="button" onClick={() => loadPayments()} style={{ padding: "0.5rem 1rem", background: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}>
+            Reintentar
+          </button>
+        </div>
+      )}
 
       {/* Tabla */}
       {loading ? (

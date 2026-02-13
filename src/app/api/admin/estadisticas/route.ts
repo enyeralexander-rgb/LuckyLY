@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
 import { logger } from "../../../../lib/logger";
-import { getGlobalTotals } from "../../../../lib/accounting";
+import { getContabilidadGlobal } from "../../../../lib/accounting";
 import { Role } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -53,14 +53,9 @@ export async function GET(request: Request) {
     }
 
     if (type === "income") {
-      // 1. Ingresos Totales: suma de todas las compras (tickets CONFIRMED) en el período
-      // 2. Premios Pagados: suma de premios pagados a ganadores (PAID) en el período
-      // 3. Ganancias Netas: Ingresos Totales - Premios Pagados
-      // 4. Crecimiento Neto: % de cambio de Ganancias Netas respecto al período anterior (misma duración)
-      const totals = await getGlobalTotals({ dateStart, dateEnd });
-      const totalIncome = totals.totalRevenue;
-      const totalPrizesPaid = totals.totalPrizesPaid;
-      const netIncome = totals.companyMargin;
+      // Contabilidad: INGRESOS (compras), EGRESOS (premios pagados), GANANCIAS (restante)
+      const contabilidad = await getContabilidadGlobal({ dateStart, dateEnd });
+      const { ingresos, egresos, ganancias } = contabilidad;
 
       // Ingresos por día (compras confirmadas)
       const tickets = await prisma.ticket.findMany({
@@ -92,34 +87,31 @@ export async function GET(request: Request) {
         }
       });
 
-      // Crecimiento Neto: % de cambio de Ganancias Netas en últimas 48h vs 48h anteriores
+      // Crecimiento Neto: % variación GANANCIAS en últimas 48h vs 48h anteriores
       const now = new Date();
       const dateEnd48 = new Date(now);
       const dateStart48 = new Date(now.getTime() - 48 * 60 * 60 * 1000);
       const dateEndPrev48 = new Date(dateStart48.getTime());
       const dateStartPrev48 = new Date(dateStart48.getTime() - 48 * 60 * 60 * 1000);
-      const [totalsLast48, totalsPrev48] = await Promise.all([
-        getGlobalTotals({ dateStart: dateStart48, dateEnd: dateEnd48 }),
-        getGlobalTotals({ dateStart: dateStartPrev48, dateEnd: dateEndPrev48 })
+      const [cont48, contPrev48] = await Promise.all([
+        getContabilidadGlobal({ dateStart: dateStart48, dateEnd: dateEnd48 }),
+        getContabilidadGlobal({ dateStart: dateStartPrev48, dateEnd: dateEndPrev48 })
       ]);
-      const netIncomeLast48 = totalsLast48.companyMargin;
-      const previousNetIncome48 = totalsPrev48.companyMargin;
+      const gananciasLast48 = cont48.ganancias;
+      const gananciasPrev48 = contPrev48.ganancias;
       let netGrowthPercentage: number;
-      if (previousNetIncome48 === 0) {
-        netGrowthPercentage = netIncomeLast48 > 0 ? 100 : netIncomeLast48 < 0 ? -100 : 0;
+      if (gananciasPrev48 === 0) {
+        netGrowthPercentage = gananciasLast48 > 0 ? 100 : gananciasLast48 < 0 ? -100 : 0;
       } else {
-        netGrowthPercentage = ((netIncomeLast48 - previousNetIncome48) / Math.abs(previousNetIncome48)) * 100;
+        netGrowthPercentage = ((gananciasLast48 - gananciasPrev48) / Math.abs(gananciasPrev48)) * 100;
       }
 
       const previousPeriodStart = new Date(dateStart);
       previousPeriodStart.setTime(previousPeriodStart.getTime() - (dateEnd.getTime() - dateStart.getTime()));
-      const previousTotals = await getGlobalTotals({
-        dateStart: previousPeriodStart,
-        dateEnd: dateStart
-      });
-      const growthPercentage = previousTotals.totalRevenue > 0
-        ? ((totalIncome - previousTotals.totalRevenue) / previousTotals.totalRevenue) * 100
-        : totalIncome > 0 ? 100 : 0;
+      const contPrevious = await getContabilidadGlobal({ dateStart: previousPeriodStart, dateEnd: dateStart });
+      const growthPercentage = contPrevious.ingresos > 0
+        ? ((ingresos - contPrevious.ingresos) / contPrevious.ingresos) * 100
+        : ingresos > 0 ? 100 : 0;
 
       // Gráfico: todos los días del período con ingresos y egresos (sin huecos). Si el rango > 400 días, mostrar solo últimos 400 para no enviar miles de puntos.
       const chartData: Array<{ date: string; ingresos: number; egresos: number }> = [];
@@ -143,9 +135,9 @@ export async function GET(request: Request) {
       }
 
       return NextResponse.json({
-        totalIncome: Number(totalIncome.toFixed(2)),
-        totalPrizesPaid: Number(totalPrizesPaid.toFixed(2)),
-        netIncome: Number(netIncome.toFixed(2)),
+        ingresos: Number(ingresos.toFixed(2)),
+        egresos: Number(egresos.toFixed(2)),
+        ganancias: Number(ganancias.toFixed(2)),
         growthPercentage: Number(growthPercentage.toFixed(2)),
         netGrowthPercentage: Number(netGrowthPercentage.toFixed(2)),
         chartData,

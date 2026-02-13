@@ -1,366 +1,218 @@
-# 🎰 LuckyLY - Plataforma de Sorteos
+# LuckyLY – Plataforma de Sorteos
 
-## 📋 Descripción
-
-LuckyLY es una plataforma completa de sorteos en línea desarrollada con Next.js 14, que permite a los usuarios participar en sorteos, comprar tickets y gestionar sus cuentas. Incluye un panel administrativo completo para la gestión de sorteos, usuarios y operaciones.
-
-## 🚀 Tecnologías Utilizadas
-
-- **Framework**: Next.js 14 (App Router)
-- **Lenguaje**: TypeScript
-- **Base de Datos**: PostgreSQL con Prisma ORM
-- **Estilos**: Tailwind CSS
-- **Autenticación**: NextAuth.js + JWT
-- **WebSockets**: Socket.io para notificaciones en tiempo real
-- **UI Components**: React con componentes personalizados
-- **Validación**: Zod
-- **Email**: Nodemailer
-- **2FA**: OTP con otplib
-- **Exportación**: ExcelJS y jsPDF
-
-## 🏗️ Arquitectura del Proyecto
-
-```
-src/
-├── app/                    # Páginas y rutas (App Router)
-│   ├── (admin)/           # Rutas protegidas para administradores
-│   ├── (user)/            # Rutas protegidas para usuarios
-│   ├── api/               # API Routes
-│   ├── auth/              # Páginas de autenticación
-│   └── globals.css        # Estilos globales
-├── components/            # Componentes reutilizables
-├── hooks/                 # Custom hooks
-├── lib/                   # Utilidades y configuraciones
-└── types/                 # Definiciones de tipos
-```
-
-## 🔄 Flujo de Trabajo del Proyecto
-
-### 1. **Configuración Inicial**
-
-```bash
-# Instalar dependencias
-npm install
-
-# Configurar variables de entorno (nunca commitear .env ni credenciales)
-cp .env.example .env.local
-
-# Generar cliente de Prisma
-npm run prisma:generate
-
-# Aplicar esquema a la base de datos
-npm run db:setup
-```
-
-### 2. **Desarrollo Local**
-
-```bash
-# Iniciar servidor de desarrollo
-npm run dev
-
-# Limpiar caché y reiniciar (si hay problemas)
-npm run dev:clean
-
-# Verificar tipos TypeScript
-npm run verify:types
-
-# Verificar build completo
-npm run verify
-```
-
-### 3. **Gestión de Base de Datos**
-
-```bash
-# Generar cliente Prisma
-npm run prisma:generate
-
-# Aplicar cambios al esquema
-npm run prisma:push
-
-# Ejecutar seed (solo limpieza: borra datos, no crea usuarios)
-npm run prisma:seed
-
-# Verificar conexión a BD
-npm run db:verify
-```
-
-**Desde cero (reset total):** Para dejar la BD vacía y crear el primer MASTER por variables de entorno, ver `docs/PLAN_LIMPIAR_DATOS_DESDE_CERO.md` (flujo completo). Resumen: usar `npx prisma db push --force-reset --accept-data-loss` o ejecutar `scripts/reset-database.sql`, luego `node scripts/apply-schema-postgres.js` (crea MASTER si existen `MASTER_INITIAL_EMAIL` y `MASTER_INITIAL_PASSWORD` en `.env`). `scripts/clean-database.sql` es solo **limpieza operativa** (mantiene admins).
-
-**Contenido generado:** La carpeta `public/uploads/payment-proofs/` almacena comprobantes de pago subidos en runtime; no se versiona (está en `.gitignore`). En un reset manual del servidor puedes vaciarla si quieres eliminar también esos archivos.
-
-### 4. **Flujo de Trabajo con Git**
-
-```bash
-# Crear rama para nueva funcionalidad
-git checkout -b feature/nueva-funcionalidad
-
-# Commits siguiendo conventional commits
-git commit -m "feat: agregar nueva funcionalidad"
-
-# Push a rama
-git push origin feature/nueva-funcionalidad
-
-# Crear Pull Request en GitHub
-# Después del merge, eliminar rama
-git branch -d feature/nueva-funcionalidad
-```
-
-### 5. **Despliegue en Producción**
-
-#### **Vercel (Recomendado)**
-
-```bash
-# Build command (configurado en vercel.json)
-prisma generate && node scripts/apply-schema-postgres.js && npm run build && npm run postbuild
-```
-
-El script `apply-schema-postgres.js` aplica el schema y **solo crea el usuario MASTER** si en Vercel están definidas `MASTER_INITIAL_EMAIL` y `MASTER_INITIAL_PASSWORD`. Si no las configuras, la BD quedará sin usuarios (puedes crear el primero luego con el endpoint de setup o en un deploy posterior con esas variables).
-
-**Variables de entorno en Vercel:**
-- Requeridas: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `EMAIL_SERVER` (o equivalente).
-- Opcionales (primer MASTER): `MASTER_INITIAL_EMAIL`, `MASTER_INITIAL_PASSWORD`; opcionales: `MASTER_INITIAL_NAME`, `MASTER_INITIAL_DOCUMENT_ID`, `MASTER_SETUP_SECRET`.
-
-#### **Build Local**
-
-```bash
-# Build para producción
-npm run build
-
-# Iniciar servidor de producción
-npm start
-```
-
-## 👥 Roles de Usuario
-
-### **Usuario Regular (USER)**
-- Participar en sorteos
-- Comprar tickets
-- Gestionar cuenta personal
-- Ver historial de jugadas
-
-### **Agente (AGENT)**
-- Todas las funciones de usuario
-- Gestionar usuarios referidos
-- Ver estadísticas básicas
-
-### **Contable (CONTABLE)**
-- Gestionar pagos y transacciones
-- Ver reportes financieros
-
-### **Super Administrador (SUPERADMIN)**
-- Gestionar sorteos
-- Gestionar usuarios
-- Ver estadísticas avanzadas
-- Configurar reglas del sistema
-
-### **Master (MASTER)**
-- Control total del sistema
-- Gestionar roles de administradores
-- Configuraciones críticas
-
-## 🎯 Funcionalidades Principales
-
-### **Para Usuarios**
-- ✅ Registro y autenticación con email
-- ✅ Verificación de email obligatoria
-- ✅ Compra de tickets para sorteos
-- ✅ Sistema de referidos
-- ✅ Historial de jugadas
-- ✅ Notificaciones en tiempo real
-- ✅ Perfil personal y configuración
-- ✅ 2FA opcional
-
-### **Para Administradores**
-- ✅ Panel de control completo
-- ✅ Gestión de sorteos (crear, modificar, ejecutar)
-- ✅ Gestión de usuarios y roles
-- ✅ Estadísticas y reportes
-- ✅ Sistema de logs de auditoría
-- ✅ Configuración de homepage
-- ✅ Gestión de pagos móviles
-- ✅ Exportación de datos
-
-### **Sistema de Sorteos**
-- ✅ Múltiples tipos de sorteos (números, animales, estados, banderas, signos zodiacales)
-- ✅ Compra de tickets individuales o múltiples
-- ✅ Sistema de cupos y límites
-- ✅ Ejecución automática de sorteos
-- ✅ Sistema de premios y ganadores
-- ✅ Resultados en tiempo real
-
-## 🔐 Seguridad
-
-- **Credenciales**: No commitear `.env` ni archivos con contraseñas o datos sensibles. Los scripts de schema y setup **no incluyen credenciales por defecto**; el primer MASTER se configura con variables de entorno (`MASTER_INITIAL_EMAIL`, `MASTER_INITIAL_PASSWORD`) o mediante el endpoint protegido `/api/setup/create-master`. Usar siempre `.env.example` como plantilla sin valores reales.
-- **Autenticación**: JWT + NextAuth.js
-- **Autorización**: Middleware de roles
-- **Validación**: Zod schemas en todas las APIs
-- **Rate Limiting**: Protección contra abuso
-- **Auditoría**: Logs completos de todas las acciones
-- **2FA**: Autenticación de dos factores opcional
-- **Encriptación**: Contraseñas hasheadas con bcrypt
-
-## 📊 API Endpoints
-
-### **Autenticación**
-- `POST /api/auth/register` - Registro de usuario
-- `POST /api/auth/login` - Inicio de sesión
-- `POST /api/auth/logout` - Cerrar sesión
-- `POST /api/auth/verify-email` - Verificar email
-
-### **Usuarios**
-- `GET /api/user/profile` - Obtener perfil
-- `PUT /api/user/profile` - Actualizar perfil
-- `GET /api/user/raffles` - Sorteos del usuario
-- `GET /api/user/payments` - Historial de pagos
-
-### **Sorteos**
-- `GET /api/raffles` - Listar sorteos activos
-- `GET /api/raffles/[id]` - Detalles de sorteo
-- `POST /api/raffles/[id]/tickets` - Comprar tickets
-- `GET /api/public/results` - Resultados públicos
-
-### **Administración**
-- `GET /api/admin/dashboard` - Dashboard admin
-- `GET /api/admin/users` - Gestión de usuarios
-- `POST /api/admin/raffles` - Crear sorteo
-- `PUT /api/admin/raffles/[id]` - Modificar sorteo
-
-## 🧪 Scripts Disponibles
-
-```bash
-# Desarrollo
-npm run dev              # Servidor de desarrollo
-npm run build            # Build de producción
-npm run start            # Servidor de producción
-
-# Base de datos
-npm run prisma:generate  # Generar cliente Prisma
-npm run prisma:push      # Aplicar cambios al esquema
-npm run prisma:seed      # Ejecutar seed
-npm run db:setup         # Configuración completa de BD
-
-# Limpieza y verificación
-npm run clean            # Limpiar caché básico
-npm run clean:deep       # Limpieza profunda
-npm run verify           # Verificar build completo
-npm run verify:types     # Verificar tipos TypeScript
-
-# Utilidades
-npm run fix:webpack      # Solucionar problemas de webpack
-npm run stop             # Detener procesos de desarrollo
-```
-
-## 🌐 Variables de Entorno
-
-### **Requeridas**
-```env
-DATABASE_URL=postgresql://username:password@host:port/database
-NEXTAUTH_SECRET=tu_secreto_jwt_aqui
-NEXTAUTH_URL=https://tu-dominio.com
-EMAIL_SERVER=smtp://usuario:password@smtp.gmail.com:587
-```
-
-### **Opcionales**
-```env
-NODE_ENV=development
-NEXT_PUBLIC_APP_URL=https://tu-dominio.com
-ENABLE_2FA=true
-RATE_LIMIT_ENABLED=true
-```
-
-## 🚀 Despliegue
-
-### **Requisitos Previos**
-- Node.js 18+
-- PostgreSQL 13+
-- Cuenta en Vercel (recomendado)
-
-### **Pasos para Despliegue**
-1. **Configurar base de datos**: Crear instancia PostgreSQL
-2. **Variables de entorno**: Configurar en Vercel
-3. **Build**: Vercel ejecuta automáticamente el build command
-4. **Migraciones**: Se ejecutan automáticamente en cada despliegue
-
-### **Configuración de Vercel**
-- **Framework Preset**: Next.js
-- **Root Directory**: ./
-- **Build Command**: `prisma generate && node scripts/apply-schema-postgres.js && npm run build && npm run postbuild`
-- **Install Command**: `npm install`
-
-## 📈 Monitoreo y Logs
-
-### **Sistema de Logs**
-- **Auditoría**: Todas las acciones administrativas se registran
-- **Errores**: Logs de errores en consola y archivos
-- **Rendimiento**: Métricas de respuesta de APIs
-- **Usuario**: Logs de acciones de usuarios
-
-### **Dashboard Administrativo**
-- Estadísticas en tiempo real
-- Métricas de uso
-- Reportes de ingresos
-- Gestión de usuarios activos
-
-## 🐛 Solución de Problemas
-
-### **Problemas Comunes**
-
-#### **Error de Build en Vercel**
-```bash
-# Limpiar caché y reconstruir
-npm run clean:deep
-npm run build
-```
-
-#### **Problemas con Prisma**
-```bash
-# Regenerar cliente
-npm run prisma:generate
-
-# Verificar conexión
-npm run db:verify
-```
-
-#### **Errores de Webpack**
-```bash
-# Limpiar caché de webpack
-npm run fix:webpack
-```
-
-#### **Problemas de Tipos TypeScript**
-```bash
-# Verificar tipos
-npm run verify:types
-```
-
-## 🤝 Contribución
-
-### **Proceso de Contribución**
-1. Crear issue describiendo la funcionalidad
-2. Crear rama desde `development`
-3. Implementar cambios siguiendo el estilo del código
-4. Crear tests si es necesario
-5. Hacer commit siguiendo conventional commits
-6. Crear Pull Request
-7. Esperar revisión y aprobación
-
-### **Estándares de Código**
-- **TypeScript**: Tipado estricto en todas las funciones
-- **ESLint**: Seguir reglas configuradas
-- **Prettier**: Formateo automático
-- **Conventional Commits**: Commits descriptivos
-
-## 📝 Licencia
-
-Este proyecto es privado y propiedad de LuckyLY.
-
-## 📞 Soporte
-
-Para soporte técnico o consultas:
-- Crear issue en el repositorio
-- Contactar al equipo de desarrollo
-- Revisar la documentación interna
+Plataforma de sorteos en línea con panel administrativo, contabilidad integrada (ingresos, egresos, ganancias), gestión de premios y reportes por período.
 
 ---
 
-**Desarrollado con ❤️ por el equipo de LuckyLY**
+## Descripción
+
+**LuckyLY** (WEB.SORTEOS) es una aplicación web que permite:
+
+- **Usuarios:** registrarse, participar en sorteos, comprar cupos (tickets), gestionar perfil y datos bancarios, reclamar premios.
+- **Administración:** crear y ejecutar sorteos, aprobar pagos móviles, pagar premios a ganadores, ver estadísticas y listas de pagos, exportar reportes (PDF, Excel).
+
+La contabilidad se centraliza en un único modelo: **INGRESOS** (pagos de usuarios), **EGRESOS** (premios pagados) y **GANANCIAS** (restante). Los montos de premios se definen al crear el sorteo (regla 70/30) y se reflejan en el módulo Pagar Premios.
+
+---
+
+## Tecnologías
+
+| Área | Stack |
+|------|--------|
+| Framework | Next.js 14 (App Router) |
+| Lenguaje | TypeScript |
+| Base de datos | PostgreSQL |
+| ORM | Prisma |
+| Estilos | Tailwind CSS |
+| Autenticación | JWT (jose) + sesión en cliente |
+| Validación | Zod |
+| Email | Nodemailer |
+| PDF | jsPDF + jspdf-autotable |
+| Exportación | ExcelJS |
+| Gráficos | Recharts |
+| 2FA | otplib |
+
+---
+
+## Estructura del proyecto
+
+```
+src/
+├── app/
+│   ├── (admin)/admin/          # Panel admin (sorteos, pagos, estadísticas, usuarios, etc.)
+│   ├── (user)/                 # Área de usuarios (dashboard, cuenta, historial)
+│   ├── api/                    # API Routes (auth, raffles, admin, claims, etc.)
+│   └── auth/                   # Páginas de login/registro
+├── components/                 # Componentes reutilizables y UI
+├── lib/
+│   ├── accounting.ts           # Contabilidad: getContabilidadGlobal (ingresos/egresos/ganancias)
+│   ├── auth.ts                 # Autenticación y roles
+│   ├── prisma.ts               # Cliente Prisma
+│   └── validators.ts           # Schemas Zod
+└── ...
+prisma/
+├── schema.prisma               # Modelos: User, Raffle, Ticket, PrizeClaim, etc.
+└── seed.ts
+```
+
+---
+
+## Requisitos
+
+- **Node.js** 18+
+- **PostgreSQL** 13+ (o servicio compatible: Neon, Supabase, etc.)
+- Cuenta SMTP opcional (verificación de email, recuperación de contraseña)
+
+---
+
+## Configuración inicial
+
+```bash
+# Clonar e instalar dependencias
+npm install
+
+# Copiar variables de entorno
+cp .env.example .env.local
+# Editar .env.local con DATABASE_URL, JWT_SECRET, etc.
+
+# Generar cliente Prisma y aplicar esquema
+npm run prisma:generate
+npm run db:setup
+```
+
+El script `db:setup` aplica el schema a la base de datos y, si están definidas `MASTER_INITIAL_EMAIL` y `MASTER_INITIAL_PASSWORD` en `.env.local`, crea el primer usuario MASTER.
+
+---
+
+## Variables de entorno
+
+Copia `.env.example` a `.env.local` y rellena los valores.
+
+### Obligatorias
+
+| Variable | Descripción |
+|----------|-------------|
+| `DATABASE_URL` | URL de conexión PostgreSQL (ej. `postgresql://user:pass@host:5432/dbname`) |
+| `JWT_SECRET` | Secreto para JWT (mín. 32 caracteres). Ej: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+
+### Opcionales
+
+| Variable | Descripción |
+|----------|-------------|
+| `BLOB_READ_WRITE_TOKEN` | Token Vercel Blob (subida de imágenes del carrusel) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | Envío de emails (verificación, recuperación de contraseña) |
+| `NEXT_PUBLIC_APP_URL` | URL base de la app (emails, enlaces) |
+| `MASTER_INITIAL_EMAIL`, `MASTER_INITIAL_PASSWORD` | Crear primer MASTER al ejecutar `db:setup` |
+| `MASTER_INITIAL_NAME`, `MASTER_INITIAL_DOCUMENT_ID` | Datos del MASTER inicial |
+| `MASTER_SETUP_SECRET` | Secreto para el endpoint de creación de MASTER en producción |
+
+---
+
+## Comandos
+
+### Desarrollo
+
+```bash
+npm run dev              # Servidor de desarrollo (puerto 3000)
+npm run dev:clean        # Limpiar caché y reiniciar
+npm run verify:types     # Verificar tipos TypeScript
+npm run verify           # Limpiar, build y verificar
+```
+
+### Base de datos
+
+```bash
+npm run prisma:generate  # Generar cliente Prisma
+npm run prisma:push      # Aplicar cambios del schema
+npm run prisma:seed      # Ejecutar seed (ver documentación del seed)
+npm run db:setup        # prisma generate + db push + apply-schema-postgres
+npm run db:verify       # Verificar conexión a la BD
+```
+
+### Producción
+
+```bash
+npm run build   # Build de Next.js
+npm start       # Servidor de producción
+```
+
+### Utilidades
+
+```bash
+npm run clean        # Limpiar caché básico
+npm run clean:deep   # Limpiar caché profundo
+npm run fix:webpack  # Limpiar caché de webpack si hay errores raros
+npm run stop         # Detener procesos next dev
+```
+
+---
+
+## Modelo contable
+
+Toda la contabilidad se calcula en `src/lib/accounting.ts`:
+
+- **INGRESOS:** Suma de `Ticket.totalPaid` con `status: "CONFIRMED"` (filtro opcional por `purchasedAt`). Origen: compras de cupos; el “Precio por cupo (Bs.)” se define en **CREAR SORTEO**.
+- **EGRESOS:** Suma de `PrizeClaim.paidAmount` con `status: "PAID"` (filtro opcional por `processedAt`). Los montos son los definidos en **CREAR SORTEO** (Premios Bs.) y pagados en **PAGAR PREMIOS**.
+- **GANANCIAS:** `INGRESOS − EGRESOS` (restante; regla 70% premios / 30% empresa).
+
+El módulo **Estadísticas** (`/admin/estadisticas`) y los reportes PDF usan `getContabilidadGlobal()` para mostrar totales por período. La **Lista de Pagos** muestra las compras confirmadas (tickets) en el mismo rango de fechas que los ingresos.
+
+---
+
+## Roles
+
+| Rol | Permisos principales |
+|-----|------------------------|
+| **USER** | Participar en sorteos, comprar cupos, perfil, historial, referidos |
+| **AGENT** | Lo de USER + gestión de referidos, vistas básicas de admin |
+| **CONTABLE** | Lista de pagos, estadísticas, pagar premios, reportes |
+| **SUPERADMIN** | Sorteos, usuarios, estadísticas, configuración |
+| **MASTER** | Control total, roles de administradores, configuración crítica |
+
+---
+
+## Módulos principales del admin
+
+- **Dashboard** (`/admin`): resumen, enlaces a sorteos, pagos, estadísticas, etc.
+- **Crear Sorteos** (`/admin/sorteos/crear`): precio por cupo, cantidad de ganadores (1–3), premios (Bs.) con regla 70%.
+- **Pagar Premios** (`/admin/pagos`): reclamos de ganadores; el monto a pagar es el definido en CREAR SORTEO (Premios Bs.).
+- **Estadísticas** (`/admin/estadisticas`): Estado de Cuenta (ingresos, egresos, ganancias, crecimiento 48 h), gráfico, lista de pagos por período, referencias, top usuarios (MASTER).
+- **Usuarios** (`/admin/usuarios`): listado, búsqueda, edición.
+- **Sorteos** (crear, modificar, ejecutar, cupos): flujo completo de sorteos.
+
+---
+
+## API (resumen)
+
+- **Auth:** registro, login, logout, verificación de email, recuperación de contraseña.
+- **Sorteos:** `GET/POST /api/raffles`, `GET/POST /api/raffles/[id]/buy`, ejecución.
+- **Admin:** dashboard, users, claims (pagos de premios), estadísticas (ingresos, PDF), payments (lista de pagos).
+- **Contabilidad:** los totales se obtienen vía `getContabilidadGlobal()` en las rutas de estadísticas y PDF.
+
+---
+
+## Despliegue (Vercel)
+
+- **Build command:** `prisma generate && node scripts/apply-schema-postgres.js && npm run build && npm run postbuild`
+- **Install command:** `npm install`
+- Configurar en Vercel: `DATABASE_URL`, `JWT_SECRET`, y las variables opcionales que uses (email, MASTER inicial, Blob, etc.).
+
+---
+
+## Seguridad
+
+- No subir `.env` ni `.env.local` al repositorio.
+- Contraseñas hasheadas con bcrypt.
+- JWT para sesión; validación de roles en API y rutas.
+- Validación de entradas con Zod.
+- Logs de auditoría para acciones administrativas.
+
+---
+
+## Licencia y soporte
+
+Proyecto privado. Para soporte o consultas, contactar al equipo de desarrollo o revisar la documentación interna.
+
+---
+
+*Desarrollado por el equipo de LuckyLY*
