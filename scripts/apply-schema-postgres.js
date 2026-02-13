@@ -51,23 +51,24 @@ function runCommand(command, options = {}) {
 }
 
 async function applySchema() {
-  console.log('🔄 Aplicando schema con prisma db push...\n');
+  console.log('🔄 Aplicando migraciones con prisma migrate deploy...\n');
   
   try {
-    // Intentar sin force-reset (preserva datos si existen)
-    runCommand('npx prisma db push --accept-data-loss');
-    console.log('✅ Schema aplicado exitosamente\n');
+    // prisma migrate deploy: aplica solo migraciones pendientes sin perder datos
+    runCommand('npx prisma migrate deploy');
+    console.log('✅ Migraciones aplicadas exitosamente\n');
     return true;
   } catch (error) {
-    console.log('⚠️  db push normal falló. Intentando con --force-reset...\n');
+    console.error('❌ Error al aplicar migraciones:', error.message);
+    console.log('⚠️  Intentando con prisma db push (sin --force-reset)...\n');
     
     try {
-      // Si falla, usar force-reset (resetea toda la base de datos)
-      runCommand('npx prisma db push --force-reset --accept-data-loss');
-      console.log('✅ Schema aplicado con force-reset\n');
+      // Fallback: db push SIN --force-reset NI --accept-data-loss para no perder datos
+      runCommand('npx prisma db push');
+      console.log('✅ Schema aplicado con db push (sin pérdida de datos)\n');
       return true;
-    } catch (resetError) {
-      console.error('❌ Error al aplicar schema:', resetError.message);
+    } catch (pushError) {
+      console.error('❌ Error al aplicar schema:', pushError.message);
       return false;
     }
   }
