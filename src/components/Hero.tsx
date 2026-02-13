@@ -186,22 +186,18 @@ export function Hero() {
 
   const imageSize = config.heroImageSize || "contain";
   
-  // Determinar backgroundSize según el modo seleccionado
+  // Autoajustar (auto): mostrar la imagen completa sin recortar, escalando de forma responsive
+  // contain = imagen completa visible; el contenedor usa altura responsive (50vh/60vh/100vh-80px)
   const getBackgroundSize = () => {
     if (imageSize === "auto") {
-      // Autoajustar: llenar todo el espacio sin dejar vacíos, preservando proporciones
-      // Usa cover para llenar completamente el espacio (puede recortar ligeramente)
-      return "cover";
+      return "contain";
     }
     return imageSize; // "contain" o "cover"
   };
   
   const backgroundSize = getBackgroundSize();
   const getEffectStyle = () => {
-    // Para "auto": usar cover para llenar todo el espacio sin vacíos
-    const finalBackgroundSize = imageSize === "auto" 
-      ? "cover" // Llena todo el espacio sin dejar vacíos
-      : backgroundSize;
+    const finalBackgroundSize = getBackgroundSize();
     
     // Aplicar blur: 0-100% se convierte a 0-20px (100% = 20px)
     const blurValue = (config.heroBlur ?? 0) / 5;
@@ -284,10 +280,7 @@ export function Hero() {
       onMouseLeave={handleMouseLeave}
       style={{ 
         position: "relative", 
-        width: "100%", 
-        minHeight: "calc(100vh - 80px)",
-        height: "calc(100vh - 80px)",
-        maxHeight: "none",
+        width: "100%",
         overflow: "hidden",
         opacity: opacity,
         transition: "opacity 0.3s ease-out",
@@ -319,10 +312,7 @@ export function Hero() {
               transform = `translateY(${currentImageIndex * 100}%)`;
             }
             
-            // Para "auto": usar cover para llenar todo el espacio sin vacíos
-            const slideBackgroundSize = imageSize === "auto" 
-              ? "cover" // Llena todo el espacio sin dejar vacíos
-              : backgroundSize;
+            const slideBackgroundSize = getBackgroundSize();
             
             // Aplicar blur y opacidad también en el modo slide
             const slideBlurValue = (config.heroBlur ?? 0) / 5;
