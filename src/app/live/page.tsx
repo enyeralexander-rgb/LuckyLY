@@ -65,7 +65,7 @@ export default function LivePage() {
         )}
 
         <div className="live-cta">
-          <Link href="/sorteos" className="live-cta-button">¡Juega ahora!</Link>
+          <Link href="/raffles" className="live-cta-button">¡Juega ahora!</Link>
         </div>
       </main>
       <Footer />
