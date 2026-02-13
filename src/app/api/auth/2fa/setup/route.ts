@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
 // @ts-ignore
 import { authenticator } from "otplib";
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
     try {
       qrCodeDataUrl = await QRCode.toDataURL(otpAuthUrl);
     } catch (qrError) {
-      console.error("Error generando QR:", qrError);
+      logger.error("Error generando QR", { error: qrError instanceof Error ? qrError.message : String(qrError) });
     }
 
     return NextResponse.json({

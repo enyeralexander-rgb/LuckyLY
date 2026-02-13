@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../lib/prisma";
 import { isDatabaseConnectionError } from "../../../../lib/dbErrors";
+import { logger } from "../../../../lib/logger";
 
 const DEFAULT_PUBLIC_CONFIG = {
   heroImages: ["/images/ruleta-fortuna-hero.jpg"],
@@ -36,7 +37,7 @@ const DEFAULT_PUBLIC_CONFIG = {
 
 export async function GET(request: Request) {
   try {
-    console.log("📤 [Public Homepage API] Solicitando configuración pública");
+    logger.info("[Public Homepage API] Solicitando configuración pública");
     const config = await prisma.homePageConfig.findFirst({
       orderBy: { updatedAt: "desc" },
       select: {
@@ -67,10 +68,11 @@ export async function GET(request: Request) {
     });
 
     if (config) {
-      console.log("✅ [Public Homepage API] Configuración encontrada");
-      console.log("   heroOpacity:", config.heroOpacity);
-      console.log("   heroBlur:", config.heroBlur);
-      console.log("   heroOverlayOpacity:", config.heroOverlayOpacity);
+      logger.info("[Public Homepage API] Configuración encontrada", {
+        heroOpacity: config.heroOpacity,
+        heroBlur: config.heroBlur,
+        heroOverlayOpacity: config.heroOverlayOpacity
+      });
     }
 
     // Configuración por defecto si no existe
@@ -86,11 +88,11 @@ export async function GET(request: Request) {
     return NextResponse.json(config);
   } catch (err) {
     if (isDatabaseConnectionError(err)) {
-      console.info("ℹ️ [Public Homepage API] DB no disponible, usando fallback");
+      logger.info("[Public Homepage API] DB no disponible, usando fallback");
       return NextResponse.json(DEFAULT_PUBLIC_CONFIG, { status: 200, headers: { "x-fallback": "db-unavailable" } });
     }
 
-    console.error("Error al obtener configuración pública:", err);
+    logger.error("Error al obtener configuración pública", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al obtener configuración" }, { status: 500 });
   }
 }

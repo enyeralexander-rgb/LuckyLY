@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { parsePrizeValue } from "../../../../../lib/validators";
+import { logger } from "../../../../../lib/logger";
 import { Role, DrawType } from "@prisma/client";
 
 // Obtener plantilla específica
@@ -87,7 +88,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al actualizar plantilla:", err);
+    logger.error("Error al actualizar plantilla", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al actualizar plantilla" }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../../../lib/prisma";
 import { loginSchema } from "../../../../lib/validators";
+import { logger } from "../../../../lib/logger";
 import { Role } from "@prisma/client";
 import crypto from "crypto";
 
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
         });
       } catch (logError) {
         // Si falla el log, no afectar el login
-        console.error("Error al registrar log de login:", logError);
+        logger.error("Error al registrar log de login", { error: logError instanceof Error ? logError.message : String(logError) });
       }
     }
 
@@ -131,7 +132,7 @@ export async function POST(request: Request) {
     
     return res;
   } catch (error) {
-    console.error("Error en login:", error);
+    logger.error("Error en login", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

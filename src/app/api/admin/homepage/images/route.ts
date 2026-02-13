@@ -3,6 +3,7 @@ import { list } from "@vercel/blob";
 import { readdir } from "fs/promises";
 import { join } from "path";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
 
 const PREFIX = "carousel/";
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
           }))
         );
       } catch (e) {
-        console.error("Error listando blobs:", e);
+        logger.error("Error listando blobs", { error: e instanceof Error ? e.message : String(e) });
       }
     }
 
@@ -54,7 +55,7 @@ export async function GET(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al obtener imágenes:", err);
+    logger.error("Error al obtener imágenes", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al obtener imágenes" }, { status: 500 });
   }
 }

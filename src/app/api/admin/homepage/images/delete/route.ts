@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { del } from "@vercel/blob";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
+import { logger } from "../../../../../../lib/logger";
 import { Role } from "@prisma/client";
 import { unlink } from "fs/promises";
 import { join } from "path";
@@ -63,7 +64,7 @@ export async function DELETE(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al eliminar imagen:", err);
+    logger.error("Error al eliminar imagen", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({
       error: "Error al eliminar la imagen",
       message: err instanceof Error ? err.message : "Error desconocido"

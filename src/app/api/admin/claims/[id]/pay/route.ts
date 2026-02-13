@@ -1,23 +1,32 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../../lib/prisma";
+import { claimPaySchema } from "../../../../../../lib/validators";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
 import { Role } from "@prisma/client";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const auth = requireAuth(request, [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER]);
-    const { paymentRef, paidAmount } = await request.json();
-
-    if (!paymentRef) {
-      return NextResponse.json({ error: "Referencia de pago requerida" }, { status: 400 });
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Cuerpo de la petición inválido (JSON)" }, { status: 400 });
     }
+    const parsed = claimPaySchema.safeParse(body);
+    if (!parsed.success) {
+      const message = parsed.error.errors.map((e) => e.path.join(".") + ": " + e.message).join("; ");
+      return NextResponse.json({ error: message || "Datos inválidos" }, { status: 400 });
+    }
+    const { paymentRef, paidAmount } = parsed.data;
 
-    if (!paidAmount) {
-      return NextResponse.json({ error: "El monto pagado es requerido para auditoría" }, { status: 400 });
+    const claimId = typeof params?.id === "string" ? params.id.trim() : "";
+    if (!claimId) {
+      return NextResponse.json({ error: "ID de reclamo inválido" }, { status: 400 });
     }
 
     const claim = await prisma.prizeClaim.findUnique({
-      where: { id: params.id },
+      where: { id: claimId },
       include: { user: { select: { name: true, email: true } }, ticket: { include: { raffle: true } } }
     });
 
@@ -31,11 +40,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
 
     await prisma.prizeClaim.update({
-      where: { id: params.id },
+      where: { id: claimId },
       data: {
         status: "PAID",
         paymentRef,
-        paidAmount: parseFloat(paidAmount),
+        paidAmount,
         processedAt: new Date(),
         processedById: auth.userId
       }
@@ -43,7 +52,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     // Obtener claim actualizado con paymentProof
     const updatedClaim = await prisma.prizeClaim.findUnique({
-      where: { id: params.id },
+      where: { id: claimId },
       include: { user: { select: { name: true, email: true } }, ticket: { include: { raffle: true } } }
     });
 
@@ -67,7 +76,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
           actorRole: auth.role,
           action: "PAY_PRIZE",
           entity: "PrizeClaim",
-          entityId: params.id,
+          entityId: claimId,
           ip,
           meta: {
             userId: claim.userId,

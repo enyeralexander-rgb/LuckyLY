@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
+import { logger } from "../../../../lib/logger";
 import bcrypt from "bcryptjs";
 
 export async function POST(request: Request) {
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
       message: "Contraseña restablecida exitosamente",
     });
   } catch (error) {
-    console.error("Error en reset-password:", error);
+    logger.error("Error en reset-password", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Error al restablecer contraseña" }, { status: 500 });
   }
 }

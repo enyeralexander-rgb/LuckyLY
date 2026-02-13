@@ -42,7 +42,7 @@ src/
 # Instalar dependencias
 npm install
 
-# Configurar variables de entorno
+# Configurar variables de entorno (nunca commitear .env ni credenciales)
 cp .env.example .env.local
 
 # Generar cliente de Prisma
@@ -77,12 +77,16 @@ npm run prisma:generate
 # Aplicar cambios al esquema
 npm run prisma:push
 
-# Ejecutar seed de datos iniciales
+# Ejecutar seed (solo limpieza: borra datos, no crea usuarios)
 npm run prisma:seed
 
 # Verificar conexión a BD
 npm run db:verify
 ```
+
+**Desde cero (reset total):** Para dejar la BD vacía y crear el primer MASTER por variables de entorno, ver `docs/PLAN_LIMPIAR_DATOS_DESDE_CERO.md` (flujo completo). Resumen: usar `npx prisma db push --force-reset --accept-data-loss` o ejecutar `scripts/reset-database.sql`, luego `node scripts/apply-schema-postgres.js` (crea MASTER si existen `MASTER_INITIAL_EMAIL` y `MASTER_INITIAL_PASSWORD` en `.env`). `scripts/clean-database.sql` es solo **limpieza operativa** (mantiene admins).
+
+**Contenido generado:** La carpeta `public/uploads/payment-proofs/` almacena comprobantes de pago subidos en runtime; no se versiona (está en `.gitignore`). En un reset manual del servidor puedes vaciarla si quieres eliminar también esos archivos.
 
 ### 4. **Flujo de Trabajo con Git**
 
@@ -108,13 +112,13 @@ git branch -d feature/nueva-funcionalidad
 ```bash
 # Build command (configurado en vercel.json)
 prisma generate && node scripts/apply-schema-postgres.js && npm run build && npm run postbuild
-
-# Variables de entorno requeridas:
-DATABASE_URL=postgresql://...
-NEXTAUTH_SECRET=...
-NEXTAUTH_URL=...
-EMAIL_SERVER=...
 ```
+
+El script `apply-schema-postgres.js` aplica el schema y **solo crea el usuario MASTER** si en Vercel están definidas `MASTER_INITIAL_EMAIL` y `MASTER_INITIAL_PASSWORD`. Si no las configuras, la BD quedará sin usuarios (puedes crear el primero luego con el endpoint de setup o en un deploy posterior con esas variables).
+
+**Variables de entorno en Vercel:**
+- Requeridas: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `EMAIL_SERVER` (o equivalente).
+- Opcionales (primer MASTER): `MASTER_INITIAL_EMAIL`, `MASTER_INITIAL_PASSWORD`; opcionales: `MASTER_INITIAL_NAME`, `MASTER_INITIAL_DOCUMENT_ID`, `MASTER_SETUP_SECRET`.
 
 #### **Build Local**
 
@@ -186,6 +190,7 @@ npm start
 
 ## 🔐 Seguridad
 
+- **Credenciales**: No commitear `.env` ni archivos con contraseñas o datos sensibles. Los scripts de schema y setup **no incluyen credenciales por defecto**; el primer MASTER se configura con variables de entorno (`MASTER_INITIAL_EMAIL`, `MASTER_INITIAL_PASSWORD`) o mediante el endpoint protegido `/api/setup/create-master`. Usar siempre `.env.example` como plantilla sin valores reales.
 - **Autenticación**: JWT + NextAuth.js
 - **Autorización**: Middleware de roles
 - **Validación**: Zod schemas en todas las APIs

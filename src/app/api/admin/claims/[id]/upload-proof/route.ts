@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
+import { logger } from "../../../../../../lib/logger";
 import { Role } from "@prisma/client";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
@@ -64,7 +65,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al subir comprobante:", err);
+    logger.error("Error al subir comprobante", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al subir comprobante" }, { status: 500 });
   }
 }

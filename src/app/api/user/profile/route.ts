@@ -4,6 +4,8 @@ import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
 import { Role, Bank } from "@prisma/client";
 import { mapBankNameToEnum } from "../../../../lib/banks";
+import { profileUpdateSchema } from "../../../../lib/validators";
+import { logger } from "../../../../lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -46,16 +48,18 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   try {
     const auth = requireAuth(request, [Role.USER]);
-    const body = await request.json();
-    
-    const { bank, phoneNumber } = body;
-
-    // Validar campos obligatorios: bank y phoneNumber
-    if (!bank || !phoneNumber || phoneNumber.trim().length < 11) {
-      return NextResponse.json({ 
-        error: "Todos los campos son obligatorios. El teléfono debe tener al menos 11 números." 
-      }, { status: 400 });
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Cuerpo de la petición inválido (JSON)" }, { status: 400 });
     }
+    const parsed = profileUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      const message = parsed.error.errors.map((e) => e.path.join(".") + ": " + e.message).join("; ");
+      return NextResponse.json({ error: message || "Datos inválidos" }, { status: 400 });
+    }
+    const { bank, phoneNumber } = parsed.data;
 
     // Obtener el usuario actual para extraer nationalId y nationalIdType del documentId
     const currentUser = await prisma.user.findUnique({
@@ -137,7 +141,7 @@ export async function PUT(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al actualizar perfil:", err);
+    logger.error("Error al actualizar perfil", { error: err instanceof Error ? err.message : String(err) });
     
     // Proporcionar mensaje de error más específico
     if (err && typeof err === 'object' && 'code' in err) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al obtener logs de administradores:", err);
+    logger.error("Error al obtener logs de administradores", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al obtener logs" }, { status: 500 });
   }
 }

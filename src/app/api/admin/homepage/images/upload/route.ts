@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
+import { logger } from "../../../../../../lib/logger";
 import { Role } from "@prisma/client";
 
 const PREFIX = "carousel/";
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al subir imagen a Blob:", err);
+    logger.error("Error al subir imagen a Blob", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({
       error: "Error al subir la imagen",
       message: err instanceof Error ? err.message : "Error desconocido"

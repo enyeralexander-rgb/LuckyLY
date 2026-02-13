@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
+import { logger } from "../../../../lib/logger";
 import { Role, Bank } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al comprobar referencia de pago:", err);
+    logger.error("Error al comprobar referencia de pago", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al comprobar referencia" }, { status: 500 });
   }
 }

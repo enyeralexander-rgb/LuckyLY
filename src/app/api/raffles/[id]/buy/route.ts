@@ -13,7 +13,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const body = await request.json();
     const parsed = ticketPurchaseSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
+      const message = parsed.error.errors.map((e) => e.path.join(".") + ": " + e.message).join("; ");
+      return NextResponse.json({ error: message || "Datos inválidos" }, { status: 400 });
     }
 
     const items = Array.from(new Set(parsed.data.items)); // sin duplicados
@@ -28,9 +29,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     const totalPaid = Number(raffle.pricePerSlot) * items.length;
 
-    const paymentMethod = body.paymentMethod || null;
-    let paymentMobileRef: string | null = typeof body.paymentMobileRef === "string" ? body.paymentMobileRef.trim() : null;
-    let paymentMobileBank: Bank | null = typeof body.paymentMobileBank === "string" && VALID_BANKS.includes(body.paymentMobileBank) ? (body.paymentMobileBank as Bank) : null;
+    const paymentMethod = parsed.data.paymentMethod ?? null;
+    const paymentMobileRefRaw = parsed.data.paymentMobileRef ?? null;
+    let paymentMobileRef: string | null = typeof paymentMobileRefRaw === "string" ? paymentMobileRefRaw.trim() : null;
+    const paymentMobileBankRaw = parsed.data.paymentMobileBank ?? null;
+    let paymentMobileBank: Bank | null = typeof paymentMobileBankRaw === "string" && VALID_BANKS.includes(paymentMobileBankRaw) ? (paymentMobileBankRaw as Bank) : null;
 
     // Validar pago móvil: Banco + Referencia + Fecha (combinación única)
     if (paymentMethod === "MOBILE") {
@@ -92,6 +95,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
       const ticketStatus = paymentMethod === "MOBILE" ? "PENDING" : "CONFIRMED";
       const itemStatus = paymentMethod === "MOBILE" ? "PENDING" : "CONFIRMED";
+      // Prisma PaymentMethod enum: BANESCO, BINANCE, MOBILE; "OTHER" del schema Zod se guarda como null
+      const paymentMethodForDb: "MOBILE" | null = paymentMethod === "MOBILE" ? "MOBILE" : null;
 
       const created = await tx.ticket.create({
         data: {
@@ -100,7 +105,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
           items,
           totalPaid,
           status: ticketStatus,
-          paymentMethod: paymentMethod || null,
+          paymentMethod: paymentMethodForDb,
           paymentMobileRef: paymentMobileRef || null,
           paymentMobileBank: paymentMobileBank || null,
           ticketItems: {

@@ -1,24 +1,38 @@
-// Sistema de logging mejorado con niveles y estructuración
+// Sistema de logging centralizado para servidor (APIs, lib).
+// En producción no se deben incluir en context: contraseñas, tokens, PII completo.
 
 type LogLevel = "error" | "warn" | "info" | "debug";
+
+const SENSITIVE_KEYS = ["password", "passwordHash", "token", "secret", "authorization", "cookie", "auth_token"];
+
+function sanitizeContext(context: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+  if (!context || process.env.NODE_ENV !== "production") return context;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(context)) {
+    const keyLower = k.toLowerCase();
+    if (SENSITIVE_KEYS.some((s) => keyLower.includes(s))) {
+      out[k] = "[REDACTED]";
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
 
 interface LogEntry {
   timestamp: string;
   level: LogLevel;
   message: string;
-  context?: Record<string, any>;
-  userId?: string;
-  ip?: string;
-  userAgent?: string;
+  context?: Record<string, unknown>;
 }
 
 class Logger {
-  private formatLog(level: LogLevel, message: string, context?: Record<string, any>): LogEntry {
+  private formatLog(level: LogLevel, message: string, context?: Record<string, unknown>): LogEntry {
     return {
       timestamp: new Date().toISOString(),
       level,
       message,
-      context,
+      context: sanitizeContext(context),
     };
   }
 
@@ -46,26 +60,26 @@ class Logger {
     }
   }
 
-  error(message: string, context?: Record<string, any>) {
+  error(message: string, context?: Record<string, unknown>) {
     this.writeLog(this.formatLog("error", message, context));
   }
 
-  warn(message: string, context?: Record<string, any>) {
+  warn(message: string, context?: Record<string, unknown>) {
     this.writeLog(this.formatLog("warn", message, context));
   }
 
-  info(message: string, context?: Record<string, any>) {
+  info(message: string, context?: Record<string, unknown>) {
     this.writeLog(this.formatLog("info", message, context));
   }
 
-  debug(message: string, context?: Record<string, any>) {
+  debug(message: string, context?: Record<string, unknown>) {
     if (process.env.NODE_ENV === "development") {
       this.writeLog(this.formatLog("debug", message, context));
     }
   }
 
-  // Helper para logs de API
-  apiLog(level: LogLevel, message: string, request: Request, context?: Record<string, any>) {
+  /** Log de APIs: incluye path, ip y userAgent sin datos sensibles del body. */
+  apiLog(level: LogLevel, message: string, request: Request, context?: Record<string, unknown>) {
     const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
     const userAgent = request.headers.get("user-agent") || "unknown";
     

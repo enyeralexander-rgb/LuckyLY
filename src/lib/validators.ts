@@ -73,6 +73,21 @@ export const raffleCreateSchema = z.object({
 });
 
 export const ticketPurchaseSchema = z.object({
-  items: z.array(z.union([z.string(), z.number()])).min(1).max(200).transform((arr) => arr.map(String))
+  items: z.array(z.union([z.string(), z.number()])).min(1).max(200).transform((arr) => arr.map(String)),
+  paymentMethod: z.enum(["MOBILE", "OTHER"]).optional().nullable(),
+  paymentMobileRef: z.string().optional().nullable(),
+  paymentMobileBank: z.string().optional().nullable()
+});
+
+/** Body para marcar un reclamo como pagado (admin) */
+export const claimPaySchema = z.object({
+  paymentRef: z.string().min(1, "Referencia de pago requerida"),
+  paidAmount: z.coerce.number().positive("El monto pagado debe ser un número positivo")
+});
+
+/** Body para actualizar datos bancarios del perfil de usuario */
+export const profileUpdateSchema = z.object({
+  bank: z.string().min(1, "El banco es obligatorio"),
+  phoneNumber: z.string().min(11, "El teléfono debe tener al menos 11 caracteres")
 });
 

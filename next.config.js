@@ -16,7 +16,22 @@ const nextConfig = {
   ...(process.env.NODE_ENV === "production" && process.env.ENABLE_STANDALONE === "true" 
     ? { output: "standalone" } 
     : {}),
-  
+
+  // Headers de seguridad (Fase 1.2 – Plan de remediación)
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+    ];
+  },
+
   // Configuración de webpack para mejorar la estabilidad y evitar errores de resolución
   webpack: (config, { dev, isServer, webpack }) => {
     // Agregar plugin de Prisma para incluir binarios en el bundle

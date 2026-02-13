@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
+import { logger } from "../../../../lib/logger";
+import { getGlobalTotals } from "../../../../lib/accounting";
 import { Role } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -50,136 +52,37 @@ export async function GET(request: Request) {
     }
 
     if (type === "income") {
-      // Estadísticas de ingresos
+      // Cuentas globales por período (fuente única: lib/accounting)
+      const totals = await getGlobalTotals({ dateStart, dateEnd });
+      const totalIncome = totals.totalRevenue;
+      const totalPrizesPaid = totals.totalPrizesPaid;
+      const netIncome = totals.companyMargin;
+
+      // Gráfico: ingresos por día (tickets CONFIRMED en el período)
       const tickets = await prisma.ticket.findMany({
         where: {
           status: "CONFIRMED",
-          purchasedAt: {
-            gte: dateStart,
-            lte: dateEnd
-          }
+          purchasedAt: { gte: dateStart, lte: dateEnd }
         },
-        select: {
-          totalPaid: true,
-          purchasedAt: true
-        }
+        select: { totalPaid: true, purchasedAt: true }
       });
-
-      const totalIncome = tickets.reduce((sum, t) => sum + Number(t.totalPaid), 0);
-
-      // Calcular premios pagados (egresos)
-      // NOTA: Como PrizeClaim no guarda el monto exacto y no sabemos la posición ganadora (1°, 2°, 3°),
-      // estimamos el pago basado en la regla del 70% dividida equitativamente o el promedio de premios.
-      // Mejor aproximación: (Slots * Precio * 0.70) / WinnersCount
-      const paidClaims = await prisma.prizeClaim.findMany({
-        where: {
-          status: "PAID",
-          processedAt: {
-            gte: dateStart,
-            lte: dateEnd
-          }
-        },
-        include: {
-          ticket: {
-            select: {
-              raffle: {
-                select: {
-                  pricePerSlot: true,
-                  slots: true,
-                  winnersCount: true
-                }
-              }
-            }
-          }
-        }
-      });
-
-      const totalPrizesPaid = paidClaims.reduce((sum, claim) => {
-        // Uso de monto real si existe (Nueva implementación)
-        if (claim.paidAmount) {
-          return sum + Number(claim.paidAmount);
-        }
-        
-        // Lógica legacy (estimación del 70%)
-        const raffle = claim.ticket.raffle;
-        if (!raffle) return sum;
-        
-        const totalRaffleValue = Number(raffle.pricePerSlot) * raffle.slots;
-        const totalPrizePool = totalRaffleValue * 0.70;
-        const estimatedPrizeValue = totalPrizePool / (raffle.winnersCount || 1);
-        
-        return sum + estimatedPrizeValue;
-      }, 0);
-
-      // Calcular ganancias netas (ingresos - premios pagados)
-      const netIncome = totalIncome - totalPrizesPaid;
-
-      // Calcular ingresos por día para el gráfico
       const incomeByDay: Record<string, number> = {};
       tickets.forEach((ticket) => {
         const date = new Date(ticket.purchasedAt).toISOString().split("T")[0];
         incomeByDay[date] = (incomeByDay[date] || 0) + Number(ticket.totalPaid);
       });
 
-      // Calcular porcentaje de crecimiento (comparar con período anterior)
+      // Período anterior para crecimiento
       const previousPeriodStart = new Date(dateStart);
       previousPeriodStart.setTime(previousPeriodStart.getTime() - (dateEnd.getTime() - dateStart.getTime()));
       const previousPeriodEnd = dateStart;
-
-      const previousTickets = await prisma.ticket.findMany({
-        where: {
-          status: "CONFIRMED",
-          purchasedAt: {
-            gte: previousPeriodStart,
-            lte: previousPeriodEnd
-          }
-        },
-        select: {
-          totalPaid: true
-        }
+      const previousTotals = await getGlobalTotals({
+        dateStart: previousPeriodStart,
+        dateEnd: previousPeriodEnd
       });
-
-      const previousPaidClaims = await prisma.prizeClaim.findMany({
-        where: {
-          status: "PAID",
-          processedAt: {
-            gte: previousPeriodStart,
-            lte: previousPeriodEnd
-          }
-        },
-        include: {
-          ticket: {
-            select: {
-              raffle: {
-                select: {
-                  pricePerSlot: true,
-                  slots: true,
-                  winnersCount: true
-                }
-              }
-            }
-          }
-        }
-      });
-
-      const previousIncome = previousTickets.reduce((sum, t) => sum + Number(t.totalPaid), 0);
-      
-      const previousPrizesPaid = previousPaidClaims.reduce((sum, claim) => {
-        if (claim.paidAmount) {
-          return sum + Number(claim.paidAmount);
-        }
-
-        const raffle = claim.ticket.raffle;
-        if (!raffle) return sum;
-        
-        const totalRaffleValue = Number(raffle.pricePerSlot) * raffle.slots;
-        const totalPrizePool = totalRaffleValue * 0.70;
-        const estimatedPrizeValue = totalPrizePool / (raffle.winnersCount || 1);
-        
-        return sum + estimatedPrizeValue;
-      }, 0);
-      
-      const previousNetIncome = previousIncome - previousPrizesPaid;
+      const previousIncome = previousTotals.totalRevenue;
+      const previousPrizesPaid = previousTotals.totalPrizesPaid;
+      const previousNetIncome = previousTotals.companyMargin;
 
       const growthPercentage = previousIncome > 0 
         ? ((totalIncome - previousIncome) / previousIncome) * 100 
@@ -383,7 +286,7 @@ export async function GET(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al obtener estadísticas:", err);
+    logger.error("Error al obtener estadísticas", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al obtener estadísticas" }, { status: 500 });
   }
 }

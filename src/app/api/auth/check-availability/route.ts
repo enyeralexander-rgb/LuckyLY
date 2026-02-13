@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../lib/prisma";
 import { getClientIP, checkRateLimit } from "../../../../lib/rateLimit";
+import { logger } from "../../../../lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
       }
     );
   } catch (err) {
-    console.error("Error al verificar disponibilidad:", err);
+    logger.error("Error al verificar disponibilidad", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al verificar disponibilidad" }, { status: 500 });
   }
 }

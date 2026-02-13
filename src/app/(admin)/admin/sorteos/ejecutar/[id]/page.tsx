@@ -225,7 +225,12 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
   // Ejecutar Giro
   async function handleExecuteSingleSpin() {
     if (!raffle || !auth?.token || executing || spinning) return;
-    
+
+    // Confirmación explícita antes del primer giro (acción irreversible)
+    if (winners.length === 0) {
+      if (!confirm("¿Ejecutar el sorteo? Esta acción iniciará la ruleta y no se puede deshacer.")) return;
+    }
+
     setExecuting(true);
     setSpinning(true);
 

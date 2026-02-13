@@ -94,7 +94,10 @@ function DatosUsuariosPageContent() {
 
   async function handleSuspendUser() {
     if (!auth?.token || !selectedUser) return;
-    
+
+    const action = selectedUser.suspended ? "reactivar" : "suspender";
+    if (!confirm(`¿Confirmar que deseas ${action} a ${selectedUser.name} (${selectedUser.email})?`)) return;
+
     setSuspendLoading(true);
     try {
       const res = await fetch(`/api/admin/users/${selectedUser.id}/suspend`, {

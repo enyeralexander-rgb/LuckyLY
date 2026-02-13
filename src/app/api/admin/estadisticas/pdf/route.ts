@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { logger } from "../../../../../lib/logger";
+import { getGlobalTotals } from "../../../../../lib/accounting";
 import { Role } from "@prisma/client";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -56,54 +58,41 @@ export async function GET(request: Request) {
       select: { name: true, email: true }
     });
 
-    // Obtener ingresos (tickets confirmados)
+    // Totales del período (fuente única: lib/accounting)
+    const totals = await getGlobalTotals({ dateStart, dateEnd });
+    const totalIncome = totals.totalRevenue;
+    const totalPrizesPaid = totals.totalPrizesPaid;
+    const netIncome = totals.companyMargin;
+
+    // Listados para tablas del PDF
     const tickets = await prisma.ticket.findMany({
       where: {
         status: "CONFIRMED",
-        purchasedAt: {
-          gte: dateStart,
-          lte: dateEnd
-        }
+        purchasedAt: { gte: dateStart, lte: dateEnd }
       },
       include: {
-        user: {
-          select: { name: true, email: true }
-        },
-        raffle: {
-          select: { title: true }
-        }
+        user: { select: { name: true, email: true } },
+        raffle: { select: { title: true } }
       },
       orderBy: { purchasedAt: "desc" }
     });
 
-    // Obtener egresos (premios pagados)
     const paidClaims = await prisma.prizeClaim.findMany({
       where: {
         status: "PAID",
-        processedAt: {
-          gte: dateStart,
-          lte: dateEnd
-        }
+        processedAt: { gte: dateStart, lte: dateEnd }
       },
       include: {
-        user: {
-          select: { name: true, email: true }
-        },
+        user: { select: { name: true, email: true } },
         ticket: {
-          include: {
-            raffle: {
-              select: { title: true }
-            }
+          select: {
+            totalPaid: true,
+            raffle: { select: { title: true } }
           }
         }
       },
       orderBy: { processedAt: "desc" }
     });
-
-    // Calcular totales
-    const totalIncome = tickets.reduce((sum, t) => sum + Number(t.totalPaid), 0);
-    const totalPrizesPaid = paidClaims.reduce((sum, claim) => sum + Number(claim.ticket.totalPaid), 0);
-    const netIncome = totalIncome - totalPrizesPaid;
 
     // Crear PDF
     const doc = new jsPDF();
@@ -212,7 +201,7 @@ export async function GET(request: Request) {
         claim.user.name,
         claim.ticket.raffle.title,
         claim.paymentRef || "-",
-        `Bs. ${Number(claim.ticket.totalPaid).toFixed(2)}`
+        `Bs. ${Number(claim.paidAmount ?? 0).toFixed(2)}`
       ]);
 
       autoTable(doc, {
@@ -283,7 +272,7 @@ export async function GET(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al generar PDF:", err);
+    logger.error("Error al generar PDF", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al generar PDF" }, { status: 500 });
   }
 }
