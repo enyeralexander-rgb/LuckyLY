@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth } from "../../../../../lib/auth";
 import { logger } from "../../../../../lib/logger";
+import { withRetry } from "../../../../../lib/retry";
 import { Role } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -11,38 +12,42 @@ export async function GET(request: Request) {
     // Solo roles administrativos pueden ver estas estadísticas
     const auth = requireAuth(request, [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER]);
 
-    const [pendingSlots, pendingClaims, activeRaffles] = await Promise.all([
-      // 1. Cupos pendientes de confirmación (pago móvil)
-      prisma.ticketItem.count({
-        where: {
-          status: "PENDING"
-        }
-      }),
-
-      // 2. Reclamos de premios pendientes
-      prisma.prizeClaim.count({
-        where: {
-          status: "REQUESTED"
-        }
-      }),
-
-      // 3. Obtener sorteos activos para calcular cuáles están listos
-      prisma.raffle.findMany({
-        where: {
-          status: "ACTIVE"
-        },
-        include: {
-          ticketItems: {
+    const [pendingSlots, pendingClaims, activeRaffles] = await withRetry(
+      () =>
+        Promise.all([
+          // 1. Cupos pendientes de confirmación (pago móvil)
+          prisma.ticketItem.count({
             where: {
-              status: "CONFIRMED"
-            },
-            select: {
-              id: true
+              status: "PENDING"
             }
-          }
-        }
-      })
-    ]);
+          }),
+
+          // 2. Reclamos de premios pendientes
+          prisma.prizeClaim.count({
+            where: {
+              status: "REQUESTED"
+            }
+          }),
+
+          // 3. Obtener sorteos activos para calcular cuáles están listos
+          prisma.raffle.findMany({
+            where: {
+              status: "ACTIVE"
+            },
+            include: {
+              ticketItems: {
+                where: {
+                  status: "CONFIRMED"
+                },
+                select: {
+                  id: true
+                }
+              }
+            }
+          })
+        ]),
+      { label: "notification stats" }
+    );
 
     // Calcular sorteos listos para ejecutar (todos los cupos confirmados)
     const readyToExecute = activeRaffles.filter(
