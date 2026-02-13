@@ -3,9 +3,15 @@ import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { Role } from "@prisma/client";
 
-// Función para obtener la URL base
+function normalizeBaseUrl(url: string): string {
+  const u = url.trim();
+  if (!u) return "http://localhost:3000";
+  if (u.startsWith("http://") || u.startsWith("https://")) return u;
+  return u.startsWith("localhost") ? `http://${u}` : `https://${u}`;
+}
+
 function getAppUrl(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.NEXT_PUBLIC_APP_URL) return normalizeBaseUrl(process.env.NEXT_PUBLIC_APP_URL);
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return "http://localhost:3000";
 }

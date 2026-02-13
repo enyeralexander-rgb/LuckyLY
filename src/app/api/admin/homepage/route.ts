@@ -41,7 +41,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
     console.error("Error al obtener configuración:", err);
-    return NextResponse.json({ error: "Error al obtener configuración" }, { status: 500 });
+    const message =
+      process.env.NODE_ENV === "development" && err instanceof Error
+        ? err.message
+        : "Error al obtener configuración";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

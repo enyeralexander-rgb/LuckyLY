@@ -72,14 +72,20 @@ export function useHomePageConfig() {
       const res = await fetch("/api/admin/homepage", {
         headers: { Authorization: `Bearer ${auth.token}` },
       });
-      const data = await res.json();
-      if (data.error) {
-        setError(data.error);
-      } else {
-        const next = normalizeFromApi(data);
-        setConfig(next);
-        setLastSavedConfig(next);
+      let data: { error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        setError(res.ok ? "Error al cargar configuración" : `Error del servidor (${res.status})`);
+        return;
       }
+      if (!res.ok || data.error) {
+        setError(data.error || `Error del servidor (${res.status})`);
+        return;
+      }
+      const next = normalizeFromApi(data as Record<string, unknown>);
+      setConfig(next);
+      setLastSavedConfig(next);
     } catch (err) {
       console.error("Error cargando configuración:", err);
       setError(err instanceof Error ? err.message : "Error al cargar configuración");
