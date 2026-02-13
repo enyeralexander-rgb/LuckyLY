@@ -38,7 +38,7 @@ type IncomeData = {
   netIncome: number;
   growthPercentage: number;
   netGrowthPercentage: number;
-  chartData: Array<{ date: string; value: number }>;
+  chartData: Array<{ date: string; ingresos: number; egresos: number }>;
   period: { start: string; end: string };
 };
 
@@ -58,6 +58,44 @@ type TopUser = {
   totalSpent: number;
   purchaseCount: number;
 };
+
+/** Calcula el rango de fechas del período (igual lógica que la API) para Lista de Pagos y filtros. */
+function getPeriodRange(
+  period: string,
+  customStartDate: string,
+  customEndDate: string
+): { start: string; end: string } {
+  const now = new Date();
+  let start = new Date(now);
+  let end = new Date(now);
+  if (period === "custom" && customStartDate && customEndDate) {
+    start = new Date(customStartDate + "T00:00:00");
+    end = new Date(customEndDate + "T23:59:59");
+  } else if (period === "24h") {
+    start.setHours(start.getHours() - 24);
+  } else if (period === "7d") {
+    start.setDate(start.getDate() - 7);
+  } else if (period === "30d") {
+    start.setDate(start.getDate() - 30);
+  } else if (period === "90d") {
+    start.setDate(start.getDate() - 90);
+  } else if (period === "180d") {
+    start.setDate(start.getDate() - 180);
+  } else if (period === "365d") {
+    start.setDate(start.getDate() - 365);
+  } else if (period === "year") {
+    start = new Date(now.getFullYear(), 0, 1);
+    end = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+  } else if (period === "all") {
+    start = new Date("2000-01-01T00:00:00.000Z");
+  } else {
+    start.setDate(start.getDate() - 7);
+  }
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10)
+  };
+}
 
 function EstadisticasPageContent() {
   const [auth, setAuth] = useState<any>(null);
@@ -318,27 +356,34 @@ function EstadisticasPageContent() {
               <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando estadísticas...</div>
             ) : incomeData ? (
               <>
+                <p style={{ marginBottom: "1.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
+                  Todos los valores corresponden al <strong>período seleccionado</strong> arriba (fechas de compra para ingresos, fechas de pago para premios).
+                </p>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Ingresos Totales</h3>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.25rem" }}>Ingresos Totales</h3>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Suma de todas las compras (purchasedAt)</p>
                     <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "var(--text-primary)" }}>
                       {incomeData.totalIncome.toFixed(2)} Bs.
                     </p>
                   </div>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Premios Pagados</h3>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.25rem" }}>Premios Pagados</h3>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Egresos (premios pagados a ganadores)</p>
                     <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#ef4444" }}>
                       -{incomeData.totalPrizesPaid.toFixed(2)} Bs.
                     </p>
                   </div>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center", background: "linear-gradient(135deg, #85BB65 0%, #64c27b 100%)" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#fff", marginBottom: "0.5rem" }}>Ganancias Netas</h3>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#fff", marginBottom: "0.25rem" }}>Ganancias Netas</h3>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "rgba(255,255,255,0.9)", marginBottom: "0.5rem" }}>Ingresos − Premios Pagados</p>
                     <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#fff" }}>
                       {incomeData.netIncome.toFixed(2)} Bs.
                     </p>
                   </div>
                   <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>Crecimiento Neto</h3>
+                    <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "var(--text-tertiary)", marginBottom: "0.25rem" }}>Crecimiento Neto (48 h)</h3>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-tertiary)", marginBottom: "0.5rem" }}>% variación ganancias netas vs. 48 h anteriores</p>
                     <p
                       style={{
                         margin: 0,
@@ -377,21 +422,31 @@ function EstadisticasPageContent() {
                 </div>
 
                 <div className="card" style={{ padding: "1.5rem", marginBottom: "2rem" }}>
-                  <h3 style={{ marginTop: 0 }}>Gráfico de Ingresos</h3>
+                  <h3 style={{ marginTop: 0 }}>Gráfico de Ingresos y Egresos</h3>
                   <ResponsiveContainer width="100%" height={400}>
                     <LineChart data={incomeData.chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip formatter={(value: number | undefined) => value !== undefined ? `${value.toFixed(2)} Bs.` : "0 Bs."} />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} Bs.`} />
+                      <Tooltip
+                        formatter={(value: number | undefined) => (value !== undefined ? `${Number(value).toFixed(2)} Bs.` : "0 Bs.")}
+                        labelFormatter={(label) => `Fecha: ${label}`}
+                      />
                       <Legend />
-                      <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} name="Ingresos (Bs.)" />
+                      <Line type="monotone" dataKey="ingresos" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} name="Ingresos (Bs.)" />
+                      <Line type="monotone" dataKey="egresos" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} name="Premios pagados (Bs.)" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
 
-                {/* Lista de Pagos */}
-                <PaymentList auth={auth} period={period} customStartDate={customStartDate} customEndDate={customEndDate} />
+                {/* Lista de Pagos: mismo rango que Ingresos Totales (período seleccionado) */}
+                <PaymentList
+                  auth={auth}
+                  computedPeriodRange={getPeriodRange(period, customStartDate, customEndDate)}
+                  period={period}
+                  customStartDate={customStartDate}
+                  customEndDate={customEndDate}
+                />
               </>
             ) : null}
           </div>
@@ -510,8 +565,20 @@ function EstadisticasPageContent() {
   );
 }
 
-// Componente para Lista de Pagos
-function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: any; period: string; customStartDate: string; customEndDate: string }) {
+// Lista de Pagos: compras (tickets CONFIRMED) en el período seleccionado; alineada con Ingresos Totales
+function PaymentList({
+  auth,
+  computedPeriodRange,
+  period,
+  customStartDate,
+  customEndDate
+}: {
+  auth: any;
+  computedPeriodRange: { start: string; end: string };
+  period: string;
+  customStartDate: string;
+  customEndDate: string;
+}) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -544,10 +611,14 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
   }, [auth]);
 
   useEffect(() => {
+    setPage(1);
+  }, [computedPeriodRange.start, computedPeriodRange.end, filters.startDate, filters.endDate]);
+
+  useEffect(() => {
     if (auth?.token) {
       loadPayments();
     }
-  }, [auth, page, filters, selectedUserId, period, customStartDate, customEndDate]);
+  }, [auth, page, filters, selectedUserId, computedPeriodRange.start, computedPeriodRange.end]);
 
   // Buscar usuarios cuando se escribe en el campo de búsqueda
   useEffect(() => {
@@ -579,10 +650,10 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("limit", "50");
-    
-    // Usar fechas del período seleccionado o filtros personalizados
-    if (filters.startDate) params.append("startDate", filters.startDate);
-    if (filters.endDate) params.append("endDate", filters.endDate);
+    const startDate = filters.startDate || computedPeriodRange.start;
+    const endDate = filters.endDate || computedPeriodRange.end;
+    params.append("startDate", startDate);
+    params.append("endDate", endDate);
     if (selectedUserId) params.append("userId", selectedUserId);
     if (filters.paymentMethod) params.append("paymentMethod", filters.paymentMethod);
     if (filters.raffleName) params.append("raffleId", filters.raffleName);
@@ -608,17 +679,22 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
     setPage(1);
   }
 
+  const effectiveStart = filters.startDate || computedPeriodRange.start;
+  const effectiveEnd = filters.endDate || computedPeriodRange.end;
+
   return (
     <div className="card" style={{ padding: "1.5rem" }}>
-      <h3 style={{ marginTop: 0, marginBottom: "1rem" }}>Lista de Pagos</h3>
-      
+      <h3 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Lista de Pagos</h3>
+      <p style={{ margin: "0 0 1rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
+        Compras confirmadas en el período seleccionado (mismo rango que Ingresos Totales).
+      </p>
       {/* Filtros */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <div>
           <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Fecha Inicio</label>
           <input
             type="date"
-            value={filters.startDate}
+            value={effectiveStart}
             onChange={(e) => handleFilterChange("startDate", e.target.value)}
             style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
           />
@@ -627,7 +703,7 @@ function PaymentList({ auth, period, customStartDate, customEndDate }: { auth: a
           <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Fecha Fin</label>
           <input
             type="date"
-            value={filters.endDate}
+            value={effectiveEnd}
             onChange={(e) => handleFilterChange("endDate", e.target.value)}
             style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
           />
