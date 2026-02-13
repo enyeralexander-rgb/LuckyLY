@@ -3,8 +3,7 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../../../../../lib/prisma";
 import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
-// @ts-ignore
-import { authenticator } from "otplib";
+import { verify } from "../../../../../lib/totp";
 
 const JWT_SECRET = process.env.JWT_SECRET || "insecure-secret";
 
@@ -42,7 +41,7 @@ export async function POST(request: Request) {
     }
 
     // Verificar código 2FA
-    const isValid = authenticator.verify({
+    const isValid = verify({
       token: code,
       secret: user.twoFactorAuth.secret,
     });

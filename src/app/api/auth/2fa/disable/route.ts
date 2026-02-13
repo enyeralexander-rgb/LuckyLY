@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { Role } from "@prisma/client";
-// @ts-ignore
-import { authenticator } from "otplib";
+import { verify } from "../../../../../lib/totp";
 
 export async function POST(request: Request) {
   try {
@@ -25,7 +24,7 @@ export async function POST(request: Request) {
     }
 
     // Verificar token antes de desactivar
-    const isValid = authenticator.verify({
+    const isValid = verify({
       token,
       secret: user.twoFactorAuth.secret,
     });
