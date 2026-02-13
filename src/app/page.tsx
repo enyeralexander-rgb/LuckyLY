@@ -83,12 +83,12 @@ export default function HomePage() {
     : ["hero", "raffles", "results", "live", "footer"];
 
   return (
-    <>
+    <main className="home-page">
       {sections.map((section) => {
         const Component = SECTION_COMPONENTS[section];
         if (!Component) return null;
         return <Component key={section} />;
       })}
-    </>
+    </main>
   );
 }

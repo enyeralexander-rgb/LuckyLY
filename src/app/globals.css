@@ -912,6 +912,109 @@ tbody tr:last-child td {
   }
 }
 
+/* ===== PÁGINA PRINCIPAL "/" - Responsive completo (móvil, tablet, desktop) ===== */
+.home-page {
+  overflow-x: hidden;
+  min-height: 100%;
+}
+
+.home-page > section {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.home-page > section:first-of-type {
+  padding-top: 0;
+}
+
+@media (min-width: 768px) {
+  .home-page > section {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-page > section {
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+  }
+}
+
+/* Sorteos activos (RaffleGrid) - grid responsive */
+.home-page .raffle-grid-cards {
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .home-page .raffle-grid-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-page .raffle-grid-cta {
+    max-width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* MOMENTO DE LA SUERTE (LiveSection) en homepage */
+.home-live-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.home-live-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .home-live-title {
+    font-size: 1.75rem;
+  }
+  .home-live-card {
+    gap: 1.5rem;
+    padding: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-live-title {
+    font-size: 2rem;
+  }
+}
+
+/* Títulos de sección en homepage - escala responsive */
+.home-page section h2 {
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+@media (max-width: 767px) {
+  .home-page section h2 {
+    font-size: 1.375rem !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .home-page section h2 {
+    font-size: 1.75rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-page section h2 {
+    font-size: 2rem !important;
+  }
+}
+
 /* Estilos responsive para imágenes */
 img {
   max-width: 100%;
@@ -3130,23 +3233,23 @@ video {
   }
 }
 
-/* ===== SOCIAL FLOAT - Submenú flotante redes (solo página principal, abajo derecha) ===== */
+/* ===== SOCIAL FLOAT - Submenú flotante redes (solo página principal, abajo izquierda) ===== */
 .social-float {
   position: fixed;
   bottom: 1.5rem;
-  right: 1.5rem;
+  left: 1.5rem;
   z-index: 50;
 }
 .social-float-inner {
   display: flex;
   flex-direction: column-reverse;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.75rem;
 }
 .social-float-submenu {
   display: flex;
   flex-direction: column-reverse;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.75rem;
   max-height: 0;
   opacity: 0;
@@ -3224,10 +3327,32 @@ video {
 .social-float-whatsapp:hover {
   background: #20bd5a;
 }
+@media (max-width: 767px) {
+  .social-float {
+    bottom: 1rem;
+    left: 1rem;
+  }
+  .social-float-toggle {
+    width: 3rem;
+    height: 3rem;
+  }
+  .social-float-toggle-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  .social-float-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  .social-float-icon {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+}
 @media (min-width: 768px) {
   .social-float {
     bottom: 1.5rem;
-    right: 1.5rem;
+    left: 1.5rem;
   }
   .social-float-inner,
   .social-float-submenu {
