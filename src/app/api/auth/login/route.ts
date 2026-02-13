@@ -6,14 +6,19 @@ import { loginSchema } from "../../../../lib/validators";
 import { Role } from "@prisma/client";
 import crypto from "crypto";
 
-// Helper to get secret lazily (duplicated here to avoid circular deps if auth.ts imports prisma, though it doesn't seem to)
-// Actually, it's safer to just check process.env.JWT_SECRET consistent with middleware/auth
-const JWT_SECRET = process.env.JWT_SECRET || "";
-if (!process.env.JWT_SECRET) {
+// Fallo rápido en desarrollo (npm run dev) si falta JWT_SECRET; en build (NODE_ENV=production) no se lanza
+if (process.env.NODE_ENV === "development" && !process.env.JWT_SECRET) {
   throw new Error("CRITICAL: JWT_SECRET is not defined in login route");
 }
+const JWT_SECRET = process.env.JWT_SECRET || "";
 
 export async function POST(request: Request) {
+  if (!JWT_SECRET) {
+    return NextResponse.json(
+      { error: "Configuración del servidor incompleta (JWT_SECRET)" },
+      { status: 500 }
+    );
+  }
   try {
     let body;
     try {

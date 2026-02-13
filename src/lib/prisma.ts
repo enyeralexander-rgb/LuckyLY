@@ -94,10 +94,20 @@ function createPrismaClient(): PrismaClient {
   });
 }
 
-// Exportar instancia singleton
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+// Obtener instancia singleton (inicialización perezosa para que el build no falle sin DATABASE_URL)
+function getPrisma(): PrismaClient {
+  if (globalForPrisma.prisma) {
+    return globalForPrisma.prisma;
+  }
+  const client = createPrismaClient();
+  globalForPrisma.prisma = client;
+  return client;
 }
+
+// Proxy que crea el cliente solo en el primer uso (evita error en "next build" sin .env)
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_, prop) {
+    return (getPrisma() as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
 

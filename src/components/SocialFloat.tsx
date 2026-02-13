@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 type SocialLinks = Record<string, string>;
 
@@ -49,8 +50,10 @@ const STYLES: Record<string, { className: string }> = {
 const ORDER = ["facebook", "instagram", "twitter", "youtube", "tiktok", "whatsapp"];
 
 export function SocialFloat() {
+  const pathname = usePathname();
   const [links, setLinks] = useState<SocialLinks>({});
   const [mounted, setMounted] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -62,25 +65,42 @@ export function SocialFloat() {
       .catch(() => {});
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted || pathname !== "/") return null;
   const entries = ORDER.filter((k) => links[k]).map((key) => ({ key, url: links[key]! }));
   if (entries.length === 0) return null;
 
   return (
     <div className="social-float" aria-label="Redes sociales">
       <div className="social-float-inner">
-        {entries.map(({ key, url }) => (
-          <a
-            key={key}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={STYLES[key]?.className ?? "social-float-btn"}
-            aria-label={key}
-          >
-            {ICONS[key]}
-          </a>
-        ))}
+        <div
+          className={`social-float-submenu ${open ? "social-float-submenu-open" : ""}`}
+          role="menu"
+        >
+          {entries.map(({ key, url }) => (
+            <a
+              key={key}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={STYLES[key]?.className ?? "social-float-btn"}
+              aria-label={key}
+              role="menuitem"
+            >
+              {ICONS[key]}
+            </a>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="social-float-toggle"
+          onClick={() => setOpen((v) => !v)}
+          aria-label={open ? "Cerrar redes sociales" : "Abrir redes sociales"}
+          aria-expanded={open}
+        >
+          <svg className="social-float-toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
       </div>
     </div>
   );
