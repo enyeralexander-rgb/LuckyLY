@@ -3,7 +3,7 @@ import { AdminNavBar } from "../../../../components/AdminNavBar";
 import { AuthGuard } from "../../../../components/AuthGuard";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { useRouter } from "next/navigation";
 
 type Payment = {
@@ -18,6 +18,20 @@ type Payment = {
   cantidadCupos: number;
   tituloSorteo: string;
   tipoSorteo: string;
+  status: string;
+};
+
+type Expense = {
+  id: string;
+  fecha: string;
+  nombreGanador: string;
+  emailGanador: string;
+  tituloSorteo: string;
+  tipoSorteo: string;
+  referenciaPago: string | null;
+  montoPagado: number;
+  montoCompra: number;
+  sorteoId: string;
 };
 
 type ReferralVisit = {
@@ -39,7 +53,7 @@ type IncomeData = {
   ganancias: number;
   growthPercentage: number;
   netGrowthPercentage: number;
-  chartData: Array<{ date: string; ingresos: number; egresos: number }>;
+  chartData: Array<{ date: string; ingresos: number; egresos: number; ganancias: number }>;
   period: { start: string; end: string };
 };
 
@@ -425,20 +439,26 @@ function EstadisticasPageContent() {
                 <div className="card" style={{ padding: "1.5rem", marginBottom: "2rem" }}>
                   <h3 style={{ marginTop: 0 }}>Gráfico de Ingresos y Egresos</h3>
                   <ResponsiveContainer width="100%" height={400}>
-                    <LineChart data={incomeData.chartData}>
+                    <ComposedChart data={incomeData.chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} Bs.`} />
                       <Tooltip
-                        formatter={(value: number | undefined) => (value !== undefined ? `${Number(value).toFixed(2)} Bs.` : "0 Bs.")}
+                        formatter={(value: number | undefined) => {
+                          return value !== undefined ? `${Number(value).toFixed(2)} Bs.` : "0 Bs.";
+                        }}
                         labelFormatter={(label) => `Fecha: ${label}`}
                       />
                       <Legend />
-                      <Line type="monotone" dataKey="ingresos" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} name="Ingresos (Bs.)" />
-                      <Line type="monotone" dataKey="egresos" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} name="Premios pagados (Bs.)" />
-                    </LineChart>
+                      <Bar dataKey="ingresos" fill="#22c55e" name="Ingresos (Bs.)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="egresos" fill="#ef4444" name="Egresos (Bs.)" radius={[4, 4, 0, 0]} />
+                      <Area type="monotone" dataKey="ganancias" stroke="#3b82f6" fill="rgba(59,130,246,0.1)" strokeWidth={2} name="Ganancia Neta (Bs.)" />
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </div>
+
+                {/* Lista de Egresos (Premios Pagados) */}
+                <ExpensesList auth={auth} period={period} customStartDate={customStartDate} customEndDate={customEndDate} computedPeriodRange={getPeriodRange(period, customStartDate, customEndDate)} />
 
                 {/* Lista de Pagos: mismo rango que Ingresos Totales (período seleccionado) */}
                 <PaymentList
@@ -492,15 +512,15 @@ function EstadisticasPageContent() {
                 <div className="card" style={{ padding: "1.5rem", marginBottom: "2rem" }}>
                   <h3 style={{ marginTop: 0 }}>Gráfico de Referencias</h3>
                   <ResponsiveContainer width="100%" height={400}>
-                    <LineChart data={referralsData.chartData}>
+                    <BarChart data={referralsData.chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" />
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Line type="monotone" dataKey="withReferral" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} name="Con Referido" />
-                      <Line type="monotone" dataKey="withoutReferral" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} name="Sin Referido" />
-                    </LineChart>
+                      <Bar dataKey="withReferral" fill="#8b5cf6" name="Con Referido" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="withoutReferral" fill="#10b981" name="Sin Referido" radius={[4, 4, 0, 0]} />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
 
@@ -585,6 +605,7 @@ function PaymentList({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalSum, setTotalSum] = useState(0);
   const [filters, setFilters] = useState({
     startDate: customStartDate || "",
     endDate: customEndDate || "",
@@ -675,6 +696,7 @@ function PaymentList({
         } else {
           setPayments(data.payments || []);
           setTotalPages(data.pagination?.totalPages || 1);
+          setTotalSum(data.totalSum || 0);
           setPaymentError(null);
         }
         setLoading(false);
@@ -829,6 +851,7 @@ function PaymentList({
                   <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Método de Pago</th>
                   <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Cupos Comprados</th>
                   <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Referencia Bancaria</th>
+                  <th style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Status</th>
                   <th style={{ padding: "0.75rem", textAlign: "right", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)" }}>Monto</th>
                 </tr>
               </thead>
@@ -853,12 +876,25 @@ function PaymentList({
                     <td style={{ padding: "0.75rem", fontSize: "0.875rem", fontFamily: "monospace", color: "var(--text-primary)" }}>
                       {payment.referenciaPago || "N/A"}
                     </td>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "center" }}>
+                      <span style={{ padding: "0.25rem 0.5rem", borderRadius: "4px", fontSize: "0.75rem", fontWeight: 600, background: payment.status === "CONFIRMED" ? "rgba(34,197,94,0.15)" : "rgba(251,191,36,0.15)", color: payment.status === "CONFIRMED" ? "#16a34a" : "#d97706" }}>
+                        {payment.status === "CONFIRMED" ? "✓ Confirmado" : "⏳ Pendiente"}
+                      </span>
+                    </td>
                     <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "right", fontWeight: 600, color: "#85BB65" }}>
                       {payment.monto.toFixed(2)} Bs.
                     </td>
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr style={{ background: "var(--table-header-bg, #f3f4f6)", borderTop: "2px solid var(--border-color, #d1d5db)" }}>
+                  <td colSpan={6} style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: 700, textAlign: "right", color: "var(--text-primary)" }}>Total Acumulado:</td>
+                  <td style={{ padding: "0.75rem", fontSize: "1rem", fontWeight: 700, textAlign: "right", color: "#22c55e" }}>
+                    {totalSum.toFixed(2)} Bs.
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
           {/* Paginación */}
@@ -886,6 +922,133 @@ function PaymentList({
         </>
       ) : (
         <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-tertiary)" }}>No hay pagos en el período seleccionado</div>
+      )}
+    </div>
+  );
+}
+
+// Lista de Egresos (Premios Pagados)
+function ExpensesList({ auth, period, customStartDate, customEndDate, computedPeriodRange }: { auth: any; period: string; customStartDate: string; customEndDate: string; computedPeriodRange: { start: string; end: string } }) {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalSum, setTotalSum] = useState(0);
+  const [filters, setFilters] = useState({ startDate: "", endDate: "" });
+
+  useEffect(() => { setPage(1); }, [computedPeriodRange.start, computedPeriodRange.end, filters.startDate, filters.endDate]);
+
+  useEffect(() => {
+    if (auth?.token) loadExpenses();
+  }, [auth, page, filters, computedPeriodRange.start, computedPeriodRange.end]);
+
+  function loadExpenses() {
+    if (!auth?.token) return;
+    setLoading(true);
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", "50");
+    params.append("startDate", filters.startDate || computedPeriodRange.start);
+    params.append("endDate", filters.endDate || computedPeriodRange.end);
+    fetch(`/api/admin/estadisticas/expenses?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${auth.token}` }
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { setExpenses([]); setTotalPages(1); setTotalSum(0); }
+        else { setExpenses(data.expenses || []); setTotalPages(data.pagination?.totalPages || 1); setTotalSum(data.totalSum || 0); }
+        setLoading(false);
+      })
+      .catch(() => { setExpenses([]); setTotalPages(1); setTotalSum(0); setLoading(false); });
+  }
+
+  return (
+    <div className="card" style={{ padding: "1.5rem", marginBottom: "2rem" }}>
+      <h3 style={{ marginTop: 0, marginBottom: "0.5rem" }}>📤 Historial de Egresos (Premios Pagados)</h3>
+      <p style={{ margin: "0 0 1rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
+        Premios pagados a ganadores en el período seleccionado.
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600 }}>Fecha Inicio</label>
+          <input type="date" value={filters.startDate || computedPeriodRange.start} onChange={e => { setFilters({ ...filters, startDate: e.target.value }); setPage(1); }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }} />
+        </div>
+        <div>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 600 }}>Fecha Fin</label>
+          <input type="date" value={filters.endDate || computedPeriodRange.end} onChange={e => { setFilters({ ...filters, endDate: e.target.value }); setPage(1); }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "flex-end" }}>
+          <button onClick={() => { setFilters({ startDate: "", endDate: "" }); setPage(1); }}
+            style={{ padding: "0.5rem 1rem", background: "#6b7280", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}>
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div style={{ padding: "2rem", textAlign: "center" }}>Cargando egresos...</div>
+      ) : expenses.length > 0 ? (
+        <>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "800px" }}>
+              <thead>
+                <tr style={{ background: "var(--table-header-bg, #f3f4f6)" }}>
+                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Fecha Pago</th>
+                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Ganador</th>
+                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Sorteo</th>
+                  <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600 }}>Referencia</th>
+                  <th style={{ padding: "0.75rem", textAlign: "right", fontSize: "0.875rem", fontWeight: 600 }}>Monto Pagado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenses.map(exp => (
+                  <tr key={exp.id} style={{ borderBottom: "1px solid var(--border-color, #e5e7eb)" }}>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
+                      {exp.fecha ? new Date(exp.fecha).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" }) : "N/A"}
+                    </td>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
+                      <div>{exp.nombreGanador}</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>{exp.emailGanador}</div>
+                    </td>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>
+                      <div style={{ fontWeight: 600 }}>{exp.tituloSorteo}</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)" }}>{exp.tipoSorteo}</div>
+                    </td>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", fontFamily: "monospace" }}>{exp.referenciaPago || "N/A"}</td>
+                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", textAlign: "right", fontWeight: 600, color: "#ef4444" }}>
+                      -{exp.montoPagado.toFixed(2)} Bs.
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ borderTop: "2px solid var(--border-color, #d1d5db)" }}>
+                  <td colSpan={4} style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: 700, textAlign: "right" }}>Total Egresos:</td>
+                  <td style={{ padding: "0.75rem", fontSize: "1rem", fontWeight: 700, textAlign: "right", color: "#ef4444" }}>
+                    -{totalSum.toFixed(2)} Bs.
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          {totalPages > 1 && (
+            <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", marginTop: "1rem" }}>
+              <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}
+                style={{ padding: "0.5rem 1rem", background: page === 1 ? "#e5e7eb" : "#3E3E3C", color: page === 1 ? "#9ca3af" : "#fff", border: "none", borderRadius: "4px", cursor: page === 1 ? "not-allowed" : "pointer" }}>
+                Anterior
+              </button>
+              <span style={{ padding: "0.5rem 1rem", display: "flex", alignItems: "center" }}>Página {page} de {totalPages}</span>
+              <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}
+                style={{ padding: "0.5rem 1rem", background: page === totalPages ? "#e5e7eb" : "#3E3E3C", color: page === totalPages ? "#9ca3af" : "#fff", border: "none", borderRadius: "4px", cursor: page === totalPages ? "not-allowed" : "pointer" }}>
+                Siguiente
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-tertiary)" }}>No hay egresos en el período seleccionado</div>
       )}
     </div>
   );

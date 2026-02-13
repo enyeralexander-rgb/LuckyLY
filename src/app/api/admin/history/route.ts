@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
+import { getRevenueByRaffle, getPrizesPaidByRaffle } from "../../../../lib/accounting";
 import { Role } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -84,7 +85,37 @@ export async function GET(request: Request) {
       })
     );
 
-    return NextResponse.json(rafflesWithWinners);
+    // Calcular contabilidad por sorteo (batch para eficiencia)
+    const raffleIds = rafflesWithWinners.map(r => r.id);
+    const [revenueMap, prizesPaidMap, ticketCountsRaw] = await Promise.all([
+      getRevenueByRaffle(raffleIds),
+      getPrizesPaidByRaffle(raffleIds),
+      prisma.ticket.groupBy({
+        by: ["raffleId"],
+        where: { raffleId: { in: raffleIds }, status: "CONFIRMED" },
+        _count: { id: true }
+      })
+    ]);
+    const ticketCounts: Record<string, number> = {};
+    for (const tc of ticketCountsRaw) {
+      if (tc.raffleId) ticketCounts[tc.raffleId] = tc._count.id;
+    }
+
+    const result = rafflesWithWinners.map(r => {
+      const ingresos = revenueMap[r.id] ?? 0;
+      const egresos = prizesPaidMap[r.id] ?? 0;
+      return {
+        ...r,
+        contabilidad: {
+          ingresos: Number(ingresos.toFixed(2)),
+          egresos: Number(egresos.toFixed(2)),
+          ganancias: Number((ingresos - egresos).toFixed(2)),
+          ticketsVendidos: ticketCounts[r.id] ?? 0
+        }
+      };
+    });
+
+    return NextResponse.json(result);
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

@@ -4,6 +4,7 @@ import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { logger } from "../../../../../lib/logger";
 import { getContabilidadGlobal } from "../../../../../lib/accounting";
+import { parsePeriodRange } from "../../../../../lib/dateRange";
 import { Role } from "@prisma/client";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -16,42 +17,7 @@ export async function GET(request: Request) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    let dateStart: Date;
-    let dateEnd: Date = new Date();
-
-    // Calcular fechas según el período (mismo criterio que GET estadísticas)
-    if (period === "custom" && startDate && endDate) {
-      dateStart = new Date(startDate);
-      dateStart.setHours(0, 0, 0, 0);
-      dateEnd = new Date(endDate);
-      dateEnd.setHours(23, 59, 59, 999);
-    } else if (period === "24h") {
-      dateStart = new Date();
-      dateStart.setHours(dateStart.getHours() - 24);
-    } else if (period === "7d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 7);
-    } else if (period === "30d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 30);
-    } else if (period === "90d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 90);
-    } else if (period === "180d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 180);
-    } else if (period === "365d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 365);
-    } else if (period === "year") {
-      dateStart = new Date(new Date().getFullYear(), 0, 1);
-      dateEnd = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999);
-    } else if (period === "all") {
-      dateStart = new Date("2000-01-01T00:00:00.000Z");
-    } else {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 7);
-    }
+    const { dateStart, dateEnd } = parsePeriodRange(period, startDate, endDate);
 
     // Obtener datos del administrador
     const admin = await prisma.user.findUnique({
