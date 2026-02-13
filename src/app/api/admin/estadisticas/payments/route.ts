@@ -25,11 +25,13 @@ export async function GET(request: Request) {
       status: "CONFIRMED" // Solo pagos confirmados
     };
 
-    // Filtro por fecha
+    // Filtro por fecha (mismo criterio que estadísticas: inicio/fin de día para alinear con purchasedAt)
     if (startDate || endDate) {
       where.purchasedAt = {};
       if (startDate) {
-        where.purchasedAt.gte = new Date(startDate);
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        where.purchasedAt.gte = start;
       }
       if (endDate) {
         const end = new Date(endDate);

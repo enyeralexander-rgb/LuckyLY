@@ -19,9 +19,10 @@ export async function GET(request: Request) {
     let dateStart: Date;
     let dateEnd: Date = new Date();
 
-    // Calcular fechas según el período
+    // Calcular fechas según el período (mismo criterio que GET estadísticas)
     if (period === "custom" && startDate && endDate) {
       dateStart = new Date(startDate);
+      dateStart.setHours(0, 0, 0, 0);
       dateEnd = new Date(endDate);
       dateEnd.setHours(23, 59, 59, 999);
     } else if (period === "24h") {
@@ -46,7 +47,7 @@ export async function GET(request: Request) {
       dateStart = new Date(new Date().getFullYear(), 0, 1);
       dateEnd = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999);
     } else if (period === "all") {
-      dateStart = new Date("2026-01-01");
+      dateStart = new Date("2000-01-01T00:00:00.000Z");
     } else {
       dateStart = new Date();
       dateStart.setDate(dateStart.getDate() - 7);
