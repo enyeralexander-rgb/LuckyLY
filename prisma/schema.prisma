@@ -95,20 +95,20 @@ model Raffle {
 }
 
 model Ticket {
-  id                  String         @id @default(cuid())
-  raffleId            String
-  userId              String
-  items               Json
-  totalPaid           Decimal        @db.Decimal(10, 2)
-  purchasedAt         DateTime       @default(now())
-  status              String         @default("PENDING")
-  paymentMethod       PaymentMethod?
-  paymentMobileRef    String?
-  paymentMobileBank   Bank?          // Banco desde el cual se realizó el pago móvil (para verificación Banco+Ref+Fecha)
-  ticketItems         TicketItem[]
-  prizeClaim          PrizeClaim?
-  raffle              Raffle         @relation(fields: [raffleId], references: [id])
-  user                User           @relation(fields: [userId], references: [id])
+  id                String         @id @default(cuid())
+  raffleId          String
+  userId            String
+  items             Json
+  totalPaid         Decimal        @db.Decimal(10, 2)
+  purchasedAt       DateTime       @default(now())
+  status            String         @default("PENDING")
+  paymentMethod     PaymentMethod?
+  paymentMobileRef  String?
+  paymentMobileBank Bank? // Banco desde el cual se realizó el pago móvil (para verificación Banco+Ref+Fecha)
+  ticketItems       TicketItem[]
+  prizeClaim        PrizeClaim?
+  raffle            Raffle         @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([raffleId])
   @@index([userId, purchasedAt])
@@ -127,8 +127,8 @@ model PrizeClaim {
   processedById String?
   paidAmount    Decimal?    @db.Decimal(10, 2) // Monto exacto pagado
   createdAt     DateTime    @default(now())
-  ticket        Ticket      @relation(fields: [ticketId], references: [id])
-  user          User        @relation(fields: [userId], references: [id])
+  ticket        Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
 }
@@ -139,8 +139,8 @@ model TicketItem {
   ticketId String
   value    String
   status   TicketItemStatus @default(PENDING)
-  ticket   Ticket           @relation(fields: [ticketId], references: [id])
-  raffle   Raffle           @relation("RaffleTicketItems", fields: [raffleId], references: [id])
+  ticket   Ticket           @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  raffle   Raffle           @relation("RaffleTicketItems", fields: [raffleId], references: [id], onDelete: Cascade)
 
   @@unique([raffleId, value])
   @@index([ticketId])
@@ -181,7 +181,7 @@ model Rules {
 
 model PaymentMobile {
   id          String   @id @default(cuid())
-  imageUrl    String
+  imageUrl    String?
   cedula      String?
   telefono    String?
   destino     String?
@@ -287,6 +287,7 @@ enum PrizeStatus {
 }
 
 enum Bank {
+  // Existing
   BANESCO
   VENEZUELA
   MERCANTIL
@@ -294,6 +295,27 @@ enum Bank {
   PROVINCIAL
   BICENTENARIO
   OTRA
+  // New additions
+  BANCO_100
+  BANCAMIGA
+  BANCARIBE
+  BANCO_ACTIVO
+  BANCO_AGRICOLA
+  BANCO_CARONI
+  BANFANB
+  BANCO_TESORO
+  BANCO_EXTERIOR
+  BFC
+  BANCO_INTERNACIONAL_DESARROLLO
+  BNC
+  BANCO_PLAZA
+  BANCO_SOFITASA
+  BANCRECER
+  BANGENTE
+  BANPLUS
+  DELSUR
+  MI_BANCO
+  N58_BANCO_DIGITAL
 }
 
 enum PaymentMethod {
@@ -462,13 +484,13 @@ model HomePageConfig {
 }
 
 model LiveConfig {
-  id               String   @id @default(cuid())
-  streamUrl        String?  // URL del iframe del reproductor (ej. Kick)
-  chatIframeUrl    String?  // URL del iframe del chat (ej. Botrix)
-  updatedById      String?
-  updatedAt        DateTime @updatedAt
-  createdAt        DateTime @default(now())
-  updatedBy        User?    @relation("LiveConfigUpdater", fields: [updatedById], references: [id])
+  id            String   @id @default(cuid())
+  streamUrl     String? // URL del iframe del reproductor (ej. Kick)
+  chatIframeUrl String? // URL del iframe del chat (ej. Botrix)
+  updatedById   String?
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedBy     User?    @relation("LiveConfigUpdater", fields: [updatedById], references: [id])
 
   @@index([updatedById])
 }

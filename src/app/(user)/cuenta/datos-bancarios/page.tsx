@@ -223,7 +223,7 @@ export default function DatosBancariosPage() {
               >
                 <option value="">Selecciona un banco</option>
                 {VENEZUELAN_BANKS.map((bank) => (
-                  <option key={bank.code} value={bank.name}>
+                  <option key={bank.code} value={bank.enumValue}>
                     ({bank.code}) {bank.name}
                   </option>
                 ))}
