@@ -107,8 +107,8 @@ model Ticket {
   paymentMobileBank Bank? // Banco desde el cual se realizó el pago móvil (para verificación Banco+Ref+Fecha)
   ticketItems       TicketItem[]
   prizeClaim        PrizeClaim?
-  raffle            Raffle         @relation(fields: [raffleId], references: [id])
-  user              User           @relation(fields: [userId], references: [id])
+  raffle            Raffle         @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([raffleId])
   @@index([userId, purchasedAt])
@@ -127,8 +127,8 @@ model PrizeClaim {
   processedById String?
   paidAmount    Decimal?    @db.Decimal(10, 2) // Monto exacto pagado
   createdAt     DateTime    @default(now())
-  ticket        Ticket      @relation(fields: [ticketId], references: [id])
-  user          User        @relation(fields: [userId], references: [id])
+  ticket        Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
 }
@@ -139,8 +139,8 @@ model TicketItem {
   ticketId String
   value    String
   status   TicketItemStatus @default(PENDING)
-  ticket   Ticket           @relation(fields: [ticketId], references: [id])
-  raffle   Raffle           @relation("RaffleTicketItems", fields: [raffleId], references: [id])
+  ticket   Ticket           @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  raffle   Raffle           @relation("RaffleTicketItems", fields: [raffleId], references: [id], onDelete: Cascade)
 
   @@unique([raffleId, value])
   @@index([ticketId])
