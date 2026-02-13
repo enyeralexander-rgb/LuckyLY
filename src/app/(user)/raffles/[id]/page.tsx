@@ -405,11 +405,6 @@ export default function RaffleDetailPage({ params }: Props) {
             </div>
           ) : (
             <>
-              {userPurchasedSlots >= 3 && (
-                <div style={{ padding: "1rem", background: "rgba(239, 68, 68, 0.1)", borderRadius: "8px", border: "1px solid #ef4444", color: "#fca5a5", marginBottom: "1rem" }}>
-                  <strong>⚠️ Límite alcanzado:</strong> Ya has comprado {userPurchasedSlots} cupo(s) en este sorteo. El máximo permitido es 2 cupos por sorteo.
-                </div>
-              )}
               <div style={{ display: "grid", gap: ".75rem", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))" }}>
                 {allSlots.map((slot) => {
                   const purchased = isSlotPurchased(slot);
@@ -420,25 +415,23 @@ export default function RaffleDetailPage({ params }: Props) {
                     <button
                       key={slot}
                       onClick={() => toggleSlot(slot)}
-                      disabled={purchased || pending || buying || userPurchasedSlots >= 3}
+                      disabled={purchased || pending || buying}
                       style={{
                         padding: "0.75rem 0.5rem",
                         borderRadius: "10px",
                         textAlign: "center",
-                        border: selected ? "2px solid #85BB65" : pending ? "2px solid #f59e0b" : userPurchasedSlots >= 3 ? "1px solid #6b7280" : "1px solid #1f2937",
+                        border: selected ? "2px solid #85BB65" : pending ? "2px solid #f59e0b" : "1px solid #1f2937",
                         background: purchased 
                           ? "#3b0c0c" 
                           : pending
                           ? "rgba(245, 158, 11, 0.2)"
-                          : userPurchasedSlots >= 3
-                          ? "#1f2937"
                           : selected 
                           ? "rgba(133, 187, 101, 0.2)" 
                           : "#0b1221",
-                        color: purchased ? "#fca5a5" : pending ? "#f59e0b" : userPurchasedSlots >= 3 ? "#6b7280" : selected ? "#85BB65" : "#e2e8f0",
+                        color: purchased ? "#fca5a5" : pending ? "#f59e0b" : selected ? "#85BB65" : "#e2e8f0",
                         fontWeight: selected || pending ? 700 : 600,
-                        cursor: purchased || pending || buying || userPurchasedSlots >= 3 ? "not-allowed" : "pointer",
-                        opacity: purchased || pending || userPurchasedSlots >= 3 ? 0.6 : 1,
+                        cursor: purchased || pending || buying ? "not-allowed" : "pointer",
+                        opacity: purchased || pending ? 0.6 : 1,
                         transition: "all 0.2s",
                         overflow: "hidden",
                         textOverflow: "ellipsis",

@@ -20,7 +20,6 @@ export function Header() {
   const [userData, setUserData] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -39,21 +38,11 @@ export function Header() {
             }
           })
           .catch(() => {});
-
-        // Cargar notificaciones no leídas (solo para usuarios regulares)
-        fetch("/api/user/notifications?unreadOnly=true", { headers: { Authorization: `Bearer ${storedAuth.token}` } })
-          .then((r) => r.json())
-          .then((data) => {
-            if (!data.error && Array.isArray(data)) {
-              setUnreadNotifications(data.length);
-            }
-          })
-          .catch(() => {});
       } else {
         setUserData(storedAuth.user || null);
       }
     }
-  }, []);
+  }, [pathname]);
 
   // Cerrar menús al cambiar de ruta
   useEffect(() => {
@@ -136,6 +125,7 @@ export function Header() {
       menu.push({ label: "Reglas", href: "/admin/reglas", icon: "📋" });
       menu.push({ label: "Pago Móvil", href: "/admin/pago-movil", icon: "💳" });
       menu.push({ label: "Redes Sociales", href: "/admin/redes-sociales", icon: "📱" });
+      menu.push({ label: "En vivo", href: "/admin/en-vivo", icon: "📺" });
       menu.push({ label: "Estadísticas Usuario", href: "/admin/estadisticas/user", icon: "📊" });
     }
 
@@ -180,18 +170,11 @@ export function Header() {
                     {isAdmin ? "👑" : "👤"}
                   </span>
                   <span className="header-user-name">{displayName}</span>
-                  {/* Indicador de notificaciones */}
-                  {!isAdmin && unreadNotifications > 0 && (
-                    <span className="header-notification-badge">
-                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
-                    </span>
-                  )}
                   <span className="header-dropdown-arrow">{userMenuOpen ? "▲" : "▼"}</span>
                 </button>
                 {userMenuOpen && (
                   <div className="header-user-dropdown">
                     {currentMenu.map((item, index) => {
-                      // Ignorar items de sección
                       if (item.href === "#section") {
                         return (
                           <div key={index} className="header-dropdown-section">
@@ -212,8 +195,6 @@ export function Header() {
                           </button>
                         );
                       }
-                      // Mostrar badge de notificación en Historial de Apuestas
-                      const showNotificationBadge = item.href === "/cuenta/historial" && !isAdmin && unreadNotifications > 0;
                       return (
                         <Link
                           key={index}
@@ -223,11 +204,6 @@ export function Header() {
                         >
                           {item.icon && <span>{item.icon}</span>}
                           <span>{item.label}</span>
-                          {showNotificationBadge && (
-                            <span className="header-menu-notification-badge">
-                              {unreadNotifications > 9 ? "9+" : unreadNotifications}
-                            </span>
-                          )}
                         </Link>
                       );
                     })}

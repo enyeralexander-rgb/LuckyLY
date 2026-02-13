@@ -152,6 +152,16 @@ function HistorialPageContent() {
                       <div><strong>Tipo:</strong> {raffle.type}</div>
                       <div><strong>Ejecutado:</strong> {raffle.executedAt ? new Date(raffle.executedAt).toLocaleString("es-VE", { dateStyle: "long", timeStyle: "short" }) : "N/A"}</div>
                       <div><strong>Ganador(es):</strong> <span style={{ color: "var(--color-primary)", fontWeight: 700 }}>{raffle.winningItem || "N/A"}</span></div>
+                      {raffle.winnerUsers && Array.isArray(raffle.winnerUsers) && raffle.winnerUsers.length > 0 && (
+                        <div>
+                          <strong>Usuario(s) ganador(es):</strong>{" "}
+                          {raffle.winnerUsers.map((u: { id: string; name: string; username: string | null }) => (
+                            <Link key={u.id} href={`/admin/estadisticas/user/${u.id}`} style={{ color: "var(--color-primary)", fontWeight: 600, textDecoration: "underline", marginRight: ".5rem" }}>
+                              {u.name || u.username || u.id}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
                       {raffle.prizes && Array.isArray(raffle.prizes) && raffle.prizes.length > 0 && (
                         <div>
                           <strong>Premios:</strong>

@@ -29,6 +29,8 @@ function PaymentContent() {
   const [paymentMobileData, setPaymentMobileData] = useState<{ cedula?: string; telefono?: string; destino?: string } | null>(null);
   const [userBankData, setUserBankData] = useState<any>(null);
   const [paymentMobileRef, setPaymentMobileRef] = useState("");
+  const [paymentRefUsedByOther, setPaymentRefUsedByOther] = useState(false);
+  const [checkingRef, setCheckingRef] = useState(false);
 
   useEffect(() => {
     const storedAuth = getStoredAuth();
@@ -117,8 +119,13 @@ function PaymentContent() {
         return;
       }
 
-      if (!paymentMobileRef.trim() || paymentMobileRef.length !== 6) {
-        alert("Debes ingresar los últimos 6 dígitos de la referencia del pago móvil");
+      const ref = paymentMobileRef.trim();
+      if (!ref || ref.length < 6 || ref.length > 12) {
+        alert("Debes ingresar la referencia del pago móvil (entre 6 y 12 dígitos)");
+        return;
+      }
+      if (paymentRefUsedByOther) {
+        alert("Esta referencia ya se registro.");
         return;
       }
     }
@@ -137,7 +144,8 @@ function PaymentContent() {
           body: JSON.stringify({
             items: items,
             paymentMethod: "MOBILE",
-            paymentMobileRef: paymentMobileRef.trim()
+            paymentMobileRef: paymentMobileRef.trim(),
+            paymentMobileBank: userBankData.bank
           })
         });
 
@@ -177,6 +185,28 @@ function PaymentContent() {
       console.error("Error:", error);
       alert("Error al procesar el pago");
       setProcessing(false);
+    }
+  }
+
+  async function checkPaymentRefOnBlur() {
+    const ref = paymentMobileRef.trim();
+    const bank = userBankData?.bank;
+    if (ref.length < 6 || !bank || !auth?.token) return;
+    setCheckingRef(true);
+    setPaymentRefUsedByOther(false);
+    try {
+      const res = await fetch(
+        `/api/user/check-payment-ref?ref=${encodeURIComponent(ref)}&bank=${encodeURIComponent(bank)}`,
+        { headers: { Authorization: `Bearer ${auth.token}` } }
+      );
+      const data = await res.json();
+      if (res.ok && data.used === true) {
+        setPaymentRefUsedByOther(true);
+      }
+    } catch {
+      // Silenciar error de red; el servidor validará al enviar
+    } finally {
+      setCheckingRef(false);
     }
   }
 
@@ -465,7 +495,7 @@ function PaymentContent() {
                       <div style={{ display: "grid", gap: ".75rem" }}>
                         <div>
                           <label style={{ display: "block", marginBottom: ".5rem", color: "#3E3E3C", fontWeight: 600, fontSize: ".875rem" }}>
-                            Últimos 6 dígitos de la referencia del Pago Móvil *
+                            Referencia del Pago Móvil (6 a 12 dígitos) *
                           </label>
                           <input
                             type="text"
@@ -473,28 +503,45 @@ function PaymentContent() {
                             pattern="[0-9]*"
                             value={paymentMobileRef}
                             onChange={(e) => {
-                              const value = e.target.value.replace(/\D/g, '');
-                              if (value.length <= 6) {
+                              const value = e.target.value.replace(/\D/g, "");
+                              if (value.length <= 12) {
                                 setPaymentMobileRef(value);
+                                setPaymentRefUsedByOther(false);
                               }
                             }}
-                            placeholder="Ingresa los últimos 6 dígitos"
-                            maxLength={6}
+                            onBlur={checkPaymentRefOnBlur}
+                            placeholder="Mínimo 6, máximo 12 dígitos"
+                            maxLength={12}
                             style={{
                               width: "100%",
                               padding: ".75rem",
                               borderRadius: "8px",
-                              border: "1px solid #d4d4c4",
+                              border: paymentRefUsedByOther ? "2px solid #ef4444" : "1px solid #d4d4c4",
                               background: "#F5F5E6",
                               color: "#3E3E3C",
                               fontSize: "1rem",
                               textAlign: "center",
-                              letterSpacing: "0.5rem"
+                              letterSpacing: "0.25rem"
                             }}
                           />
-                          {paymentMobileRef.length > 0 && paymentMobileRef.length < 6 && (
+                          {checkingRef && (
+                            <div style={{ marginTop: ".5rem", fontSize: ".75rem", color: "var(--text-secondary)" }}>
+                              Comprobando referencia...
+                            </div>
+                          )}
+                          {paymentRefUsedByOther && (
+                            <div style={{ marginTop: ".5rem", fontSize: ".875rem", color: "#ef4444", fontWeight: 600 }}>
+                              Esta referencia ya se registro.
+                            </div>
+                          )}
+                          {paymentMobileRef.length > 0 && paymentMobileRef.length < 6 && !paymentRefUsedByOther && (
                             <div style={{ marginTop: ".5rem", fontSize: ".75rem", color: "#f59e0b" }}>
-                              Faltan {6 - paymentMobileRef.length} dígito(s)
+                              Mínimo 6 dígitos (faltan {6 - paymentMobileRef.length})
+                            </div>
+                          )}
+                          {paymentMobileRef.length >= 6 && paymentMobileRef.length <= 12 && !paymentRefUsedByOther && !checkingRef && (
+                            <div style={{ marginTop: ".5rem", fontSize: ".75rem", color: "#228D57" }}>
+                              {paymentMobileRef.length}/12 dígitos
                             </div>
                           )}
                         </div>
@@ -518,17 +565,28 @@ function PaymentContent() {
                       
                       <button
                         onClick={() => handlePayment("MOBILE")}
-                        disabled={processing || paymentMobileRef.length !== 6}
+                        disabled={
+                          processing ||
+                          paymentMobileRef.trim().length < 6 ||
+                          paymentMobileRef.trim().length > 12 ||
+                          paymentRefUsedByOther
+                        }
                         style={{
                           width: "100%",
                           padding: ".75rem 1.5rem",
-                          background: processing || paymentMobileRef.length !== 6 ? "#6b7280" : "#f59e0b",
+                          background:
+                            processing || paymentMobileRef.trim().length < 6 || paymentMobileRef.trim().length > 12 || paymentRefUsedByOther
+                              ? "#6b7280"
+                              : "#f59e0b",
                           color: "#3E3E3C",
                           border: "none",
                           borderRadius: "8px",
                           fontWeight: 700,
                           fontSize: "1.125rem",
-                          cursor: processing || paymentMobileRef.length !== 6 ? "not-allowed" : "pointer"
+                          cursor:
+                            processing || paymentMobileRef.trim().length < 6 || paymentMobileRef.trim().length > 12 || paymentRefUsedByOther
+                              ? "not-allowed"
+                              : "pointer"
                         }}
                       >
                         {processing ? "Procesando..." : "Confirmar Pago Móvil"}

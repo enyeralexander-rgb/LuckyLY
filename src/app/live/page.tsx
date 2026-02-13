@@ -1,27 +1,74 @@
+"use client";
+
 import { Footer } from "../../components/Footer";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+
+type LiveConfig = {
+  streamUrl: string;
+  chatIframeUrl: string;
+};
 
 export default function LivePage() {
+  const [config, setConfig] = useState<LiveConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/public/live")
+      .then((r) => r.json())
+      .then((data) => {
+        setConfig({
+          streamUrl: data.streamUrl || "",
+          chatIframeUrl: data.chatIframeUrl || ""
+        });
+      })
+      .catch(() => setConfig({ streamUrl: "", chatIframeUrl: "" }))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <>
-      <main className="container" style={{ display: "grid", gap: "1.5rem", paddingTop: "2rem" }}>
-        <div className="card" style={{ display: "grid", gap: "1rem" }}>
-          <h1 style={{ margin: 0 }}>Sección en vivo</h1>
-          <div style={{ position: "relative", paddingBottom: "56.25%", background: "#228D57", borderRadius: "12px", overflow: "hidden", border: "1px solid #1f2937" }}>
-            <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b" }}>
-              Iframe de YouTube/Twitch/RTMP aquí
+      <main className="container live-page">
+        <div className="live-page-header">
+          <h1 className="live-page-title">En vivo</h1>
+          <Link href="/" className="live-page-back">← Inicio</Link>
+        </div>
+
+        {loading ? (
+          <div className="card live-loading">Cargando...</div>
+        ) : (
+          <div className="live-layout">
+            <div className="live-stream-wrap">
+              {config?.streamUrl ? (
+                <iframe
+                  src={config.streamUrl}
+                  className="live-stream-iframe"
+                  allowFullScreen
+                  title="Stream en vivo"
+                />
+              ) : (
+                <div className="live-placeholder">Sin reproductor configurado</div>
+              )}
+            </div>
+            <div className="live-chat-wrap">
+              {config?.chatIframeUrl ? (
+                <iframe
+                  src={config.chatIframeUrl}
+                  className="live-chat-iframe"
+                  title="Chat en vivo"
+                />
+              ) : (
+                <div className="live-placeholder">Sin chat configurado</div>
+              )}
             </div>
           </div>
-          <button style={{ width: "fit-content", padding: ".75rem 1rem", background: "#85BB65", color: "#3E3E3C", border: "none", borderRadius: "8px", fontWeight: 700 }}>
-            ¡Juega ahora!
-          </button>
-        </div>
-        <div className="card">
-          <h2 style={{ marginTop: 0 }}>Chat en vivo (opcional)</h2>
-          <p style={{ color: "#94a3b8" }}>Integrar proveedor de chat o componente WebSocket.</p>
+        )}
+
+        <div className="live-cta">
+          <Link href="/sorteos" className="live-cta-button">¡Juega ahora!</Link>
         </div>
       </main>
       <Footer />
     </>
   );
 }
-

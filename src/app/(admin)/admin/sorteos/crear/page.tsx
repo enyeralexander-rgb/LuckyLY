@@ -259,7 +259,8 @@ function CrearSorteosPageContent() {
         router.push("/admin/sorteos/ejecutar");
       } else {
         const err = await res.json();
-        alert(`Error: ${err.error || "No se pudo crear el sorteo"}`);
+        const msg = typeof err.error === "string" ? err.error : (err.error && typeof err.error === "object" ? JSON.stringify(err.error) : "No se pudo crear el sorteo");
+        alert(`Error: ${msg}`);
       }
     } catch (error) {
       alert("Error al crear sorteo");

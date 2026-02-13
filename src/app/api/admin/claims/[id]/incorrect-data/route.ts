@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
-import { Role, NotificationType } from "@prisma/client";
+import { Role } from "@prisma/client";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -18,22 +18,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
     if (!claim) {
       return NextResponse.json({ error: "Reclamo no encontrado" }, { status: 404 });
     }
-
-    // Crear notificación para el usuario
-    await prisma.notification.create({
-      data: {
-        userId: claim.userId,
-        type: NotificationType.SYSTEM,
-        title: "⚠️ Datos Bancarios Incorrectos",
-        message: `Tu reclamo de premio para el sorteo "${claim.ticket.raffle.title}" requiere que actualices tus datos bancarios. Por favor, ingresa a tu perfil y actualiza tu información bancaria.`,
-        data: {
-          claimId: claim.id,
-          raffleId: claim.ticket.raffleId,
-          raffleTitle: claim.ticket.raffle.title,
-          action: "UPDATE_BANK_DATA"
-        }
-      }
-    });
 
     // Enviar email al usuario
     const { sendIncorrectBankDataEmail } = await import("../../../../../../lib/email");
