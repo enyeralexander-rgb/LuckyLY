@@ -3,8 +3,7 @@ import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
-// @ts-ignore
-import { authenticator } from "otplib";
+import { generateSecret, keyuri } from "../../../../../lib/totp";
 // @ts-ignore
 import QRCode from "qrcode";
 
@@ -27,7 +26,7 @@ export async function POST(request: Request) {
     }
 
     // Generar secreto
-    const secret = authenticator.generateSecret();
+    const secret = generateSecret();
     const serviceName = "LuckyLY";
     const accountName = user.email;
 
@@ -43,7 +42,7 @@ export async function POST(request: Request) {
     });
 
     // Generar URL para QR code
-    const otpAuthUrl = authenticator.keyuri(accountName, serviceName, secret);
+    const otpAuthUrl = keyuri(accountName, serviceName, secret);
 
     // Generar QR code
     let qrCodeDataUrl = "";
