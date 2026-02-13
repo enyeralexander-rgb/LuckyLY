@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
+import { logger } from "../../../../../../lib/logger";
 import { Role } from "@prisma/client";
 
 // Crear sorteo desde plantilla
@@ -47,7 +48,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al crear sorteo desde plantilla:", err);
+    logger.error("Error al crear sorteo desde plantilla", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al crear sorteo desde plantilla" }, { status: 500 });
   }
 }

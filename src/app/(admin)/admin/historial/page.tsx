@@ -152,6 +152,16 @@ function HistorialPageContent() {
                       <div><strong>Tipo:</strong> {raffle.type}</div>
                       <div><strong>Ejecutado:</strong> {raffle.executedAt ? new Date(raffle.executedAt).toLocaleString("es-VE", { dateStyle: "long", timeStyle: "short" }) : "N/A"}</div>
                       <div><strong>Ganador(es):</strong> <span style={{ color: "var(--color-primary)", fontWeight: 700 }}>{raffle.winningItem || "N/A"}</span></div>
+                      {raffle.winnerUsers && Array.isArray(raffle.winnerUsers) && raffle.winnerUsers.length > 0 && (
+                        <div>
+                          <strong>Usuario(s) ganador(es):</strong>{" "}
+                          {raffle.winnerUsers.map((u: { id: string; name: string; username: string | null }) => (
+                            <Link key={u.id} href={`/admin/estadisticas/user/${u.id}`} style={{ color: "var(--color-primary)", fontWeight: 600, textDecoration: "underline", marginRight: ".5rem" }}>
+                              {u.name || u.username || u.id}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
                       {raffle.prizes && Array.isArray(raffle.prizes) && raffle.prizes.length > 0 && (
                         <div>
                           <strong>Premios:</strong>
@@ -162,6 +172,27 @@ function HistorialPageContent() {
                       )}
                     </div>
                   </div>
+                  {/* Contabilidad del sorteo */}
+                  {raffle.contabilidad && (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem", padding: "1rem", background: "var(--bg-secondary, #f8f9fa)", borderRadius: "8px", marginTop: "0.5rem" }}>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 600 }}>Ingresos</div>
+                        <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#22c55e" }}>{raffle.contabilidad.ingresos.toFixed(2)} Bs.</div>
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 600 }}>Egresos</div>
+                        <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#ef4444" }}>{raffle.contabilidad.egresos.toFixed(2)} Bs.</div>
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 600 }}>Ganancia</div>
+                        <div style={{ fontSize: "1.125rem", fontWeight: 700, color: raffle.contabilidad.ganancias >= 0 ? "#3b82f6" : "#ef4444" }}>{raffle.contabilidad.ganancias.toFixed(2)} Bs.</div>
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 600 }}>Tickets</div>
+                        <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)" }}>{raffle.contabilidad.ticketsVendidos}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

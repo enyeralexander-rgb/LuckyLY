@@ -1,5 +1,4 @@
-import bcrypt from "bcryptjs";
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
@@ -11,37 +10,30 @@ if (!databaseUrl) {
   throw new Error("DATABASE_URL no está definida");
 }
 
-// Limpiar parámetros SSL obsoletos que causan warnings en pg-connection-string
-// Remover sslmode=require, sslmode=prefer, sslmode=verify-ca que son tratados como aliases
 const cleanDatabaseUrl = (url: string): string => {
   try {
     const urlObj = new URL(url);
-    // Remover parámetros SSL obsoletos
-    const obsoleteParams = ['sslmode', 'sslcert', 'sslkey', 'sslrootcert'];
-    obsoleteParams.forEach(param => {
+    const obsoleteParams = ["sslmode", "sslcert", "sslkey", "sslrootcert"];
+    obsoleteParams.forEach((param) => {
       if (urlObj.searchParams.has(param)) {
         urlObj.searchParams.delete(param);
       }
     });
     return urlObj.toString();
-  } catch (error) {
-    // Si no es una URL válida, devolver como está
+  } catch {
     return url;
   }
 };
 
 databaseUrl = cleanDatabaseUrl(databaseUrl);
 
-// Detectar si es Prisma Postgres (db.prisma.io) o Neon (neon.tech) u otro
-const isPrismaPostgres = databaseUrl.includes('db.prisma.io');
-const isNeon = databaseUrl.includes('neon.tech');
-const requiresSSL = isPrismaPostgres || isNeon || process.env.NODE_ENV === 'production';
+const isPrismaPostgres = databaseUrl.includes("db.prisma.io");
+const isNeon = databaseUrl.includes("neon.tech");
+const requiresSSL = isPrismaPostgres || isNeon || process.env.NODE_ENV === "production";
 
 const pool = new Pool({
   connectionString: databaseUrl,
-  // SSL siempre habilitado para bases de datos cloud
   ssl: requiresSSL ? { rejectUnauthorized: false } : false,
-  // Configuración robusta para evitar errores P1017 (ConnectionClosed)
   max: 5,
   min: 1,
   idleTimeoutMillis: 60000,
@@ -57,148 +49,74 @@ const prisma = new PrismaClient({
   },
 });
 
+/**
+ * Seed "solo limpieza": borra todos los datos de negocio y usuarios.
+ * No crea ningún usuario. El primer MASTER se crea por:
+ * - scripts/apply-schema-postgres.js (si MASTER_INITIAL_EMAIL y MASTER_INITIAL_PASSWORD están definidos)
+ * - POST/GET /api/setup/create-master (body/query o env)
+ * - scripts/create-master-vercel.ts (env)
+ */
 async function main() {
-  console.log("🧹 Limpiando datos de prueba...\n");
+  console.log("🧹 Limpieza de base de datos (desde cero)...\n");
 
-  // NOTA: El usuario MASTER ya se crea en el script apply-schema-postgres.js
-  // Este seed solo maneja datos adicionales de prueba
+  // Orden: tablas que dependen de otras primero; User al final
+  await prisma.passwordResetToken.deleteMany({});
+  console.log("  ✓ PasswordResetToken");
 
-  // Eliminar todas las notificaciones
+  await prisma.emailVerificationToken.deleteMany({});
+  console.log("  ✓ EmailVerificationToken");
+
+  await prisma.twoFactorAuth.deleteMany({});
+  console.log("  ✓ TwoFactorAuth");
+
   await prisma.notification.deleteMany({});
-  console.log("  ✓ Notificaciones eliminadas");
+  console.log("  ✓ Notification");
 
-  // Eliminar todos los ticketItems
-  await prisma.ticketItem.deleteMany({});
-  console.log("  ✓ TicketItems eliminados");
+  await prisma.favoriteRaffle.deleteMany({});
+  console.log("  ✓ FavoriteRaffle");
 
-  // Eliminar todos los prizeClaims
+  await prisma.referralVisit.deleteMany({});
+  console.log("  ✓ ReferralVisit");
+
+  await prisma.referralLink.deleteMany({});
+  console.log("  ✓ ReferralLink");
+
   await prisma.prizeClaim.deleteMany({});
-  console.log("  ✓ PrizeClaims eliminados");
+  console.log("  ✓ PrizeClaim");
 
-  // Eliminar todos los tickets
+  await prisma.ticketItem.deleteMany({});
+  console.log("  ✓ TicketItem");
+
   await prisma.ticket.deleteMany({});
-  console.log("  ✓ Tickets eliminados");
+  console.log("  ✓ Ticket");
 
-  // Eliminar todos los sorteos
   await prisma.raffle.deleteMany({});
-  console.log("  ✓ Ruletas eliminadas");
+  console.log("  ✓ Raffle");
 
-  // Eliminar todos los auditLogs
+  await prisma.raffleTemplate.deleteMany({});
+  console.log("  ✓ RaffleTemplate");
+
+  await prisma.automationRule.deleteMany({});
+  console.log("  ✓ AutomationRule");
+
   await prisma.auditLog.deleteMany({});
-  console.log("  ✓ AuditLogs eliminados");
+  console.log("  ✓ AuditLog");
 
-  // Eliminar TODOS los usuarios (sin excepciones)
+  // Desvincular updatedById para poder borrar User
+  await prisma.termsAndConditions.updateMany({ data: { updatedById: null } });
+  await prisma.rules.updateMany({ data: { updatedById: null } });
+  await prisma.paymentMobile.updateMany({ data: { updatedById: null } });
+  await prisma.socialMedia.updateMany({ data: { updatedById: null } });
+  await prisma.liveConfig.updateMany({ data: { updatedById: null } });
+  await prisma.homePageConfig.updateMany({ data: { updatedById: null } });
+  console.log("  ✓ Referencias updatedById anuladas");
+
+  await prisma.user.updateMany({ data: { createdById: null } });
   await prisma.user.deleteMany({});
-  console.log("  ✓ Todos los usuarios eliminados");
+  console.log("  ✓ User");
 
-  console.log("\n✅ Limpieza completada. Base de datos limpia.\n");
-
-  console.log("👥 Creando usuarios de prueba...\n");
-
-  // ══════════════════════════════════════════════════════════════
-  // USUARIO MASTER PRINCIPAL (credenciales reales)
-  // ══════════════════════════════════════════════════════════════
-  const masterUser = {
-    email: "enyeralexander@gmail.com",
-    password: "0995697717",
-    name: "Administrador Master",
-    username: "master",
-    documentId: "V-00000001",
-    nationalId: "00000001",
-    nationalIdType: "V",
-    role: Role.MASTER,
-    emailVerified: true,
-  };
-
-  console.log("  👑 Creando usuario MASTER principal...");
-  const masterPasswordHash = await bcrypt.hash(masterUser.password, 10);
-  try {
-    await prisma.user.upsert({
-      where: { email: masterUser.email },
-      update: {
-        passwordHash: masterPasswordHash,
-        name: masterUser.name,
-        role: masterUser.role,
-        emailVerified: masterUser.emailVerified,
-      },
-      create: {
-        email: masterUser.email,
-        passwordHash: masterPasswordHash,
-        name: masterUser.name,
-        username: masterUser.username,
-        documentId: masterUser.documentId,
-        nationalId: masterUser.nationalId,
-        nationalIdType: masterUser.nationalIdType,
-        role: masterUser.role,
-        emailVerified: masterUser.emailVerified,
-        emailVerifiedAt: new Date(),
-      },
-    });
-    console.log("     ✅ Usuario MASTER creado:", masterUser.email);
-  } catch (masterError: unknown) {
-    const errorMessage = masterError instanceof Error ? masterError.message : String(masterError);
-    console.log("     ⚠️ Usuario MASTER ya existe o error:", errorMessage);
-  }
-  // ══════════════════════════════════════════════════════════════
-
-  // Crear 5 usuarios de prueba de cada tipo
-  const testUsers = [
-    // 5 usuarios USER (clientes)
-    { email: "cliente1@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Uno", username: "cliente1", documentId: "V-12345678" },
-    { email: "cliente2@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Dos", username: "cliente2", documentId: "V-12345679" },
-    { email: "cliente3@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Tres", username: "cliente3", documentId: "V-12345680" },
-    { email: "cliente4@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Cuatro", username: "cliente4", documentId: "V-12345681" },
-    { email: "cliente5@test.com", password: "Cliente123!", role: Role.USER, name: "Cliente Cinco", username: "cliente5", documentId: "V-12345682" },
-    
-    // 5 usuarios AGENT
-    { email: "agent1@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Uno", username: "agent1", documentId: "V-22345678" },
-    { email: "agent2@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Dos", username: "agent2", documentId: "V-22345679" },
-    { email: "agent3@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Tres", username: "agent3", documentId: "V-22345680" },
-    { email: "agent4@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Cuatro", username: "agent4", documentId: "V-22345681" },
-    { email: "agent5@test.com", password: "Agent123!", role: Role.AGENT, name: "Agente Cinco", username: "agent5", documentId: "V-22345682" },
-    
-    // 5 usuarios SUPERADMIN
-    { email: "superadmin1@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Uno", username: "superadmin1", documentId: "V-32345678" },
-    { email: "superadmin2@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Dos", username: "superadmin2", documentId: "V-32345679" },
-    { email: "superadmin3@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Tres", username: "superadmin3", documentId: "V-32345680" },
-    { email: "superadmin4@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Cuatro", username: "superadmin4", documentId: "V-32345681" },
-    { email: "superadmin5@test.com", password: "Super123!", role: Role.SUPERADMIN, name: "Superadmin Cinco", username: "superadmin5", documentId: "V-32345682" },
-    
-    // 5 usuarios MASTER
-    { email: "master1@test.com", password: "Master123!", role: Role.MASTER, name: "Master Uno", username: "master1", documentId: "V-42345678" },
-    { email: "master2@test.com", password: "Master123!", role: Role.MASTER, name: "Master Dos", username: "master2", documentId: "V-42345679" },
-    { email: "master3@test.com", password: "Master123!", role: Role.MASTER, name: "Master Tres", username: "master3", documentId: "V-42345680" },
-    { email: "master4@test.com", password: "Master123!", role: Role.MASTER, name: "Master Cuatro", username: "master4", documentId: "V-42345681" },
-    { email: "master5@test.com", password: "Master123!", role: Role.MASTER, name: "Master Cinco", username: "master5", documentId: "V-42345682" }
-  ];
-
-  for (const u of testUsers) {
-    const passwordHash = await bcrypt.hash(u.password, 10);
-    await prisma.user.create({
-      data: {
-        email: u.email,
-        passwordHash,
-        name: u.name,
-        username: u.username,
-        documentId: u.documentId,
-        role: u.role
-      }
-    });
-    console.log(`  ✅ ${u.role} creado: ${u.email} (username: ${u.username})`);
-  }
-
-  console.log("\n✅ Seed completado:");
-  console.log("  • 5 usuarios USER (clientes)");
-  console.log("  • 5 usuarios AGENT");
-  console.log("  • 5 usuarios SUPERADMIN");
-  console.log("  • 5 usuarios MASTER");
-  console.log("  • Total: 20 usuarios de prueba");
-  console.log("  • Base de datos limpia: sin ruletas, sin historiales");
-  console.log("\n📝 Credenciales de acceso:");
-  console.log("  • Clientes: cliente1@test.com - cliente5@test.com (password: Cliente123!)");
-  console.log("  • Agentes: agent1@test.com - agent5@test.com (password: Agent123!)");
-  console.log("  • Superadmins: superadmin1@test.com - superadmin5@test.com (password: Super123!)");
-  console.log("  • Masters: master1@test.com - master5@test.com (password: Master123!)");
+  console.log("\n✅ Limpieza completada. Base de datos vacía (sin usuarios ni datos de negocio).");
+  console.log("   Para crear el primer MASTER usa variables de entorno o /api/setup/create-master.\n");
 }
 
 main()
@@ -208,4 +126,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });

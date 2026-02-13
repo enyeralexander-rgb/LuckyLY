@@ -3,6 +3,7 @@ import { prisma } from "../../../lib/prisma";
 import { raffleCreateSchema } from "../../../lib/validators";
 import { requireAuth, AuthError, getTokenFromRequest } from "../../../lib/auth";
 import { isDatabaseConnectionError } from "../../../lib/dbErrors";
+import { logger } from "../../../lib/logger";
 import { Role, Prisma } from "@prisma/client";
 
 // Definir el tipo específico que retorna la consulta con sus relaciones
@@ -95,12 +96,12 @@ export async function GET(request: Request) {
       const token = getTokenFromRequest(request);
       const isPublic = !token;
       if (isPublic) {
-        console.info("ℹ️ [Raffles API] DB no disponible, devolviendo vacío");
+        logger.info("[Raffles API] DB no disponible, devolviendo vacío");
         return NextResponse.json([], { status: 200, headers: { "x-fallback": "db-unavailable" } });
       }
       return NextResponse.json({ error: "Base de datos no disponible" }, { status: 503 });
     }
-    console.error("Error al obtener sorteos:", error);
+    logger.error("Error al obtener sorteos", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Error al obtener sorteos" }, { status: 500 });
   }
 }
@@ -108,12 +109,26 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const auth = requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
+    // Verificar que el usuario sigue existiendo en BD (evita FK si la sesión es de antes de un seed/reset)
+    const userExists = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { id: true }
+    });
+    if (!userExists) {
+      return NextResponse.json(
+        { error: "Tu sesión ya no es válida (usuario no encontrado). Cierra sesión e inicia sesión de nuevo." },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const parsed = raffleCreateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
+      const issues = parsed.error.errors.map((e) => e.path.join(".") + ": " + e.message).join("; ");
+      return NextResponse.json({ error: issues || "Datos inválidos" }, { status: 400 });
     }
 
+    // Contabilidad: pricePerSlot → INGRESOS (Ticket.totalPaid al comprar); prizes → EGRESOS (PrizeClaim.paidAmount en PAGAR PREMIOS). Ver lib/accounting.
     const raffle = await prisma.raffle.create({
       data: {
         title: parsed.data.title,

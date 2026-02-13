@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
+import path from "path";
+import { fileURLToPath } from "url";
+import dotenv from "dotenv";
 import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin';
+
+// Cargar .env y .env.local desde la raíz del proyecto (donde está next.config.js)
+// para que el servidor lea las variables aunque next dev se ejecute desde otro cwd
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, ".env") });
+dotenv.config({ path: path.join(__dirname, ".env.local") });
 
 const nextConfig = {
   // Solo usar standalone en producción explícitamente (evitar en desarrollo)
@@ -7,7 +16,22 @@ const nextConfig = {
   ...(process.env.NODE_ENV === "production" && process.env.ENABLE_STANDALONE === "true" 
     ? { output: "standalone" } 
     : {}),
-  
+
+  // Headers de seguridad (Fase 1.2 – Plan de remediación)
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+    ];
+  },
+
   // Configuración de webpack para mejorar la estabilidad y evitar errores de resolución
   webpack: (config, { dev, isServer, webpack }) => {
     // Agregar plugin de Prisma para incluir binarios en el bundle

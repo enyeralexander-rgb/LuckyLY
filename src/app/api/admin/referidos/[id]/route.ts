@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
 
 // Eliminar link de referido
@@ -36,7 +37,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al eliminar link de referido:", err);
+    logger.error("Error al eliminar link de referido", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al eliminar link de referido" }, { status: 500 });
   }
 }

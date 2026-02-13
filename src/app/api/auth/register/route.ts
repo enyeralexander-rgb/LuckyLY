@@ -5,6 +5,7 @@ import { registerSchema } from "../../../../lib/validators";
 import { sendEmailVerificationEmail } from "../../../../lib/email";
 import crypto from "crypto";
 import { getCountryFromIP } from "../../../../lib/geolocation";
+import { logger } from "../../../../lib/logger";
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       const errors = parsed.error.flatten().fieldErrors;
       const errorMessage = Object.values(errors).flat().join(", ");
-      console.error("Error de validación en registro:", errors);
+      logger.error("Error de validación en registro", { errors: Object.keys(errors) });
       return NextResponse.json({ error: errorMessage || "Datos inválidos" }, { status: 400 });
     }
 
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
         }
       } catch (geoError) {
         // Silenciar errores de geolocalización
-        console.warn("Error en geolocalización durante registro (no crítico):", geoError);
+        logger.warn("Error en geolocalización durante registro (no crítico)", { error: geoError instanceof Error ? geoError.message : String(geoError) });
       }
     }
 
@@ -171,30 +172,13 @@ export async function POST(request: Request) {
   // Enviar email de verificación
   await sendEmailVerificationEmail(user.email, verificationToken);
 
-  // Crear notificación de bienvenida personalizada
-  await prisma.notification.create({
-    data: {
-      userId: user.id,
-      type: "SYSTEM",
-      title: `¡Todo listo, ${name}! 🌟`,
-      message: `Nos alegra tenerte aquí. Hemos diseñado esta plataforma pensando en velocidad, transparencia y confianza. Tu panel de usuario está listo para usar. ¿Tienes un presentimiento ganador hoy? No lo dejes pasar.`,
-      read: false,
-      data: {
-        buttons: [
-          { label: "SORTEOS", href: "/raffles", primary: true },
-          { label: "VERIFICAR CORREO", href: "/cuenta/configuracion", primary: false }
-        ]
-      }
-    }
-  });
-
     return NextResponse.json({ 
       id: user.id, 
       email: user.email,
       message: "Registro exitoso. Por favor verifica tu email." 
     }, { status: 201 });
   } catch (error) {
-    console.error("Error en registro:", error);
+    logger.error("Error en registro", { error: error instanceof Error ? error.message : String(error) });
     
     // Si es un error de Prisma, dar un mensaje más amigable
     if (error && typeof error === 'object' && 'code' in error) {

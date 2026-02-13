@@ -1,6 +1,7 @@
 // @ts-ignore - nodemailer puede no estar instalado
 import nodemailer from "nodemailer";
 import { join } from "path";
+import { logger } from "./logger";
 
 // Configuración de email (usar variables de entorno en producción)
 const transporter = nodemailer.createTransport({
@@ -17,8 +18,8 @@ export async function sendEmail(to: string, subject: string, html: string, text?
   try {
     // Si no hay configuración de SMTP, solo loguear en desarrollo
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.log("📧 Email (desarrollo):", { to, subject });
-      console.log("📧 Contenido:", text || html);
+      logger.info("Email (desarrollo)", { to, subject });
+      logger.debug("Contenido email (desarrollo)", { hasText: !!text, hasHtml: !!html });
       return { success: true, messageId: "dev-mode" };
     }
 
@@ -38,24 +39,27 @@ export async function sendEmail(to: string, subject: string, html: string, text?
 
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error("Error enviando email:", error);
+    logger.error("Error enviando email", { error: error instanceof Error ? error.message : String(error) });
     return { success: false, error: String(error) };
   }
 }
 
+// Asegura que la URL base tenga protocolo (para enlaces en emails/PDFs)
+function normalizeBaseUrl(url: string): string {
+  const u = url.trim();
+  if (!u) return "http://localhost:3000";
+  if (u.startsWith("http://") || u.startsWith("https://")) return u;
+  return u.startsWith("localhost") ? `http://${u}` : `https://${u}`;
+}
+
 // Función helper para obtener la URL base de la aplicación
 function getAppUrl(): string {
-  // Prioridad 1: NEXT_PUBLIC_APP_URL (si está definida)
   if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL;
+    return normalizeBaseUrl(process.env.NEXT_PUBLIC_APP_URL);
   }
-  
-  // Prioridad 2: VERCEL_URL (automático en Vercel)
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
-  
-  // Prioridad 3: Fallback a localhost (solo desarrollo)
   return "http://localhost:3000";
 }
 

@@ -30,6 +30,14 @@ export const loginSchema = z.object({
   password: z.string().min(1, "La contraseña es requerida")
 });
 
+/** Extrae el valor numérico de un premio (acepta "700", "700.00", "Bs. 700.00", etc.) */
+export function parsePrizeValue(p: string): number {
+  if (typeof p !== "string") return 0;
+  const match = p.trim().match(/(\d+(?:[.,]\d+)?)/);
+  if (!match) return parseFloat(p) || 0;
+  return parseFloat(match[1].replace(",", ".")) || 0;
+}
+
 export const raffleCreateSchema = z.object({
   title: z.string().min(3),
   description: z.string().optional(),
@@ -43,8 +51,7 @@ export const raffleCreateSchema = z.object({
   prizes: z.array(z.string()).min(1)
 }).refine((data) => {
   // Regla de Orden: Premios de mayor a menor
-  // Convertimos a números para comparar
-  const values = data.prizes.map((p) => parseFloat(p) || 0);
+  const values = data.prizes.map((p) => parsePrizeValue(p));
   for (let i = 0; i < values.length - 1; i++) {
     if (values[i] < values[i + 1]) {
       return false;
@@ -58,13 +65,7 @@ export const raffleCreateSchema = z.object({
   // Regla del 70%: El total de premios debe ser EXÁCTAMENTE el 70% del ingreso total
   const totalIncome = data.slots * data.pricePerSlot;
   const requiredPrizePool = totalIncome * 0.70;
-  
-  const currentPrizePool = data.prizes.reduce((acc, curr) => {
-    const val = parseFloat(curr) || 0;
-    return acc + val;
-  }, 0);
-  
-  // Usamos una pequeña tolerancia para errores de punto flotante, aunque en moneda debería ser exacto
+  const currentPrizePool = data.prizes.reduce((acc, curr) => acc + parsePrizeValue(curr), 0);
   return Math.abs(currentPrizePool - requiredPrizePool) < 0.1;
 }, {
   message: "El valor total de los premios debe ser exactamente el 70% del valor total del sorteo (Cupos * Precio)",
@@ -72,6 +73,21 @@ export const raffleCreateSchema = z.object({
 });
 
 export const ticketPurchaseSchema = z.object({
-  items: z.array(z.union([z.string(), z.number()])).min(1).max(200).transform((arr) => arr.map(String))
+  items: z.array(z.union([z.string(), z.number()])).min(1).max(200).transform((arr) => arr.map(String)),
+  paymentMethod: z.enum(["MOBILE", "OTHER"]).optional().nullable(),
+  paymentMobileRef: z.string().optional().nullable(),
+  paymentMobileBank: z.string().optional().nullable()
+});
+
+/** Body para marcar un reclamo como pagado (admin) */
+export const claimPaySchema = z.object({
+  paymentRef: z.string().min(1, "Referencia de pago requerida"),
+  paidAmount: z.coerce.number().positive("El monto pagado debe ser un número positivo")
+});
+
+/** Body para actualizar datos bancarios del perfil de usuario */
+export const profileUpdateSchema = z.object({
+  bank: z.string().min(1, "El banco es obligatorio"),
+  phoneNumber: z.string().min(11, "El teléfono debe tener al menos 11 caracteres")
 });
 

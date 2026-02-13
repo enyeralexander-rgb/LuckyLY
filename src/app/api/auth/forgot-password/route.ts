@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { sendPasswordResetEmail } from "../../../../lib/email";
+import { logger } from "../../../../lib/logger";
 import crypto from "crypto";
 
 export async function POST(request: Request) {
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
       message: "Si el email existe, recibirás un enlace para restablecer tu contraseña",
     });
   } catch (error) {
-    console.error("Error en forgot-password:", error);
+    logger.error("Error en forgot-password", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Error al procesar solicitud" }, { status: 500 });
   }
 }

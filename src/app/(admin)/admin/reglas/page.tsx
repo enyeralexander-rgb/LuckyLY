@@ -292,7 +292,7 @@ function ReglasPageContent() {
                 <li>Usa los botones de arriba para insertar elementos comunes</li>
                 <li>Para imágenes, usa URLs completas (https://...)</li>
                 <li>Para enlaces, asegúrate de incluir el protocolo (http:// o https://)</li>
-                <li>Usa "Vista Previa" para ver cómo se verá el contenido</li>
+                <li>Usa &quot;Vista Previa&quot; para ver cómo se verá el contenido</li>
               </ul>
             </div>
           </div>

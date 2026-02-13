@@ -9,6 +9,15 @@
  */
 
 import { execSync } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+// Cargar .env y .env.local para que MASTER_INITIAL_* estén disponibles en local
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, '..');
+dotenv.config({ path: path.join(root, '.env') });
+dotenv.config({ path: path.join(root, '.env.local') });
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
@@ -117,17 +126,21 @@ async function createMasterUserManually() {
   });
 
   try {
-    // ══════════════════════════════════════════════════════════════
-    // CREDENCIALES DEL ADMINISTRADOR MASTER
-    // ══════════════════════════════════════════════════════════════
-    const email = "enyeralexander@gmail.com";
-    const password = "0995697717";
-    const name = "Administrador Master";
-    const username = "master";
-    const documentId = "V-00000001";  // Document ID único para MASTER
-    const nationalId = "00000001";
-    const nationalIdType = "V";
-    // ══════════════════════════════════════════════════════════════
+    // Credenciales solo desde variables de entorno (sin valores en código)
+    const email = process.env.MASTER_INITIAL_EMAIL?.trim();
+    const password = process.env.MASTER_INITIAL_PASSWORD;
+    const name = (process.env.MASTER_INITIAL_NAME?.trim()) || 'Administrador Master';
+    const username = 'master';
+    const documentId = (process.env.MASTER_INITIAL_DOCUMENT_ID?.trim()) || `V-MASTER-${Date.now()}`;
+    const nationalId = (documentId && documentId.includes('-')) ? documentId.split('-')[1] || '00000001' : '00000001';
+    const nationalIdType = (documentId && documentId.toUpperCase().startsWith('E-')) ? 'E' : 'V';
+
+    if (!email || !password) {
+      console.log('  ℹ️  MASTER_INITIAL_EMAIL o MASTER_INITIAL_PASSWORD no definidos; no se crea usuario MASTER.');
+      await prisma.$disconnect();
+      await pool.end();
+      return;
+    }
 
     console.log('  📧 Email:', email);
     console.log('  👤 Nombre:', name);
@@ -232,14 +245,18 @@ async function main() {
     const schemaApplied = await applySchema();
 
     if (schemaApplied) {
-      // Crear usuario MASTER directamente (garantizado)
-      console.log('👑 Creando usuario MASTER...\n');
-      try {
-        await createMasterUserManually();
-        console.log('✅ Usuario MASTER creado exitosamente\n');
-      } catch (masterError) {
-        console.error('❌ Error al crear usuario MASTER:', masterError.message);
-        console.log('⚠️  Continuando sin usuario MASTER...\n');
+      // Crear usuario MASTER solo si están definidas MASTER_INITIAL_EMAIL y MASTER_INITIAL_PASSWORD
+      if (process.env.MASTER_INITIAL_EMAIL?.trim() && process.env.MASTER_INITIAL_PASSWORD) {
+        console.log('👑 Creando usuario MASTER (desde variables de entorno)...\n');
+        try {
+          await createMasterUserManually();
+          console.log('✅ Usuario MASTER creado exitosamente\n');
+        } catch (masterError) {
+          console.error('❌ Error al crear usuario MASTER:', masterError.message);
+          console.log('⚠️  Continuando sin usuario MASTER...\n');
+        }
+      } else {
+        console.log('ℹ️  Sin MASTER_INITIAL_EMAIL/MASTER_INITIAL_PASSWORD; no se crea usuario. BD vacía de usuarios.\n');
       }
 
       // NOTA: El seed NO se ejecuta automáticamente en producción

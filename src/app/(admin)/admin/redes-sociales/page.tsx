@@ -3,6 +3,7 @@ import { AdminNavBar } from "../../../../components/AdminNavBar";
 import { AuthGuard } from "../../../../components/AuthGuard";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
+import Link from "next/link";
 
 type SocialMedia = {
   id: string;
@@ -12,7 +13,22 @@ type SocialMedia = {
   youtube: string | null;
   tiktok: string | null;
   whatsapp: string | null;
+  facebookEnabled?: boolean;
+  instagramEnabled?: boolean;
+  twitterEnabled?: boolean;
+  youtubeEnabled?: boolean;
+  tiktokEnabled?: boolean;
+  whatsappEnabled?: boolean;
 };
+
+const NETWORKS = [
+  { key: "facebook", label: "Facebook URL", placeholder: "https://facebook.com/tu-pagina" },
+  { key: "instagram", label: "Instagram URL", placeholder: "https://instagram.com/tu-cuenta" },
+  { key: "twitter", label: "Twitter URL", placeholder: "https://twitter.com/tu-cuenta" },
+  { key: "youtube", label: "YouTube URL", placeholder: "https://youtube.com/@tu-canal" },
+  { key: "tiktok", label: "TikTok URL", placeholder: "https://tiktok.com/@tu-cuenta" },
+  { key: "whatsapp", label: "WhatsApp URL", placeholder: "https://wa.me/584123456789" }
+] as const;
 
 function RedesSocialesPageContent() {
   const [auth, setAuth] = useState<any>(null);
@@ -25,7 +41,13 @@ function RedesSocialesPageContent() {
     twitter: "",
     youtube: "",
     tiktok: "",
-    whatsapp: ""
+    whatsapp: "",
+    facebookEnabled: true,
+    instagramEnabled: true,
+    twitterEnabled: true,
+    youtubeEnabled: true,
+    tiktokEnabled: true,
+    whatsappEnabled: true
   });
 
   useEffect(() => {
@@ -46,7 +68,13 @@ function RedesSocialesPageContent() {
               twitter: data.twitter || "",
               youtube: data.youtube || "",
               tiktok: data.tiktok || "",
-              whatsapp: data.whatsapp || ""
+              whatsapp: data.whatsapp || "",
+              facebookEnabled: data.facebookEnabled !== false,
+              instagramEnabled: data.instagramEnabled !== false,
+              twitterEnabled: data.twitterEnabled !== false,
+              youtubeEnabled: data.youtubeEnabled !== false,
+              tiktokEnabled: data.tiktokEnabled !== false,
+              whatsappEnabled: data.whatsappEnabled !== false
             });
           }
           setLoading(false);
@@ -55,9 +83,13 @@ function RedesSocialesPageContent() {
     }
   }, [auth]);
 
+  function setEnabled(key: (typeof NETWORKS)[number]["key"], value: boolean) {
+    const enabledKey = `${key}Enabled` as keyof typeof formData;
+    setFormData((prev) => ({ ...prev, [enabledKey]: value }));
+  }
+
   async function handleSave() {
     if (!auth?.token || saving) return;
-
     setSaving(true);
     try {
       const res = await fetch("/api/admin/social", {
@@ -68,7 +100,6 @@ function RedesSocialesPageContent() {
         },
         body: JSON.stringify(formData)
       });
-
       if (res.ok) {
         const updated = await res.json();
         setSocial(updated);
@@ -100,143 +131,76 @@ function RedesSocialesPageContent() {
     <>
       <AdminNavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
-        <h1>Redes Sociales</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
+          <h1 style={{ margin: 0, color: "var(--text-primary)" }}>Redes Sociales</h1>
+          <Link href="/admin" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: 600 }}>← Volver</Link>
+        </div>
         <div className="card" style={{ padding: "1.5rem", display: "grid", gap: "1.5rem" }}>
-          <div style={{ display: "grid", gap: "1rem" }}>
-            <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
-                Facebook URL
-              </label>
-              <input
-                type="url"
-                value={formData.facebook}
-                onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
-                placeholder="https://facebook.com/tu-pagina"
-                style={{
-                  width: "100%",
-                  padding: ".75rem",
-                  borderRadius: "8px",
-                  border: "1px solid var(--border-color)",
-                  background: "var(--input-bg)",
-                  color: "var(--text-primary)",
-                  fontSize: "1rem"
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
-                Instagram URL
-              </label>
-              <input
-                type="url"
-                value={formData.instagram}
-                onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-                placeholder="https://instagram.com/tu-cuenta"
-                style={{
-                  width: "100%",
-                  padding: ".75rem",
-                  borderRadius: "8px",
-                  border: "1px solid var(--border-color)",
-                  background: "var(--input-bg)",
-                  color: "var(--text-primary)",
-                  fontSize: "1rem"
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
-                Twitter URL
-              </label>
-              <input
-                type="url"
-                value={formData.twitter}
-                onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
-                placeholder="https://twitter.com/tu-cuenta"
-                style={{
-                  width: "100%",
-                  padding: ".75rem",
-                  borderRadius: "8px",
-                  border: "1px solid var(--border-color)",
-                  background: "var(--input-bg)",
-                  color: "var(--text-primary)",
-                  fontSize: "1rem"
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
-                YouTube URL
-              </label>
-              <input
-                type="url"
-                value={formData.youtube}
-                onChange={(e) => setFormData({ ...formData, youtube: e.target.value })}
-                placeholder="https://youtube.com/@tu-canal"
-                style={{
-                  width: "100%",
-                  padding: ".75rem",
-                  borderRadius: "8px",
-                  border: "1px solid var(--border-color)",
-                  background: "var(--input-bg)",
-                  color: "var(--text-primary)",
-                  fontSize: "1rem"
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
-                TikTok URL
-              </label>
-              <input
-                type="url"
-                value={formData.tiktok}
-                onChange={(e) => setFormData({ ...formData, tiktok: e.target.value })}
-                placeholder="https://tiktok.com/@tu-cuenta"
-                style={{
-                  width: "100%",
-                  padding: ".75rem",
-                  borderRadius: "8px",
-                  border: "1px solid var(--border-color)",
-                  background: "var(--input-bg)",
-                  color: "var(--text-primary)",
-                  fontSize: "1rem"
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
-                WhatsApp URL
-              </label>
-              <input
-                type="url"
-                value={formData.whatsapp}
-                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                placeholder="https://wa.me/584123456789"
-                style={{
-                  width: "100%",
-                  padding: ".75rem",
-                  borderRadius: "8px",
-                  border: "1px solid var(--border-color)",
-                  background: "var(--input-bg)",
-                  color: "var(--text-primary)",
-                  fontSize: "1rem"
-                }}
-              />
-            </div>
+          <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: ".875rem" }}>
+            Los enlaces habilitados se muestran en el menú flotante de la página principal (abajo a la izquierda). Deshabilita una red para ocultarla del menú sin borrar la URL.
+          </p>
+          <div style={{ display: "grid", gap: "1.25rem" }}>
+            {NETWORKS.map(({ key, label, placeholder }) => {
+              const enabledKey = `${key}Enabled` as keyof typeof formData;
+              const enabled = !!formData[enabledKey];
+              const value = formData[key as keyof typeof formData] as string;
+              return (
+                <div
+                  key={key}
+                  style={{
+                    padding: "1rem",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border-color)",
+                    background: enabled ? undefined : "var(--input-bg)",
+                    opacity: enabled ? 1 : 0.85
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: ".5rem", flexWrap: "wrap", gap: ".5rem" }}>
+                    <label style={{ color: "var(--text-primary)", fontWeight: 600 }}>{label}</label>
+                    <button
+                      type="button"
+                      onClick={() => setEnabled(key, !enabled)}
+                      style={{
+                        padding: ".35rem .75rem",
+                        borderRadius: "6px",
+                        border: "none",
+                        fontSize: ".8rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        background: enabled ? "#dc2626" : "#16a34a",
+                        color: "#fff"
+                      }}
+                    >
+                      {enabled ? "Deshabilitar" : "Habilitar"}
+                    </button>
+                  </div>
+                  <input
+                    type="url"
+                    value={value}
+                    onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
+                    placeholder={placeholder}
+                    disabled={!enabled}
+                    style={{
+                      width: "100%",
+                      padding: ".75rem",
+                      borderRadius: "8px",
+                      border: "1px solid var(--border-color)",
+                      background: "var(--input-bg)",
+                      color: "var(--text-primary)",
+                      fontSize: "1rem"
+                    }}
+                  />
+                </div>
+              );
+            })}
           </div>
-
           <button
             onClick={handleSave}
             disabled={saving}
             style={{
               padding: ".75rem 1.5rem",
               background: saving ? "#6b7280" : "#85BB65",
-              color: "var(--text-primary)",
+              color: "#fff",
               border: "none",
               borderRadius: "8px",
               fontWeight: 700,

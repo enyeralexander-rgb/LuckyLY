@@ -1,15 +1,24 @@
 import { NextResponse } from "next/server";
+import { put } from "@vercel/blob";
 import { prisma } from "../../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
+import { logger } from "../../../../../../lib/logger";
 import { Role } from "@prisma/client";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+
+const PREFIX = "payment-proofs/";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const auth = requireAuth(request, [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER]);
-    
+
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+      return NextResponse.json(
+        { error: "BLOB_READ_WRITE_TOKEN no está configurado. Añade la variable de entorno." },
+        { status: 500 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get("file") as File;
 
@@ -18,8 +27,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
 
     // Validar que sea una imagen
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "Solo se permiten archivos de imagen" }, { status: 400 });
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ error: "Solo se permiten archivos de imagen (JPG, PNG, GIF, WEBP)" }, { status: 400 });
     }
 
     // Validar tamaño (máximo 5MB)
@@ -35,36 +45,29 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ error: "Reclamo no encontrado" }, { status: 404 });
     }
 
-    // Crear directorio si no existe
-    const uploadDir = join(process.cwd(), "public", "uploads", "payment-proofs");
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
-    // Generar nombre único para el archivo
+    // Subir a Vercel Blob Storage (funciona en serverless sin filesystem local)
     const timestamp = Date.now();
-    const extension = file.name.split(".").pop();
-    const fileName = `${params.id}-${timestamp}.${extension}`;
-    const filePath = join(uploadDir, fileName);
+    const extension = file.name.split(".").pop() || "png";
+    const safeName = `${params.id}-${timestamp}.${extension}`;
+    const pathname = `${PREFIX}${safeName}`;
 
-    // Guardar archivo
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
-
-    // Guardar ruta en la base de datos
-    const proofUrl = `/uploads/payment-proofs/${fileName}`;
-    await prisma.prizeClaim.update({
-      where: { id: params.id },
-      data: { paymentProof: proofUrl },
+    const blob = await put(pathname, file, {
+      access: "public",
+      token
     });
 
-    return NextResponse.json({ success: true, proofUrl });
+    // Guardar URL del blob en la base de datos
+    await prisma.prizeClaim.update({
+      where: { id: params.id },
+      data: { paymentProof: blob.url },
+    });
+
+    return NextResponse.json({ success: true, proofUrl: blob.url });
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al subir comprobante:", err);
+    logger.error("Error al subir comprobante", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al subir comprobante" }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool, PoolConfig } from "pg";
+import { logger } from "./logger";
 
 // Singleton pattern para evitar múltiples conexiones en desarrollo
 const globalForPrisma = globalThis as unknown as { 
@@ -57,7 +58,7 @@ function createPool(): Pool {
 
   // Manejar errores del pool para evitar crashes
   pool.on('error', (err) => {
-    console.error('🔴 Error inesperado en pool de PostgreSQL:', err.message);
+    logger.error('Error inesperado en pool de PostgreSQL', { message: err.message });
   });
 
   return pool;
@@ -94,10 +95,20 @@ function createPrismaClient(): PrismaClient {
   });
 }
 
-// Exportar instancia singleton
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+// Obtener instancia singleton (inicialización perezosa para que el build no falle sin DATABASE_URL)
+function getPrisma(): PrismaClient {
+  if (globalForPrisma.prisma) {
+    return globalForPrisma.prisma;
+  }
+  const client = createPrismaClient();
+  globalForPrisma.prisma = client;
+  return client;
 }
+
+// Proxy que crea el cliente solo en el primer uso (evita error en "next build" sin .env)
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_, prop) {
+    return (getPrisma() as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
 

@@ -5,6 +5,7 @@ import { ThemeProvider } from "../components/providers/ThemeProvider";
 import { TutorialProvider } from "../contexts/TutorialContext";
 import { TutorialOverlay } from "../components/TutorialOverlay";
 import { Header } from "../components/ui/Header";
+import { SocialFloat } from "../components/SocialFloat";
 
 // Usar Fredoka en lugar de Cherry Bomb One (más confiable en Vercel)
 const fredoka = Fredoka({ 
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <TutorialProvider>
             <Header />
             {children}
+            <SocialFloat />
             <TutorialOverlay />
           </TutorialProvider>
         </ThemeProvider>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
 
 // Aprobar un sorteo para que sea visible a los usuarios
@@ -53,7 +54,7 @@ export async function PUT(
         }
       });
     } catch (logError) {
-      console.error("Error al registrar audit log:", logError);
+      logger.error("Error al registrar audit log", { error: logError instanceof Error ? logError.message : String(logError) });
     }
 
     return NextResponse.json({
@@ -65,7 +66,7 @@ export async function PUT(
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al aprobar sorteo:", err);
+    logger.error("Error al aprobar sorteo", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al aprobar sorteo" }, { status: 500 });
   }
 }

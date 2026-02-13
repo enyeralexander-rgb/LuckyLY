@@ -2,205 +2,129 @@ import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
+import { logger } from "../../../../lib/logger";
+import { getContabilidadGlobal } from "../../../../lib/accounting";
+import { parsePeriodRange } from "../../../../lib/dateRange";
 import { Role } from "@prisma/client";
 
 export async function GET(request: Request) {
   try {
     const auth = requireAuth(request, [Role.CONTABLE, Role.MASTER]);
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get("period") || "7d"; // 24h, 7d, 30d, 90d, 180d, 365d, year, all, custom
+    const period = searchParams.get("period") || "7d";
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
-    const type = searchParams.get("type") || "income"; // income, referrals, topUsers
+    const type = searchParams.get("type") || "income";
 
-    let dateStart: Date;
-    let dateEnd: Date = new Date();
-
-    // Calcular fechas según el período
-    if (period === "custom" && startDate && endDate) {
-      dateStart = new Date(startDate);
-      dateEnd = new Date(endDate);
-      dateEnd.setHours(23, 59, 59, 999);
-    } else if (period === "24h") {
-      dateStart = new Date();
-      dateStart.setHours(dateStart.getHours() - 24);
-    } else if (period === "7d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 7);
-    } else if (period === "30d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 30);
-    } else if (period === "90d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 90);
-    } else if (period === "180d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 180);
-    } else if (period === "365d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 365);
-    } else if (period === "year") {
-      dateStart = new Date(new Date().getFullYear(), 0, 1);
-      dateEnd = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999);
-    } else if (period === "all") {
-      dateStart = new Date("2026-01-01");
-    } else {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 7);
-    }
+    const { dateStart, dateEnd } = parsePeriodRange(period, startDate, endDate);
 
     if (type === "income") {
-      // Estadísticas de ingresos
+      // Contabilidad: INGRESOS (compras), EGRESOS (premios pagados), GANANCIAS (restante)
+      const contabilidad = await getContabilidadGlobal({ dateStart, dateEnd });
+      const { ingresos, egresos, ganancias } = contabilidad;
+
+      // Ingresos por día (compras confirmadas)
       const tickets = await prisma.ticket.findMany({
         where: {
           status: "CONFIRMED",
-          purchasedAt: {
-            gte: dateStart,
-            lte: dateEnd
-          }
+          purchasedAt: { gte: dateStart, lte: dateEnd }
         },
-        select: {
-          totalPaid: true,
-          purchasedAt: true
-        }
+        select: { totalPaid: true, purchasedAt: true }
       });
-
-      const totalIncome = tickets.reduce((sum, t) => sum + Number(t.totalPaid), 0);
-
-      // Calcular premios pagados (egresos)
-      // NOTA: Como PrizeClaim no guarda el monto exacto y no sabemos la posición ganadora (1°, 2°, 3°),
-      // estimamos el pago basado en la regla del 70% dividida equitativamente o el promedio de premios.
-      // Mejor aproximación: (Slots * Precio * 0.70) / WinnersCount
-      const paidClaims = await prisma.prizeClaim.findMany({
-        where: {
-          status: "PAID",
-          processedAt: {
-            gte: dateStart,
-            lte: dateEnd
-          }
-        },
-        include: {
-          ticket: {
-            select: {
-              raffle: {
-                select: {
-                  pricePerSlot: true,
-                  slots: true,
-                  winnersCount: true
-                }
-              }
-            }
-          }
-        }
-      });
-
-      const totalPrizesPaid = paidClaims.reduce((sum, claim) => {
-        // Uso de monto real si existe (Nueva implementación)
-        if (claim.paidAmount) {
-          return sum + Number(claim.paidAmount);
-        }
-        
-        // Lógica legacy (estimación del 70%)
-        const raffle = claim.ticket.raffle;
-        if (!raffle) return sum;
-        
-        const totalRaffleValue = Number(raffle.pricePerSlot) * raffle.slots;
-        const totalPrizePool = totalRaffleValue * 0.70;
-        const estimatedPrizeValue = totalPrizePool / (raffle.winnersCount || 1);
-        
-        return sum + estimatedPrizeValue;
-      }, 0);
-
-      // Calcular ganancias netas (ingresos - premios pagados)
-      const netIncome = totalIncome - totalPrizesPaid;
-
-      // Calcular ingresos por día para el gráfico
       const incomeByDay: Record<string, number> = {};
       tickets.forEach((ticket) => {
         const date = new Date(ticket.purchasedAt).toISOString().split("T")[0];
         incomeByDay[date] = (incomeByDay[date] || 0) + Number(ticket.totalPaid);
       });
 
-      // Calcular porcentaje de crecimiento (comparar con período anterior)
-      const previousPeriodStart = new Date(dateStart);
-      previousPeriodStart.setTime(previousPeriodStart.getTime() - (dateEnd.getTime() - dateStart.getTime()));
-      const previousPeriodEnd = dateStart;
-
-      const previousTickets = await prisma.ticket.findMany({
-        where: {
-          status: "CONFIRMED",
-          purchasedAt: {
-            gte: previousPeriodStart,
-            lte: previousPeriodEnd
-          }
-        },
-        select: {
-          totalPaid: true
-        }
-      });
-
-      const previousPaidClaims = await prisma.prizeClaim.findMany({
+      // Egresos por día (premios pagados) — incluye fallback para paidAmount NULL
+      const paidClaims = await prisma.prizeClaim.findMany({
         where: {
           status: "PAID",
-          processedAt: {
-            gte: previousPeriodStart,
-            lte: previousPeriodEnd
-          }
+          processedAt: { gte: dateStart, lte: dateEnd }
         },
-        include: {
+        select: {
+          paidAmount: true,
+          processedAt: true,
           ticket: {
             select: {
-              raffle: {
-                select: {
-                  pricePerSlot: true,
-                  slots: true,
-                  winnersCount: true
-                }
-              }
+              items: true,
+              raffle: { select: { winningItem: true, prizes: true, pricePerSlot: true, slots: true } }
             }
           }
         }
       });
-
-      const previousIncome = previousTickets.reduce((sum, t) => sum + Number(t.totalPaid), 0);
-      
-      const previousPrizesPaid = previousPaidClaims.reduce((sum, claim) => {
-        if (claim.paidAmount) {
-          return sum + Number(claim.paidAmount);
+      const egresosByDay: Record<string, number> = {};
+      paidClaims.forEach((claim) => {
+        if (claim.processedAt) {
+          const date = new Date(claim.processedAt).toISOString().split("T")[0];
+          let amount = Number(claim.paidAmount ?? 0);
+          // Fallback para claims legacy sin paidAmount
+          if (claim.paidAmount == null && claim.ticket.raffle?.prizes) {
+            amount = estimateChartPrize(
+              claim.ticket.raffle.winningItem,
+              claim.ticket.raffle.prizes,
+              claim.ticket.items
+            );
+          }
+          egresosByDay[date] = (egresosByDay[date] || 0) + amount;
         }
+      });
 
-        const raffle = claim.ticket.raffle;
-        if (!raffle) return sum;
-        
-        const totalRaffleValue = Number(raffle.pricePerSlot) * raffle.slots;
-        const totalPrizePool = totalRaffleValue * 0.70;
-        const estimatedPrizeValue = totalPrizePool / (raffle.winnersCount || 1);
-        
-        return sum + estimatedPrizeValue;
-      }, 0);
-      
-      const previousNetIncome = previousIncome - previousPrizesPaid;
+      // Crecimiento Neto: % variación GANANCIAS en últimas 48h vs 48h anteriores
+      const now = new Date();
+      const dateEnd48 = new Date(now);
+      const dateStart48 = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+      const dateEndPrev48 = new Date(dateStart48.getTime());
+      const dateStartPrev48 = new Date(dateStart48.getTime() - 48 * 60 * 60 * 1000);
+      const [cont48, contPrev48] = await Promise.all([
+        getContabilidadGlobal({ dateStart: dateStart48, dateEnd: dateEnd48 }),
+        getContabilidadGlobal({ dateStart: dateStartPrev48, dateEnd: dateEndPrev48 })
+      ]);
+      const gananciasLast48 = cont48.ganancias;
+      const gananciasPrev48 = contPrev48.ganancias;
+      let netGrowthPercentage: number;
+      if (gananciasPrev48 === 0) {
+        netGrowthPercentage = gananciasLast48 > 0 ? 100 : gananciasLast48 < 0 ? -100 : 0;
+      } else {
+        netGrowthPercentage = ((gananciasLast48 - gananciasPrev48) / Math.abs(gananciasPrev48)) * 100;
+      }
 
-      const growthPercentage = previousIncome > 0 
-        ? ((totalIncome - previousIncome) / previousIncome) * 100 
-        : 0;
+      const previousPeriodStart = new Date(dateStart);
+      previousPeriodStart.setTime(previousPeriodStart.getTime() - (dateEnd.getTime() - dateStart.getTime()));
+      const contPrevious = await getContabilidadGlobal({ dateStart: previousPeriodStart, dateEnd: dateStart });
+      const growthPercentage = contPrevious.ingresos > 0
+        ? ((ingresos - contPrevious.ingresos) / contPrevious.ingresos) * 100
+        : ingresos > 0 ? 100 : 0;
 
-      const netGrowthPercentage = previousNetIncome > 0 
-        ? ((netIncome - previousNetIncome) / previousNetIncome) * 100 
-        : 0;
-
-      // Formatear datos para el gráfico
-      const chartData = Object.entries(incomeByDay)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([date, value]) => ({
-          date,
-          value: Number(value.toFixed(2))
-        }));
+      // Gráfico: todos los días del período con ingresos y egresos (sin huecos)
+      const chartData: Array<{ date: string; ingresos: number; egresos: number; ganancias: number }> = [];
+      const end = new Date(dateEnd);
+      end.setHours(23, 59, 59, 999);
+      const maxChartDays = 400;
+      const rangeMs = end.getTime() - dateStart.getTime();
+      const chartStart = rangeMs > maxChartDays * 24 * 60 * 60 * 1000
+        ? new Date(end.getTime() - maxChartDays * 24 * 60 * 60 * 1000)
+        : new Date(dateStart);
+      chartStart.setHours(0, 0, 0, 0);
+      const current = new Date(chartStart);
+      while (current <= end) {
+        const dateStr = current.toISOString().split("T")[0];
+        const dayIngresos = Number((incomeByDay[dateStr] ?? 0).toFixed(2));
+        const dayEgresos = Number((egresosByDay[dateStr] ?? 0).toFixed(2));
+        chartData.push({
+          date: dateStr,
+          ingresos: dayIngresos,
+          egresos: dayEgresos,
+          ganancias: Number((dayIngresos - dayEgresos).toFixed(2))
+        });
+        current.setDate(current.getDate() + 1);
+      }
 
       return NextResponse.json({
-        totalIncome: Number(totalIncome.toFixed(2)),
-        totalPrizesPaid: Number(totalPrizesPaid.toFixed(2)),
-        netIncome: Number(netIncome.toFixed(2)),
+        ingresos: Number(ingresos.toFixed(2)),
+        egresos: Number(egresos.toFixed(2)),
+        ganancias: Number(ganancias.toFixed(2)),
         growthPercentage: Number(growthPercentage.toFixed(2)),
         netGrowthPercentage: Number(netGrowthPercentage.toFixed(2)),
         chartData,
@@ -383,7 +307,31 @@ export async function GET(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al obtener estadísticas:", err);
+    logger.error("Error al obtener estadísticas", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al obtener estadísticas" }, { status: 500 });
   }
+}
+
+/** Fallback para chart: estima el premio desde raffle.prizes (misma lógica que accounting.ts) */
+function estimateChartPrize(
+  winningItem: string | null,
+  prizes: unknown,
+  ticketItems: unknown
+): number {
+  if (!winningItem || !prizes || !Array.isArray(prizes) || prizes.length === 0) return 0;
+  const winners = winningItem.split(",").map(s => s.trim()).filter(Boolean);
+  const items = Array.isArray(ticketItems) ? ticketItems.filter((x): x is string => typeof x === "string") : [];
+  let winnerIndex = -1;
+  for (const item of items) {
+    const idx = winners.indexOf(item);
+    if (idx !== -1 && (winnerIndex === -1 || idx < winnerIndex)) winnerIndex = idx;
+  }
+  if (winnerIndex < 0 || winnerIndex >= prizes.length) return 0;
+  const raw = prizes[winnerIndex];
+  if (typeof raw === "number") return raw;
+  if (typeof raw === "string") {
+    const match = raw.trim().match(/(\d+(?:[.,]\d+)?)/);
+    return match ? parseFloat(match[1].replace(",", ".")) || 0 : parseFloat(raw) || 0;
+  }
+  return 0;
 }

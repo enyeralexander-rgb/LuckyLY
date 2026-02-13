@@ -68,7 +68,6 @@ function TemplatesPageContent() {
   }
 
   function handleTypeChange(type: string) {
-    setFormData({ ...formData, type: type as any });
     if (type === "STATES") {
       setCustomItems(VENEZUELA_STATES);
       setFormData({ ...formData, type: type as any, slots: "24" });
@@ -103,16 +102,28 @@ function TemplatesPageContent() {
   }
 
   function validatePrizes(): { error: string | null, invalidIndex: number | null } {
-    const prizes = formData.prizes.slice(0, formData.winnersCount).map(p => parseFloat(p) || 0);
-    
-    if (prizes.length >= 3 && prizes[2] > prizes[1]) {
+    const slots = parseInt(formData.slots) || 0;
+    const pricePerSlot = parseFloat(formData.pricePerSlot) || 0;
+    const totalIncome = slots * pricePerSlot;
+    const requiredTotalPrize = totalIncome * 0.70;
+
+    const currentPrizes = formData.prizes.slice(0, formData.winnersCount).map(p => parseFloat(p) || 0);
+    const currentTotalPrize = currentPrizes.reduce((a, b) => a + b, 0);
+
+    if (currentPrizes.length >= 3 && currentPrizes[2] > currentPrizes[1]) {
       return { error: "El 3° ganador no puede ganar un monto mayor que el 2° ganador", invalidIndex: 2 };
     }
-    if (prizes.length >= 2 && prizes[1] > prizes[0]) {
+    if (currentPrizes.length >= 2 && currentPrizes[1] > currentPrizes[0]) {
       return { error: "El 2° ganador no puede ganar un monto mayor que el 1° ganador", invalidIndex: 1 };
     }
-    
-    // Los premios son totalmente personalizables - sin restricción del 50%
+
+    if (Math.abs(currentTotalPrize - requiredTotalPrize) > 0.1) {
+      return {
+        error: `El total de premios (Bs. ${currentTotalPrize.toFixed(2)}) debe ser el 70% del ingreso total (Bs. ${requiredTotalPrize.toFixed(2)})`,
+        invalidIndex: -1
+      };
+    }
+
     return { error: null, invalidIndex: null };
   }
 
@@ -131,35 +142,15 @@ function TemplatesPageContent() {
 
   function validateSlots(): { valid: boolean; error: string | null } {
     const slots = parseInt(formData.slots);
-    
-    if (isNaN(slots) || slots <= 0) {
-      return { valid: false, error: "El número de cupos debe ser mayor a 0" };
+    if (formData.type === "STATES" || formData.type === "ZODIAC") {
+      return { valid: true, error: null };
     }
-
-    switch (formData.type) {
-      case "STATES":
-        if (slots !== 24) {
-          return { valid: false, error: "Los estados deben tener exactamente 24 cupos" };
-        }
-        break;
-      case "ZODIAC":
-        if (slots !== 12) {
-          return { valid: false, error: "Los signos zodiacales deben tener exactamente 12 cupos" };
-        }
-        break;
-      case "NUMBERS":
-      case "FLAGS":
-        if (slots < 10 || slots > 100) {
-          return { valid: false, error: "Los números y banderas deben tener entre 10 y 100 cupos" };
-        }
-        break;
-      case "ANIMALS":
-        if (slots < 10 || slots > 50) {
-          return { valid: false, error: "Los animales deben tener entre 10 y 50 cupos" };
-        }
-        break;
+    if (isNaN(slots) || slots < 10) {
+      return { valid: false, error: "La cantidad mínima de cupos es 10" };
     }
-
+    if (slots > 100) {
+      return { valid: false, error: "La cantidad máxima de cupos es 100" };
+    }
     return { valid: true, error: null };
   }
 

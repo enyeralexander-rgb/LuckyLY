@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
+import { logger } from "../../../../lib/logger";
 import { Role } from "@prisma/client";
 import { randomBytes } from "crypto";
 
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al obtener links de referidos:", err);
+    logger.error("Error al obtener links de referidos", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al obtener links de referidos" }, { status: 500 });
   }
 }
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al crear link de referido:", err);
+    logger.error("Error al crear link de referido", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al crear link de referido" }, { status: 500 });
   }
 }

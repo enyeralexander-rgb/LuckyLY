@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { logger } from "../../../../../lib/logger";
+import { getContabilidadGlobal } from "../../../../../lib/accounting";
+import { parsePeriodRange } from "../../../../../lib/dateRange";
 import { Role } from "@prisma/client";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -14,41 +17,7 @@ export async function GET(request: Request) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    let dateStart: Date;
-    let dateEnd: Date = new Date();
-
-    // Calcular fechas según el período
-    if (period === "custom" && startDate && endDate) {
-      dateStart = new Date(startDate);
-      dateEnd = new Date(endDate);
-      dateEnd.setHours(23, 59, 59, 999);
-    } else if (period === "24h") {
-      dateStart = new Date();
-      dateStart.setHours(dateStart.getHours() - 24);
-    } else if (period === "7d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 7);
-    } else if (period === "30d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 30);
-    } else if (period === "90d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 90);
-    } else if (period === "180d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 180);
-    } else if (period === "365d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 365);
-    } else if (period === "year") {
-      dateStart = new Date(new Date().getFullYear(), 0, 1);
-      dateEnd = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999);
-    } else if (period === "all") {
-      dateStart = new Date("2026-01-01");
-    } else {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 7);
-    }
+    const { dateStart, dateEnd } = parsePeriodRange(period, startDate, endDate);
 
     // Obtener datos del administrador
     const admin = await prisma.user.findUnique({
@@ -56,54 +25,39 @@ export async function GET(request: Request) {
       select: { name: true, email: true }
     });
 
-    // Obtener ingresos (tickets confirmados)
+    // Contabilidad del período (fuente única: lib/accounting)
+    const contabilidad = await getContabilidadGlobal({ dateStart, dateEnd });
+    const { ingresos, egresos, ganancias } = contabilidad;
+
+    // Listados para tablas del PDF
     const tickets = await prisma.ticket.findMany({
       where: {
         status: "CONFIRMED",
-        purchasedAt: {
-          gte: dateStart,
-          lte: dateEnd
-        }
+        purchasedAt: { gte: dateStart, lte: dateEnd }
       },
       include: {
-        user: {
-          select: { name: true, email: true }
-        },
-        raffle: {
-          select: { title: true }
-        }
+        user: { select: { name: true, email: true } },
+        raffle: { select: { title: true } }
       },
       orderBy: { purchasedAt: "desc" }
     });
 
-    // Obtener egresos (premios pagados)
     const paidClaims = await prisma.prizeClaim.findMany({
       where: {
         status: "PAID",
-        processedAt: {
-          gte: dateStart,
-          lte: dateEnd
-        }
+        processedAt: { gte: dateStart, lte: dateEnd }
       },
       include: {
-        user: {
-          select: { name: true, email: true }
-        },
+        user: { select: { name: true, email: true } },
         ticket: {
-          include: {
-            raffle: {
-              select: { title: true }
-            }
+          select: {
+            totalPaid: true,
+            raffle: { select: { title: true } }
           }
         }
       },
       orderBy: { processedAt: "desc" }
     });
-
-    // Calcular totales
-    const totalIncome = tickets.reduce((sum, t) => sum + Number(t.totalPaid), 0);
-    const totalPrizesPaid = paidClaims.reduce((sum, claim) => sum + Number(claim.ticket.totalPaid), 0);
-    const netIncome = totalIncome - totalPrizesPaid;
 
     // Crear PDF
     const doc = new jsPDF();
@@ -144,20 +98,20 @@ export async function GET(request: Request) {
     yPos += 10;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Ingresos Totales:`, 20, yPos);
-    doc.text(`Bs. ${totalIncome.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`Ingresos:`, 20, yPos);
+    doc.text(`Bs. ${ingresos.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
     
     yPos += 7;
-    doc.text(`Premios Pagados:`, 20, yPos);
+    doc.text(`Egresos (Premios pagados):`, 20, yPos);
     doc.setTextColor(220, 38, 38); // Rojo para egresos
-    doc.text(`-Bs. ${totalPrizesPaid.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`-Bs. ${egresos.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
     
     yPos += 7;
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "bold");
-    doc.text(`Ganancias Netas:`, 20, yPos);
+    doc.text(`Ganancias:`, 20, yPos);
     doc.setTextColor(133, 187, 101); // Verde para ganancias
-    doc.text(`Bs. ${netIncome.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`Bs. ${ganancias.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
     
     yPos += 15;
     doc.setTextColor(0, 0, 0);
@@ -212,7 +166,7 @@ export async function GET(request: Request) {
         claim.user.name,
         claim.ticket.raffle.title,
         claim.paymentRef || "-",
-        `Bs. ${Number(claim.ticket.totalPaid).toFixed(2)}`
+        `Bs. ${Number(claim.paidAmount ?? 0).toFixed(2)}`
       ]);
 
       autoTable(doc, {
@@ -244,21 +198,21 @@ export async function GET(request: Request) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.text(`Total Ingresos:`, 20, yPos);
-    doc.text(`Bs. ${totalIncome.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`Bs. ${ingresos.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
     
     yPos += 7;
     doc.text(`Total Egresos:`, 20, yPos);
     doc.setTextColor(220, 38, 38);
-    doc.text(`Bs. ${totalPrizesPaid.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`Bs. ${egresos.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
     
     yPos += 10;
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text(`GANANCIAS NETAS:`, 20, yPos);
+    doc.text(`GANANCIAS:`, 20, yPos);
     doc.setTextColor(133, 187, 101);
     doc.setFontSize(14);
-    doc.text(`Bs. ${netIncome.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`Bs. ${ganancias.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
 
     // Pie de página
     const totalPages = doc.getNumberOfPages();
@@ -283,7 +237,7 @@ export async function GET(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al generar PDF:", err);
+    logger.error("Error al generar PDF", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al generar PDF" }, { status: 500 });
   }
 }

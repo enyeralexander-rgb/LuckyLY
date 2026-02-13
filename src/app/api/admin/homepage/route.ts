@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
+import { logger } from "../../../../lib/logger";
 import { Role } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -40,8 +41,12 @@ export async function GET(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al obtener configuración:", err);
-    return NextResponse.json({ error: "Error al obtener configuración" }, { status: 500 });
+    logger.error("Error al obtener configuración", { error: err instanceof Error ? err.message : String(err) });
+    const message =
+      process.env.NODE_ENV === "development" && err instanceof Error
+        ? err.message
+        : "Error al obtener configuración";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -50,10 +55,11 @@ export async function PUT(request: Request) {
     const auth = requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
     const body = await request.json();
 
-    console.log("📥 [Homepage API] Recibiendo actualización de configuración");
-    console.log("   heroOpacity:", body.heroOpacity);
-    console.log("   heroBlur:", body.heroBlur);
-    console.log("   heroOverlayOpacity:", body.heroOverlayOpacity);
+    logger.info("[Homepage API] Recibiendo actualización de configuración", {
+      heroOpacity: body.heroOpacity,
+      heroBlur: body.heroBlur,
+      heroOverlayOpacity: body.heroOverlayOpacity
+    });
 
     // Validar máximo 5 imágenes
     if (body.heroImages && Array.isArray(body.heroImages) && body.heroImages.length > 5) {
@@ -106,11 +112,12 @@ export async function PUT(request: Request) {
         where: { id: config.id },
         data: updateData
       });
-      console.log("✅ [Homepage API] Configuración actualizada exitosamente");
-      console.log("   ID:", config.id);
-      console.log("   heroOpacity guardado:", config.heroOpacity);
-      console.log("   heroBlur guardado:", config.heroBlur);
-      console.log("   heroOverlayOpacity guardado:", config.heroOverlayOpacity);
+      logger.info("[Homepage API] Configuración actualizada exitosamente", {
+        configId: config.id,
+        heroOpacity: config.heroOpacity,
+        heroBlur: config.heroBlur,
+        heroOverlayOpacity: config.heroOverlayOpacity
+      });
     } else {
       // Crear nueva configuración con valores por defecto
       config = await prisma.homePageConfig.create({
@@ -134,7 +141,7 @@ export async function PUT(request: Request) {
           updatedById: auth.userId
         }
       });
-      console.log("✅ [Homepage API] Nueva configuración creada exitosamente");
+      logger.info("[Homepage API] Nueva configuración creada exitosamente");
     }
 
     return NextResponse.json(config);
@@ -142,10 +149,9 @@ export async function PUT(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al actualizar configuración:", err);
     const errorMessage = err instanceof Error ? err.message : "Error desconocido al actualizar configuración";
     const errorDetails = err instanceof Error ? err.stack : String(err);
-    console.error("Detalles del error:", errorDetails);
+    logger.error("Error al actualizar configuración", { error: errorMessage, details: process.env.NODE_ENV === "development" ? errorDetails : undefined });
     return NextResponse.json({ 
       error: "Error al actualizar configuración",
       message: errorMessage,

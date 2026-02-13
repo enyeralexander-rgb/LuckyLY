@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
+import { logger } from "../../../../lib/logger";
 import { Role } from "@prisma/client";
 
 export async function GET() {
@@ -117,7 +118,7 @@ export async function PUT(request: Request) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al actualizar pago móvil:", err);
+    logger.error("Error al actualizar pago móvil", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al actualizar datos de pago móvil" }, { status: 500 });
   }
 }

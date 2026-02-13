@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
+import { getContabilidadGlobal } from "../../../../lib/accounting";
 import { Role } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -14,16 +15,10 @@ export async function GET(request: Request) {
     const isSuperOrMaster = auth.role === Role.SUPERADMIN || auth.role === Role.MASTER;
     const isContable = auth.role === Role.CONTABLE;
 
-    const [todayTickets, activeRaffles, finishedRaffles, pendingClaims, totalUsers] = await Promise.all([
-      // Solo calcular ingresos si es SUPERADMIN o MASTER
+    const [contabilidadHoy, activeRaffles, finishedRaffles, pendingClaims, totalUsers] = await Promise.all([
       isSuperOrMaster
-        ? prisma.ticket.findMany({
-            where: {
-              purchasedAt: { gte: today, lt: tomorrow }
-            },
-            select: { totalPaid: true }
-          })
-        : Promise.resolve([]),
+        ? getContabilidadGlobal({ dateStart: today, dateEnd: tomorrow })
+        : Promise.resolve({ ingresos: 0, egresos: 0, ganancias: 0 }),
       prisma.raffle.count({ where: { status: "ACTIVE" } }),
       prisma.raffle.count({ where: { status: "FINISHED" } }),
       prisma.prizeClaim.count({ where: { status: { in: ["REQUESTED", "PROCESSING"] } } }),
@@ -32,12 +27,10 @@ export async function GET(request: Request) {
         : Promise.resolve(0)
     ]);
 
-    const todayIncome = isSuperOrMaster 
-      ? todayTickets.reduce((sum, t) => sum + (Number(t.totalPaid) || 0), 0)
-      : 0;
+    const todayIncome = isSuperOrMaster ? contabilidadHoy.ingresos : 0;
 
     return NextResponse.json({
-      todayIncome: todayIncome || 0,
+      todayIncome: Number(todayIncome.toFixed(2)),
       activeRaffles: activeRaffles || 0,
       finishedRaffles: finishedRaffles || 0,
       pendingClaims: pendingClaims || 0,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
+import { getRevenueByRaffle, getPrizesPaidByRaffle } from "../../../../lib/accounting";
 import { Role } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -48,7 +49,73 @@ export async function GET(request: Request) {
       take: 100
     });
 
-    return NextResponse.json(raffles);
+    // Para cada sorteo obtener los usuarios ganadores (tickets que tienen items ganadores)
+    const rafflesWithWinners = await Promise.all(
+      raffles.map(async (r) => {
+        const winningValues = r.winningItem
+          ? r.winningItem.split(",").map((s: string) => s.trim()).filter(Boolean)
+          : [];
+        if (winningValues.length === 0) {
+          return { ...r, winnerUsers: [] as { id: string; name: string; username: string | null }[] };
+        }
+        const items = await prisma.ticketItem.findMany({
+          where: { raffleId: r.id, value: { in: winningValues } },
+          include: {
+            ticket: {
+              include: {
+                user: { select: { id: true, name: true, username: true } }
+              }
+            }
+          }
+        });
+        const seen = new Set<string>();
+        const winnerUsers = items
+          .filter((i) => {
+            const uid = i.ticket.user.id;
+            if (seen.has(uid)) return false;
+            seen.add(uid);
+            return true;
+          })
+          .map((i) => ({
+            id: i.ticket.user.id,
+            name: i.ticket.user.name,
+            username: i.ticket.user.username
+          }));
+        return { ...r, winnerUsers };
+      })
+    );
+
+    // Calcular contabilidad por sorteo (batch para eficiencia)
+    const raffleIds = rafflesWithWinners.map(r => r.id);
+    const [revenueMap, prizesPaidMap, ticketCountsRaw] = await Promise.all([
+      getRevenueByRaffle(raffleIds),
+      getPrizesPaidByRaffle(raffleIds),
+      prisma.ticket.groupBy({
+        by: ["raffleId"],
+        where: { raffleId: { in: raffleIds }, status: "CONFIRMED" },
+        _count: { id: true }
+      })
+    ]);
+    const ticketCounts: Record<string, number> = {};
+    for (const tc of ticketCountsRaw) {
+      if (tc.raffleId) ticketCounts[tc.raffleId] = tc._count.id;
+    }
+
+    const result = rafflesWithWinners.map(r => {
+      const ingresos = revenueMap[r.id] ?? 0;
+      const egresos = prizesPaidMap[r.id] ?? 0;
+      return {
+        ...r,
+        contabilidad: {
+          ingresos: Number(ingresos.toFixed(2)),
+          egresos: Number(egresos.toFixed(2)),
+          ganancias: Number((ingresos - egresos).toFixed(2)),
+          ticketsVendidos: ticketCounts[r.id] ?? 0
+        }
+      };
+    });
+
+    return NextResponse.json(result);
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

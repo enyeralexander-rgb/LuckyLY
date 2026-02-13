@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 import { prisma } from "../../../../lib/prisma";
+import { logger } from "../../../../lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
       message: "Email verificado exitosamente" 
     }, { status: 200 });
   } catch (error) {
-    console.error("Error en verify-email:", error);
+    logger.error("Error en verify-email", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Error al verificar email" }, { status: 500 });
   }
 }

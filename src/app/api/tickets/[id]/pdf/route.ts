@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
+import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
 
-// Función para obtener la URL base
+function normalizeBaseUrl(url: string): string {
+  const u = url.trim();
+  if (!u) return "http://localhost:3000";
+  if (u.startsWith("http://") || u.startsWith("https://")) return u;
+  return u.startsWith("localhost") ? `http://${u}` : `https://${u}`;
+}
+
 function getAppUrl(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.NEXT_PUBLIC_APP_URL) return normalizeBaseUrl(process.env.NEXT_PUBLIC_APP_URL);
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return "http://localhost:3000";
 }
@@ -257,7 +264,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("Error al generar ticket:", err);
+    logger.error("Error al generar ticket", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al generar ticket" }, { status: 500 });
   }
 }

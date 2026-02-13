@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { isDatabaseConnectionError } from "../../../../lib/dbErrors";
+import { logger } from "../../../../lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -60,10 +61,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(formattedResults);
   } catch (error) {
     if (isDatabaseConnectionError(error)) {
-      console.info("ℹ️ [Public Results API] DB no disponible, devolviendo vacío");
+      logger.info("[Public Results API] DB no disponible, devolviendo vacío");
       return NextResponse.json([], { status: 200, headers: { "x-fallback": "db-unavailable" } });
     }
-    console.error("Error al obtener resultados:", error);
+    logger.error("Error al obtener resultados", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Error al obtener resultados" }, { status: 500 });
   }
 }

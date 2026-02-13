@@ -3,17 +3,23 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../../../lib/prisma";
 import { loginSchema } from "../../../../lib/validators";
+import { logger } from "../../../../lib/logger";
 import { Role } from "@prisma/client";
 import crypto from "crypto";
 
-// Helper to get secret lazily (duplicated here to avoid circular deps if auth.ts imports prisma, though it doesn't seem to)
-// Actually, it's safer to just check process.env.JWT_SECRET consistent with middleware/auth
-const JWT_SECRET = process.env.JWT_SECRET || "";
-if (!process.env.JWT_SECRET) {
+// Fallo rápido en desarrollo (npm run dev) si falta JWT_SECRET; en build (NODE_ENV=production) no se lanza
+if (process.env.NODE_ENV === "development" && !process.env.JWT_SECRET) {
   throw new Error("CRITICAL: JWT_SECRET is not defined in login route");
 }
+const JWT_SECRET = process.env.JWT_SECRET || "";
 
 export async function POST(request: Request) {
+  if (!JWT_SECRET) {
+    return NextResponse.json(
+      { error: "Configuración del servidor incompleta (JWT_SECRET)" },
+      { status: 500 }
+    );
+  }
   try {
     let body;
     try {
@@ -103,7 +109,7 @@ export async function POST(request: Request) {
         });
       } catch (logError) {
         // Si falla el log, no afectar el login
-        console.error("Error al registrar log de login:", logError);
+        logger.error("Error al registrar log de login", { error: logError instanceof Error ? logError.message : String(logError) });
       }
     }
 
@@ -126,7 +132,7 @@ export async function POST(request: Request) {
     
     return res;
   } catch (error) {
-    console.error("Error en login:", error);
+    logger.error("Error en login", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

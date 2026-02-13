@@ -107,8 +107,8 @@ export function RaffleGrid() {
 
   if (loading) {
     return (
-      <section className="container grid gap-4 py-8">
-        <div className="card text-center p-8 text-brand-text">
+      <section className="container grid gap-6 py-8">
+        <div className="card text-center p-8" style={{ color: "var(--text-secondary)" }}>
           Cargando sorteos...
         </div>
       </section>
@@ -117,32 +117,71 @@ export function RaffleGrid() {
 
   if (raffles.length === 0) {
     return (
-      <section className="container grid gap-4 py-8">
-        <div className="card text-center p-8 text-brand-text">
+      <section className="container grid gap-6 py-8">
+        <div className="card text-center p-8" style={{ color: "var(--text-secondary)" }}>
           No hay sorteos activos en este momento
+        </div>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <Link
+            href="/raffles"
+            style={{
+              padding: ".75rem 1.5rem",
+              background: "var(--button-primary)",
+              color: "var(--button-text)",
+              borderRadius: "8px",
+              fontWeight: 700,
+              textDecoration: "none",
+              fontSize: ".875rem"
+            }}
+          >
+            VER SORTEOS
+          </Link>
         </div>
       </section>
     );
   }
 
-  const displayedRaffles = raffles.slice(0, 3);
+  const displayedRaffles = raffles.slice(0, 6);
 
   return (
     <section className="container grid gap-6 py-8">
-      <div className="flex flex-col items-center gap-4">
-        <Link 
-          href="/raffles" 
-          className="px-8 py-3 rounded-xl font-normal text-lg text-center uppercase font-[family-name:var(--font-cherry-bomb)] transition-transform hover:scale-105 active:scale-95"
-          style={{ 
-            background: "var(--button-secondary)", 
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem", marginBottom: "1rem" }}>
+        <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "var(--text-primary)" }}>
+          Sorteos activos
+        </h2>
+        <Link
+          href="/raffles"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            maxWidth: "320px",
+            padding: "0.75rem 1.5rem",
+            background: "var(--button-primary)",
             color: "var(--button-text)",
-            boxShadow: "0 4px 14px rgba(0,0,0,0.1)"
+            border: "none",
+            borderRadius: "8px",
+            fontWeight: 700,
+            fontSize: "0.875rem",
+            textTransform: "uppercase",
+            textDecoration: "none",
+            boxShadow: "0 4px 12px var(--card-shadow)",
+            transition: "background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease"
           }}
+          className="raffle-grid-cta"
         >
           VER TODOS LOS SORTEOS ACTIVOS
         </Link>
       </div>
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        className="raffle-grid-cards"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 260px), 1fr))",
+          gap: "1.5rem"
+        }}
+      >
         {displayedRaffles.map((raffle) => {
           const availableSlots = getAvailableSlots(raffle);
           const isAvailable = availableSlots > 0;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAuth } from "../../../../../lib/auth";
+import { logger } from "../../../../../lib/logger";
 import { Role } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
     if (err.message && (err.message.includes("No authorized") || err.message.includes("Unauthorized"))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Error fetching notification stats:", err);
+    logger.error("Error fetching notification stats", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
