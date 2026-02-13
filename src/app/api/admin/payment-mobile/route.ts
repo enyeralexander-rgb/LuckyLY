@@ -3,9 +3,11 @@ import { prisma } from "../../../../lib/prisma";
 import { requireAuth, AuthError } from "../../../../lib/auth";
 import { logger } from "../../../../lib/logger";
 import { Role } from "@prisma/client";
+import { put } from "@vercel/blob";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // GET no requiere auth — datos públicos para mostrar al usuario
     const paymentMobile = await prisma.paymentMobile.findFirst({
       orderBy: { updatedAt: "desc" }
     });
@@ -17,6 +19,7 @@ export async function GET() {
       destino: paymentMobile?.destino || null
     });
   } catch (err) {
+    logger.error("Error al obtener datos de pago móvil", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Error al obtener datos de pago móvil" }, { status: 500 });
   }
 }
@@ -25,14 +28,14 @@ export async function PUT(request: Request) {
   try {
     const auth = requireAuth(request, [Role.MASTER]);
     
-    const contentType = request.headers.get("content-type");
+    const contentType = request.headers.get("content-type") || "";
     let imageUrl: string | undefined;
     let cedula: string | undefined;
     let telefono: string | undefined;
     let destino: string | undefined;
 
-    if (contentType?.includes("multipart/form-data")) {
-      // Actualizar imagen
+    if (contentType.includes("multipart/form-data")) {
+      // ── Subida de imagen via Vercel Blob ──
       const formData = await request.formData();
       const file = formData.get("image") as File | null;
 
@@ -40,28 +43,28 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: "No se proporcionó una imagen" }, { status: 400 });
       }
 
-      // Validar formato (debe ser imagen)
       if (!file.type.startsWith("image/")) {
         return NextResponse.json({ error: "El archivo debe ser una imagen" }, { status: 400 });
       }
 
-      // Convertir a base64 para almacenamiento temporal
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const base64 = buffer.toString("base64");
-      imageUrl = `data:${file.type};base64,${base64}`;
+      // Subir a Vercel Blob
+      const blob = await put(`payment-mobile/${Date.now()}-${file.name}`, file, {
+        access: "public",
+        addRandomSuffix: true,
+      });
+      imageUrl = blob.url;
     } else {
-      // Actualizar datos (cedula, telefono, destino)
+      // ── Guardar datos de texto (cedula, telefono, destino) ──
       const body = await request.json();
       cedula = body.cedula;
       telefono = body.telefono;
       destino = body.destino;
     }
 
-    // Guardar o actualizar
+    // Buscar registro existente
     let paymentMobile = await prisma.paymentMobile.findFirst();
     
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedById: auth.userId
     };
 
@@ -79,14 +82,16 @@ export async function PUT(request: Request) {
     }
 
     if (paymentMobile) {
+      // Actualizar registro existente
       paymentMobile = await prisma.paymentMobile.update({
         where: { id: paymentMobile.id },
         data: updateData
       });
     } else {
+      // Crear nuevo registro — imageUrl es ahora nullable
       paymentMobile = await prisma.paymentMobile.create({
         data: {
-          imageUrl: imageUrl || "",
+          imageUrl: imageUrl || null,
           cedula: cedula || null,
           telefono: telefono || null,
           destino: destino || null,
@@ -95,6 +100,7 @@ export async function PUT(request: Request) {
       });
     }
 
+    // Auditoría
     await prisma.auditLog.create({
       data: {
         actorId: auth.userId,
@@ -122,4 +128,3 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Error al actualizar datos de pago móvil" }, { status: 500 });
   }
 }
-
