@@ -43,19 +43,22 @@ export async function sendEmail(to: string, subject: string, html: string, text?
   }
 }
 
+// Asegura que la URL base tenga protocolo (para enlaces en emails/PDFs)
+function normalizeBaseUrl(url: string): string {
+  const u = url.trim();
+  if (!u) return "http://localhost:3000";
+  if (u.startsWith("http://") || u.startsWith("https://")) return u;
+  return u.startsWith("localhost") ? `http://${u}` : `https://${u}`;
+}
+
 // Función helper para obtener la URL base de la aplicación
 function getAppUrl(): string {
-  // Prioridad 1: NEXT_PUBLIC_APP_URL (si está definida)
   if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL;
+    return normalizeBaseUrl(process.env.NEXT_PUBLIC_APP_URL);
   }
-  
-  // Prioridad 2: VERCEL_URL (automático en Vercel)
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
-  
-  // Prioridad 3: Fallback a localhost (solo desarrollo)
   return "http://localhost:3000";
 }
 
