@@ -94,6 +94,11 @@ function AdminHomePageContent() {
                   <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>Página Principal</h3>
                   <p style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Configura el carrusel de imágenes y videos de la portada principal con opciones gráficas avanzadas.</p>
                 </Link>
+
+                <Link href="/admin/en-vivo" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>En vivo</h3>
+                  <p style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Configura el enlace del reproductor (canal) y el chat en vivo que se muestran en la sección /live.</p>
+                </Link>
               </>
             )}
 

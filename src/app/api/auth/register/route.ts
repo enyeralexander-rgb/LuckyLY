@@ -171,23 +171,6 @@ export async function POST(request: Request) {
   // Enviar email de verificación
   await sendEmailVerificationEmail(user.email, verificationToken);
 
-  // Crear notificación de bienvenida personalizada
-  await prisma.notification.create({
-    data: {
-      userId: user.id,
-      type: "SYSTEM",
-      title: `¡Todo listo, ${name}! 🌟`,
-      message: `Nos alegra tenerte aquí. Hemos diseñado esta plataforma pensando en velocidad, transparencia y confianza. Tu panel de usuario está listo para usar. ¿Tienes un presentimiento ganador hoy? No lo dejes pasar.`,
-      read: false,
-      data: {
-        buttons: [
-          { label: "SORTEOS", href: "/raffles", primary: true },
-          { label: "VERIFICAR CORREO", href: "/cuenta/configuracion", primary: false }
-        ]
-      }
-    }
-  });
-
     return NextResponse.json({ 
       id: user.id, 
       email: user.email,

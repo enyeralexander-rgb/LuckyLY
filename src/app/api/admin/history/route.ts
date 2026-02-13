@@ -48,7 +48,43 @@ export async function GET(request: Request) {
       take: 100
     });
 
-    return NextResponse.json(raffles);
+    // Para cada sorteo obtener los usuarios ganadores (tickets que tienen items ganadores)
+    const rafflesWithWinners = await Promise.all(
+      raffles.map(async (r) => {
+        const winningValues = r.winningItem
+          ? r.winningItem.split(",").map((s: string) => s.trim()).filter(Boolean)
+          : [];
+        if (winningValues.length === 0) {
+          return { ...r, winnerUsers: [] as { id: string; name: string; username: string | null }[] };
+        }
+        const items = await prisma.ticketItem.findMany({
+          where: { raffleId: r.id, value: { in: winningValues } },
+          include: {
+            ticket: {
+              include: {
+                user: { select: { id: true, name: true, username: true } }
+              }
+            }
+          }
+        });
+        const seen = new Set<string>();
+        const winnerUsers = items
+          .filter((i) => {
+            const uid = i.ticket.user.id;
+            if (seen.has(uid)) return false;
+            seen.add(uid);
+            return true;
+          })
+          .map((i) => ({
+            id: i.ticket.user.id,
+            name: i.ticket.user.name,
+            username: i.ticket.user.username
+          }));
+        return { ...r, winnerUsers };
+      })
+    );
+
+    return NextResponse.json(rafflesWithWinners);
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { ticketPurchaseSchema } from "../../../../../lib/validators";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
-import { Role } from "@prisma/client";
+import { Role, Bank } from "@prisma/client";
+
+const VALID_BANKS: string[] = Object.values(Bank);
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -27,11 +29,39 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const totalPaid = Number(raffle.pricePerSlot) * items.length;
 
     const paymentMethod = body.paymentMethod || null;
-    const paymentMobileRef = body.paymentMobileRef || null;
+    let paymentMobileRef: string | null = typeof body.paymentMobileRef === "string" ? body.paymentMobileRef.trim() : null;
+    let paymentMobileBank: Bank | null = typeof body.paymentMobileBank === "string" && VALID_BANKS.includes(body.paymentMobileBank) ? (body.paymentMobileBank as Bank) : null;
 
-    // Validar referencia de pago móvil si el método es MOBILE
-    if (paymentMethod === "MOBILE" && !paymentMobileRef) {
-      return NextResponse.json({ error: "Debes proporcionar el número de referencia del pago móvil" }, { status: 400 });
+    // Validar pago móvil: Banco + Referencia + Fecha (combinación única)
+    if (paymentMethod === "MOBILE") {
+      if (!paymentMobileRef) {
+        return NextResponse.json({ error: "Debes proporcionar el número de referencia del pago móvil" }, { status: 400 });
+      }
+      if (!/^\d+$/.test(paymentMobileRef)) {
+        return NextResponse.json({ error: "La referencia debe contener solo dígitos" }, { status: 400 });
+      }
+      if (paymentMobileRef.length < 6 || paymentMobileRef.length > 12) {
+        return NextResponse.json({ error: "La referencia debe tener entre 6 y 12 dígitos" }, { status: 400 });
+      }
+      if (!paymentMobileBank) {
+        return NextResponse.json({ error: "Debes indicar el banco desde el cual realizaste el pago. Valores válidos: " + VALID_BANKS.join(", ") }, { status: 400 });
+      }
+      // Comprobar que la combinación Banco + Referencia + Fecha (hoy) no exista ya
+      const now = new Date();
+      const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+      const dayEnd = new Date(dayStart);
+      dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+      const duplicate = await prisma.ticket.findFirst({
+        where: {
+          paymentMobileRef,
+          paymentMobileBank,
+          purchasedAt: { gte: dayStart, lt: dayEnd }
+        },
+        select: { id: true }
+      });
+      if (duplicate) {
+        return NextResponse.json({ error: "Esta referencia ya se registro." }, { status: 400 });
+      }
     }
 
     const ticket = await prisma.$transaction(async (tx) => {
@@ -72,6 +102,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
           status: ticketStatus,
           paymentMethod: paymentMethod || null,
           paymentMobileRef: paymentMobileRef || null,
+          paymentMobileBank: paymentMobileBank || null,
           ticketItems: {
             createMany: {
               data: items.map((value) => ({ 

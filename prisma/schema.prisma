@@ -43,6 +43,7 @@ model User {
   updatedRules            Rules[]                  @relation("RulesUpdater")
   updatedPaymentMobile    PaymentMobile[]          @relation("PaymentMobileUpdater")
   updatedSocialMedia      SocialMedia[]            @relation("SocialMediaUpdater")
+  updatedLiveConfig       LiveConfig[]             @relation("LiveConfigUpdater")
   createdReferralLinks    ReferralLink[]           @relation("ReferralLinkCreator")
   referralVisits          ReferralVisit[]          @relation("ReferralUser")
   favoriteRaffles         FavoriteRaffle[]
@@ -94,23 +95,25 @@ model Raffle {
 }
 
 model Ticket {
-  id               String         @id @default(cuid())
-  raffleId         String
-  userId           String
-  items            Json
-  totalPaid        Decimal        @db.Decimal(10, 2)
-  purchasedAt      DateTime       @default(now())
-  status           String         @default("PENDING")
-  paymentMethod    PaymentMethod?
-  paymentMobileRef String?
-  ticketItems      TicketItem[]
-  prizeClaim       PrizeClaim?
-  raffle           Raffle         @relation(fields: [raffleId], references: [id])
-  user             User           @relation(fields: [userId], references: [id])
+  id                  String         @id @default(cuid())
+  raffleId            String
+  userId              String
+  items               Json
+  totalPaid           Decimal        @db.Decimal(10, 2)
+  purchasedAt         DateTime       @default(now())
+  status              String         @default("PENDING")
+  paymentMethod       PaymentMethod?
+  paymentMobileRef    String?
+  paymentMobileBank   Bank?          // Banco desde el cual se realizó el pago móvil (para verificación Banco+Ref+Fecha)
+  ticketItems         TicketItem[]
+  prizeClaim          PrizeClaim?
+  raffle              Raffle         @relation(fields: [raffleId], references: [id])
+  user                User           @relation(fields: [userId], references: [id])
 
   @@index([raffleId])
   @@index([userId, purchasedAt])
   @@index([status])
+  @@index([paymentMobileBank, paymentMobileRef, purchasedAt])
 }
 
 model PrizeClaim {
@@ -188,16 +191,22 @@ model PaymentMobile {
 }
 
 model SocialMedia {
-  id          String   @id @default(cuid())
-  facebook    String?
-  instagram   String?
-  twitter     String?
-  youtube     String?
-  tiktok      String?
-  whatsapp    String?
-  updatedAt   DateTime @updatedAt
-  updatedById String?
-  updatedBy   User?    @relation("SocialMediaUpdater", fields: [updatedById], references: [id])
+  id               String   @id @default(cuid())
+  facebook         String?
+  instagram        String?
+  twitter          String?
+  youtube          String?
+  tiktok           String?
+  whatsapp         String?
+  facebookEnabled  Boolean  @default(true)
+  instagramEnabled Boolean  @default(true)
+  twitterEnabled   Boolean  @default(true)
+  youtubeEnabled   Boolean  @default(true)
+  tiktokEnabled    Boolean  @default(true)
+  whatsappEnabled  Boolean  @default(true)
+  updatedAt        DateTime @updatedAt
+  updatedById      String?
+  updatedBy        User?    @relation("SocialMediaUpdater", fields: [updatedById], references: [id])
 }
 
 model Notification {
@@ -448,6 +457,18 @@ model HomePageConfig {
   updatedById String?
   updatedAt   DateTime @updatedAt
   createdAt   DateTime @default(now())
+
+  @@index([updatedById])
+}
+
+model LiveConfig {
+  id               String   @id @default(cuid())
+  streamUrl        String?  // URL del iframe del reproductor (ej. Kick)
+  chatIframeUrl    String?  // URL del iframe del chat (ej. Botrix)
+  updatedById      String?
+  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now())
+  updatedBy        User?    @relation("LiveConfigUpdater", fields: [updatedById], references: [id])
 
   @@index([updatedById])
 }
