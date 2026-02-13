@@ -573,14 +573,14 @@ function PaginaPrincipalContent() {
               >
                 <option value="contain">Contener (Mostrar imagen completa - Recomendado)</option>
                 <option value="cover">Cubrir (Llenar todo el espacio, puede recortar)</option>
-                <option value="auto">Autoajustar (Llenar todo el espacio sin recortar, mostrando la imagen completa)</option>
+                <option value="auto">Autoajustar (Imagen completa visible, responsive en móvil, tablet y escritorio)</option>
               </select>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--text-tertiary)" }}>
+              <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>
                 {config.heroImageSize === "contain" 
                   ? "✓ La imagen se mostrará completa sin recortes" 
                   : config.heroImageSize === "cover"
                   ? "⚠ La imagen puede recortarse para llenar todo el espacio"
-                  : "✓ La imagen se ajustará automáticamente para llenar todo el espacio sin dejar vacíos arriba o abajo, preservando sus proporciones originales (sin estirar)"}
+                  : "✓ Autoajustar: imagen completa sin recortar, adaptada al tamaño de pantalla (responsive)."}
               </div>
             </div>
 
