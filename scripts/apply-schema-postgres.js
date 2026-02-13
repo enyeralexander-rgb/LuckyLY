@@ -60,6 +60,14 @@ async function applySchema() {
     return true;
   } catch (error) {
     console.error('❌ Error al aplicar migraciones:', error.message);
+    
+    if (error.message.includes('P3005')) {
+      console.log('\n💡 SUGERENCIA DE SOLUCIÓN:');
+      console.log('   La base de datos tiene datos pero no tiene historial de migraciones.');
+      console.log('   Para arreglar esto permanentemente, ejecuta en tu terminal local contra producción:');
+      console.log('   npx prisma migrate resolve --applied 0_init\n');
+    }
+
     console.log('⚠️  Intentando con prisma db push (sin --force-reset)...\n');
     
     try {
