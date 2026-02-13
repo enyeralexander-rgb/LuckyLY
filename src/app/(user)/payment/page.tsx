@@ -370,7 +370,7 @@ function PaymentContent() {
                           <div style={{ display: "grid", gap: ".5rem", fontSize: ".875rem" }}>
                             {paymentMobileData.cedula && (
                               <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
-                                <strong style={{ color: "#3E3E3C", minWidth: "80px" }}>CÉDULA:</strong>
+                                <strong style={{ color: "#3E3E3C", minWidth: "90px" }}>CÉDULA:</strong>
                                 <span
                                   onClick={() => {
                                     navigator.clipboard.writeText(paymentMobileData.cedula!);
@@ -408,9 +408,49 @@ function PaymentContent() {
                                 </button>
                               </div>
                             )}
+                            {paymentMobileData.destino && (
+                              <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
+                                <strong style={{ color: "#3E3E3C", minWidth: "90px" }}>BANCO:</strong>
+                                <span
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(paymentMobileData.destino!);
+                                    alert("Banco copiado al portapapeles");
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    padding: ".5rem",
+                                    background: "#fff",
+                                    borderRadius: "4px",
+                                    border: "1px solid #d4d4c4",
+                                    cursor: "pointer",
+                                    userSelect: "all",
+                                    color: "#3E3E3C"
+                                  }}
+                                >
+                                  {paymentMobileData.destino}
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(paymentMobileData.destino!);
+                                    alert("Banco copiado al portapapeles");
+                                  }}
+                                  style={{
+                                    padding: ".5rem",
+                                    background: "#85BB65",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    cursor: "pointer",
+                                    fontSize: ".75rem"
+                                  }}
+                                >
+                                  📋
+                                </button>
+                              </div>
+                            )}
                             {paymentMobileData.telefono && (
                               <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
-                                <strong style={{ color: "#3E3E3C", minWidth: "80px" }}>TELÉFONO:</strong>
+                                <strong style={{ color: "#3E3E3C", minWidth: "90px" }}>TELÉFONO:</strong>
                                 <span
                                   onClick={() => {
                                     navigator.clipboard.writeText(paymentMobileData.telefono!);
@@ -433,46 +473,6 @@ function PaymentContent() {
                                   onClick={() => {
                                     navigator.clipboard.writeText(paymentMobileData.telefono!);
                                     alert("Teléfono copiado al portapapeles");
-                                  }}
-                                  style={{
-                                    padding: ".5rem",
-                                    background: "#85BB65",
-                                    color: "#fff",
-                                    border: "none",
-                                    borderRadius: "4px",
-                                    cursor: "pointer",
-                                    fontSize: ".75rem"
-                                  }}
-                                >
-                                  📋
-                                </button>
-                              </div>
-                            )}
-                            {paymentMobileData.destino && (
-                              <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
-                                <strong style={{ color: "#3E3E3C", minWidth: "80px" }}>DESTINO:</strong>
-                                <span
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(paymentMobileData.destino!);
-                                    alert("Destino copiado al portapapeles");
-                                  }}
-                                  style={{
-                                    flex: 1,
-                                    padding: ".5rem",
-                                    background: "#fff",
-                                    borderRadius: "4px",
-                                    border: "1px solid #d4d4c4",
-                                    cursor: "pointer",
-                                    userSelect: "all",
-                                    color: "#3E3E3C"
-                                  }}
-                                >
-                                  {paymentMobileData.destino}
-                                </span>
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(paymentMobileData.destino!);
-                                    alert("Destino copiado al portapapeles");
                                   }}
                                   style={{
                                     padding: ".5rem",
