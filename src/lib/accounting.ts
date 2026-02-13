@@ -60,6 +60,9 @@ export type ContabilidadGlobal = {
 /**
  * Totales de contabilidad: INGRESOS, EGRESOS, GANANCIAS.
  * Única fuente de verdad para el módulo Estadísticas, PDF y dashboard.
+ *
+ * EGRESOS: usa PrizeClaim.paidAmount; para claims legacy con paidAmount=NULL,
+ * estima el monto desde raffle.prizes según la posición del ganador.
  */
 export async function getContabilidadGlobal(options?: ContabilidadOptions): Promise<ContabilidadGlobal> {
   const dateStart = options?.dateStart;
@@ -67,31 +70,74 @@ export async function getContabilidadGlobal(options?: ContabilidadOptions): Prom
   const egressStart = options?.dateStartEgress ?? dateStart;
   const egressEnd = options?.dateEndEgress ?? dateEnd;
 
-  const [revenueAgg, prizesAgg] = await Promise.all([
-    prisma.ticket.aggregate({
-      where: {
-        status: "CONFIRMED",
-        ...(dateStart != null && dateEnd != null ? { purchasedAt: { gte: dateStart, lte: dateEnd } } : {})
-      },
-      _sum: { totalPaid: true }
-    }),
-    prisma.prizeClaim.aggregate({
-      where: {
-        status: "PAID",
-        ...(egressStart != null && egressEnd != null ? { processedAt: { gte: egressStart, lte: egressEnd } } : {})
-      },
-      _sum: { paidAmount: true }
-    })
-  ]);
+  const dateFilter = dateStart != null && dateEnd != null ? { purchasedAt: { gte: dateStart, lte: dateEnd } } : {};
+  const egressDateFilter = egressStart != null && egressEnd != null ? { processedAt: { gte: egressStart, lte: egressEnd } } : {};
 
+  // INGRESOS: suma directa (siempre tiene totalPaid)
+  const revenueAgg = await prisma.ticket.aggregate({
+    where: { status: "CONFIRMED", ...dateFilter },
+    _sum: { totalPaid: true }
+  });
   const ingresos = Number(revenueAgg._sum.totalPaid ?? 0);
-  const egresos = Number(prizesAgg._sum.paidAmount ?? 0);
+
+  // EGRESOS: suma de paidAmount + fallback para claims con paidAmount NULL
+  const paidClaims = await prisma.prizeClaim.findMany({
+    where: { status: "PAID", ...egressDateFilter },
+    select: {
+      paidAmount: true,
+      ticket: {
+        select: {
+          items: true,
+          raffle: { select: { winningItem: true, prizes: true } }
+        }
+      }
+    }
+  });
+
+  let egresos = 0;
+  for (const claim of paidClaims) {
+    if (claim.paidAmount != null) {
+      egresos += Number(claim.paidAmount);
+    } else {
+      // Fallback: estimar desde raffle.prizes
+      const estimated = estimatePrizeFromRaffle(
+        claim.ticket.raffle?.winningItem ?? null,
+        claim.ticket.raffle?.prizes ?? null,
+        claim.ticket.items
+      );
+      egresos += estimated;
+    }
+  }
 
   return {
     ingresos,
     egresos,
     ganancias: ingresos - egresos
   };
+}
+
+/** Estima el monto del premio según la posición del ganador en raffle.prizes */
+function estimatePrizeFromRaffle(
+  winningItem: string | null,
+  prizes: unknown,
+  ticketItems: unknown
+): number {
+  if (!winningItem || !prizes || !Array.isArray(prizes) || prizes.length === 0) return 0;
+  const winners = winningItem.split(",").map(s => s.trim()).filter(Boolean);
+  const items = Array.isArray(ticketItems) ? ticketItems.filter((x): x is string => typeof x === "string") : [];
+  let winnerIndex = -1;
+  for (const item of items) {
+    const idx = winners.indexOf(item);
+    if (idx !== -1 && (winnerIndex === -1 || idx < winnerIndex)) winnerIndex = idx;
+  }
+  if (winnerIndex < 0 || winnerIndex >= prizes.length) return 0;
+  const raw = prizes[winnerIndex];
+  if (typeof raw === "number") return raw;
+  if (typeof raw === "string") {
+    const match = raw.trim().match(/(\d+(?:[.,]\d+)?)/);
+    return match ? parseFloat(match[1].replace(",", ".")) || 0 : parseFloat(raw) || 0;
+  }
+  return 0;
 }
 
 // -----------------------------------------------------------------------------

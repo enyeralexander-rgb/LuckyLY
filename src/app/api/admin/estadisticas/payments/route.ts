@@ -16,14 +16,22 @@ export async function GET(request: Request) {
     const userId = searchParams.get("userId");
     const paymentMethod = searchParams.get("paymentMethod");
     const raffleId = searchParams.get("raffleId");
+    const status = searchParams.get("status") || "CONFIRMED"; // CONFIRMED, PENDING, or all
+    const refSearch = searchParams.get("refSearch");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "50", 10);
     const skip = (page - 1) * limit;
 
     // Construir filtros
-    const where: any = {
-      status: "CONFIRMED" // Solo pagos confirmados
-    };
+    const where: any = {};
+    // Status filter: default CONFIRMED for backward compat
+    if (status && status !== "all") {
+      where.status = status;
+    } else if (status === "all") {
+      where.status = { in: ["CONFIRMED", "PENDING"] };
+    } else {
+      where.status = "CONFIRMED";
+    }
 
     // Filtro por fecha (mismo criterio que estadísticas: inicio/fin de día para alinear con purchasedAt)
     if (startDate || endDate) {
@@ -55,8 +63,13 @@ export async function GET(request: Request) {
       where.raffleId = raffleId;
     }
 
-    // Obtener tickets con información del usuario y sorteo
-    const [tickets, total] = await Promise.all([
+    // Filtro por referencia de pago
+    if (refSearch) {
+      where.paymentMobileRef = { contains: refSearch, mode: "insensitive" };
+    }
+
+    // Obtener tickets con información del usuario y sorteo + total acumulado
+    const [tickets, total, totalSumAgg] = await Promise.all([
       prisma.ticket.findMany({
         where,
         include: {
@@ -81,7 +94,11 @@ export async function GET(request: Request) {
         skip,
         take: limit
       }),
-      prisma.ticket.count({ where })
+      prisma.ticket.count({ where }),
+      prisma.ticket.aggregate({
+        where,
+        _sum: { totalPaid: true }
+      })
     ]);
 
     // Helper para obtener label del tipo de sorteo
@@ -107,7 +124,7 @@ export async function GET(request: Request) {
         metodoPago: ticket.paymentMethod || "N/A",
         monto: Number(ticket.totalPaid),
         referenciaPago: ticket.paymentMobileRef || null,
-        // Nuevos campos
+        status: ticket.status,
         cuposComprados: items.join(", "),
         cantidadCupos: items.length,
         tituloSorteo: ticket.raffle.title,
@@ -117,6 +134,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       payments,
+      totalSum: Number(totalSumAgg._sum.totalPaid ?? 0),
       pagination: {
         page,
         limit,

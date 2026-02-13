@@ -172,6 +172,27 @@ function HistorialPageContent() {
                       )}
                     </div>
                   </div>
+                  {/* Contabilidad del sorteo */}
+                  {raffle.contabilidad && (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem", padding: "1rem", background: "var(--bg-secondary, #f8f9fa)", borderRadius: "8px", marginTop: "0.5rem" }}>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 600 }}>Ingresos</div>
+                        <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#22c55e" }}>{raffle.contabilidad.ingresos.toFixed(2)} Bs.</div>
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 600 }}>Egresos</div>
+                        <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#ef4444" }}>{raffle.contabilidad.egresos.toFixed(2)} Bs.</div>
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 600 }}>Ganancia</div>
+                        <div style={{ fontSize: "1.125rem", fontWeight: 700, color: raffle.contabilidad.ganancias >= 0 ? "#3b82f6" : "#ef4444" }}>{raffle.contabilidad.ganancias.toFixed(2)} Bs.</div>
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 600 }}>Tickets</div>
+                        <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)" }}>{raffle.contabilidad.ticketsVendidos}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
