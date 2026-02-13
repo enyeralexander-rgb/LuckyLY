@@ -17,9 +17,10 @@ const nextConfig = {
     ? { output: "standalone" } 
     : {}),
 
-  // Headers de seguridad (Fase 1.2 – Plan de remediación)
+  // Headers de seguridad + Cache-Control (cache busting)
   async headers() {
     return [
+      // Seguridad global
       {
         source: "/:path*",
         headers: [
@@ -27,6 +28,36 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+      // HTML pages — nunca cachear (siempre pedir al servidor)
+      {
+        source: "/((?!_next/static|_next/image|api|favicon.ico).*)",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Pragma", value: "no-cache" },
+          { key: "Expires", value: "0" },
+        ],
+      },
+      // Static assets — inmutable (ya tienen hash en nombre de archivo)
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      // API routes — nunca cachear
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "Cache-Control", value: "no-store, max-age=0" },
+        ],
+      },
+      // Imágenes estáticas — cachear 1 día
+      {
+        source: "/_next/image/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=3600" },
         ],
       },
     ];
