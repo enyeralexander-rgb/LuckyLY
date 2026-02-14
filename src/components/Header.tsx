@@ -55,13 +55,13 @@ export function Header() {
       clearStoredAuth();
       setAuth(null);
       setUserData(null);
-      window.location.href = "/auth/login";
+      window.location.href = "/";
     } catch (err) {
       console.error("Error al cerrar sesión:", err);
       clearStoredAuth();
       setAuth(null);
       setUserData(null);
-      window.location.href = "/auth/login";
+      window.location.href = "/";
     }
   }
 

@@ -1,102 +1,50 @@
 import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
-import { prisma } from "../../../../../../lib/prisma";
+export const dynamic = "force-dynamic";
+import * as db from "../../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
 import { logger } from "../../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import { parsePeriodRange } from "../../../../../../lib/dateRange";
+import type { Role } from "../../../../../../lib/db-types";
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const auth = requireAuth(request, [Role.MASTER]);
+    requireAuth(request, ["MASTER"] as Role[]);
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "7d";
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    let dateStart: Date;
-    let dateEnd: Date = new Date();
+    const { dateStart, dateEnd } = parsePeriodRange(period, startDate ?? undefined, endDate ?? undefined);
 
-    // Calcular fechas según el período
-    if (period === "custom" && startDate && endDate) {
-      dateStart = new Date(startDate);
-      dateEnd = new Date(endDate);
-      dateEnd.setHours(23, 59, 59, 999);
-    } else if (period === "24h") {
-      dateStart = new Date();
-      dateStart.setHours(dateStart.getHours() - 24);
-    } else if (period === "7d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 7);
-    } else if (period === "30d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 30);
-    } else if (period === "90d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 90);
-    } else if (period === "180d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 180);
-    } else if (period === "365d") {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 365);
-    } else if (period === "year") {
-      dateStart = new Date(new Date().getFullYear(), 0, 1);
-      dateEnd = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999);
-    } else if (period === "all") {
-      dateStart = new Date("2026-01-01");
-    } else {
-      dateStart = new Date();
-      dateStart.setDate(dateStart.getDate() - 7);
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: params.id },
-      include: {
-        tickets: {
-          where: {
-            status: "CONFIRMED",
-            purchasedAt: {
-              gte: dateStart,
-              lte: dateEnd
-            }
-          },
-          select: {
-            totalPaid: true,
-            purchasedAt: true,
-            raffle: {
-              select: {
-                title: true,
-                type: true
-              }
-            }
-          }
-        }
-      }
-    });
-
+    const user = await db.users.findById(params.id);
     if (!user) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
-
     if (user.role !== "USER") {
       return NextResponse.json({ error: "El usuario no es un cliente" }, { status: 400 });
     }
 
-    const totalSpent = user.tickets.reduce((sum, t) => sum + Number(t.totalPaid), 0);
+    const allTickets = await db.tickets.findMany({
+      where: { userId: user.id, status: "CONFIRMED" },
+      take: 10000,
+    });
+    const ticketsInRange = allTickets.filter(
+      (t) => new Date(t.purchasedAt) >= dateStart && new Date(t.purchasedAt) <= dateEnd
+    );
 
-    // Datos por día para el gráfico
+    const raffleIds = [...new Set(ticketsInRange.map((t) => t.raffleId))];
+    const raffles = await Promise.all(raffleIds.map((id) => db.raffles.findById(id)));
+    const raffleMap = Object.fromEntries(raffles.filter(Boolean).map((r) => [r!.id, r!]));
+
+    const totalSpent = ticketsInRange.reduce((sum, t) => sum + Number(t.totalPaid), 0);
     const purchasesByDay: Record<string, number> = {};
-    user.tickets.forEach((ticket) => {
+    ticketsInRange.forEach((ticket) => {
       const date = new Date(ticket.purchasedAt).toISOString().split("T")[0];
       purchasesByDay[date] = (purchasesByDay[date] || 0) + Number(ticket.totalPaid);
     });
-
     const chartData = Object.entries(purchasesByDay)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, value]) => ({
-        date,
-        value: Number(value.toFixed(2))
-      }));
+      .map(([date, value]) => ({ date, value: Number(value.toFixed(2)) }));
 
     return NextResponse.json({
       user: {
@@ -109,21 +57,18 @@ export async function GET(request: Request, { params }: { params: { id: string }
         nationalId: user.nationalId,
         nationalIdType: user.nationalIdType,
         bank: user.bank,
-        createdAt: user.createdAt.toISOString()
+        createdAt: new Date(user.createdAt).toISOString(),
       },
       totalSpent: Number(totalSpent.toFixed(2)),
-      purchaseCount: user.tickets.length,
+      purchaseCount: ticketsInRange.length,
       chartData,
-      tickets: user.tickets.map(t => ({
+      tickets: ticketsInRange.map((t) => ({
         totalPaid: Number(t.totalPaid),
-        purchasedAt: t.purchasedAt.toISOString(),
-        raffleTitle: t.raffle.title,
-        raffleType: t.raffle.type
+        purchasedAt: new Date(t.purchasedAt).toISOString(),
+        raffleTitle: raffleMap[t.raffleId]?.title ?? "-",
+        raffleType: raffleMap[t.raffleId]?.type ?? "-",
       })),
-      period: {
-        start: dateStart.toISOString(),
-        end: dateEnd.toISOString()
-      }
+      period: { start: dateStart.toISOString(), end: dateEnd.toISOString() },
     });
   } catch (err) {
     if (err instanceof AuthError) {

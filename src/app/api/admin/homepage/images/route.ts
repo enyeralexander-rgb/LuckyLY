@@ -4,14 +4,15 @@ import { readdir } from "fs/promises";
 import { join } from "path";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { logger } from "../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../lib/db-types";
 
+const ROLES: Role[] = ["SUPERADMIN", "MASTER"];
 const PREFIX = "carousel/";
 const ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".mp4", ".webm"];
 
 export async function GET(request: Request) {
   try {
-    requireAuth(request, [Role.SUPERADMIN, Role.MASTER]);
+    requireAuth(request, ROLES);
 
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     const blobImages: { name: string; url: string; type: "image" | "video" }[] = [];

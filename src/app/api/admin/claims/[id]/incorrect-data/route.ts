@@ -1,56 +1,49 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../../lib/prisma";
+import { prizeClaims, users, tickets, raffles, auditLog } from "../../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
 import { logger } from "../../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../../lib/db-types";
+import { newId } from "../../../../../../lib/id";
+import { sendIncorrectBankDataEmail } from "../../../../../../lib/email";
+
+const ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER]);
+    const auth = requireAuth(request, ROLES);
 
-    const claim = await prisma.prizeClaim.findUnique({
-      where: { id: params.id },
-      include: { 
-        user: { select: { name: true, email: true } }, 
-        ticket: { include: { raffle: true } } 
-      }
-    });
-
+    const claim = await prizeClaims.findById(params.id);
     if (!claim) {
       return NextResponse.json({ error: "Reclamo no encontrado" }, { status: 404 });
     }
 
-    // Enviar email al usuario
-    const { sendIncorrectBankDataEmail } = await import("../../../../../../lib/email");
-    await sendIncorrectBankDataEmail(
-      claim.user.email,
-      claim.user.name,
-      claim.ticket.raffle.title
-    );
+    const user = await users.findById(claim.userId);
+    const ticket = await tickets.findById(claim.ticketId);
+    const raffle = ticket ? await raffles.findById(ticket.raffleId) : null;
 
-    // Registrar log de acción
-    if (auth.role === Role.AGENT || auth.role === Role.CONTABLE || auth.role === Role.SUPERADMIN || auth.role === Role.MASTER) {
-      const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
-      await prisma.auditLog.create({
-        data: {
-          actorId: auth.userId,
-          actorRole: auth.role,
-          action: "MARK_CLAIM_INCORRECT_DATA",
-          entity: "PrizeClaim",
-          entityId: params.id,
-          ip,
-          meta: {
-            userId: claim.userId,
-            userName: claim.user.name,
-            userEmail: claim.user.email,
-            raffleId: claim.ticket.raffleId,
-            raffleTitle: claim.ticket.raffle.title,
-            action: "DATOS_INCORRECTOS",
-            processedAt: new Date().toISOString()
-          }
-        }
-      });
+    if (user && raffle) {
+      await sendIncorrectBankDataEmail(user.email, user.name, raffle.title);
     }
+
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    await auditLog.create({
+      id: newId(),
+      actorId: auth.userId,
+      actorRole: auth.role,
+      action: "MARK_CLAIM_INCORRECT_DATA",
+      entity: "PrizeClaim",
+      entityId: params.id,
+      ip,
+      meta: {
+        userId: claim.userId,
+        userName: user?.name ?? "N/A",
+        userEmail: user?.email ?? "N/A",
+        raffleId: ticket?.raffleId ?? null,
+        raffleTitle: raffle?.title ?? "N/A",
+        action: "DATOS_INCORRECTOS",
+        processedAt: new Date().toISOString(),
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

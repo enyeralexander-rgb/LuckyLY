@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
-import { prisma } from "../../../../lib/prisma";
+export const dynamic = "force-dynamic";
+import { emailVerificationToken, users } from "../../../../lib/db";
 import { logger } from "../../../../lib/logger";
 
 export async function GET(request: Request) {
@@ -12,24 +12,18 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Token requerido" }, { status: 400 });
     }
 
-    // Buscar token válido
-    const verificationToken = await prisma.emailVerificationToken.findUnique({
-      where: { token },
-      include: { user: true },
-    });
+    const verificationToken = await emailVerificationToken.findUnique({ token });
 
     if (!verificationToken) {
       return NextResponse.json({ error: "Token inválido o expirado" }, { status: 400 });
     }
 
-    // Si el token ya fue usado, verificar si el email ya está verificado
     if (verificationToken.used) {
-      // Verificar si el usuario ya tiene el email verificado
       if (verificationToken.user?.emailVerified) {
-        return NextResponse.json({ 
-          success: true, 
+        return NextResponse.json({
+          success: true,
           message: "Email ya verificado previamente",
-          alreadyVerified: true 
+          alreadyVerified: true,
         }, { status: 200 });
       }
       return NextResponse.json({ error: "Este enlace ya fue utilizado" }, { status: 400 });
@@ -39,21 +33,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "El enlace ha expirado. Solicita uno nuevo." }, { status: 400 });
     }
 
-    // Verificar email y marcar token como usado
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: verificationToken.userId },
-        data: { emailVerified: true, emailVerifiedAt: new Date() },
-      }),
-      prisma.emailVerificationToken.update({
-        where: { id: verificationToken.id },
-        data: { used: true },
-      }),
-    ]);
+    await users.update(verificationToken.userId, { emailVerified: true, emailVerifiedAt: new Date() });
+    await emailVerificationToken.update({ id: verificationToken.id }, { used: true });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Email verificado exitosamente" 
+    return NextResponse.json({
+      success: true,
+      message: "Email verificado exitosamente",
     }, { status: 200 });
   } catch (error) {
     logger.error("Error en verify-email", { error: error instanceof Error ? error.message : String(error) });

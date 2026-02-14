@@ -8,12 +8,12 @@ function VerifyEmailPageContent() {
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
-  const hasVerified = useRef(false); // Prevenir doble verificación
+  const hasVerified = useRef(false);
+  const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    // Prevenir múltiples llamadas
     if (hasVerified.current) return;
-    
+
     const token = searchParams.get("token");
     if (!token) {
       setStatus("error");
@@ -25,22 +25,37 @@ function VerifyEmailPageContent() {
 
     fetch(`/api/auth/verify-email?token=${token}`, {
       method: "GET",
-      headers: { "Accept": "application/json" },
-      redirect: "manual" // No seguir redirects automáticamente
+      headers: { Accept: "application/json" },
+      redirect: "manual",
+      credentials: "same-origin",
+      cache: "no-store",
     })
       .then(async (res) => {
         const data = await res.json().catch(() => null);
-        
+
         if (res.ok && data?.success) {
           setStatus("success");
-          if (data.alreadyVerified) {
-            setMessage("Tu email ya estaba verificado. Serás redirigido al login...");
-          } else {
-            setMessage("¡Email verificado exitosamente! Serás redirigido al login...");
-          }
-          setTimeout(() => {
-            router.push("/auth/login?verified=true");
-          }, 3000);
+          setMessage(
+            data.alreadyVerified
+              ? "Tu email ya estaba verificado. Redirigiendo..."
+              : "¡Email verificado exitosamente! Redirigiendo..."
+          );
+          redirectTimeoutRef.current = setTimeout(async () => {
+            try {
+              const sessionRes = await fetch("/api/auth/verify", {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "no-store",
+              });
+              if (sessionRes.ok) {
+                router.push("/cuenta/configuracion");
+              } else {
+                router.push("/auth/login?verified=true");
+              }
+            } catch {
+              router.push("/auth/login?verified=true");
+            }
+          }, 1500);
         } else {
           setStatus("error");
           setMessage(data?.error || "Error al verificar email");
@@ -51,6 +66,13 @@ function VerifyEmailPageContent() {
         setStatus("error");
         setMessage("Error de conexión al verificar email");
       });
+
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+        redirectTimeoutRef.current = null;
+      }
+    };
   }, [searchParams, router]);
 
   return (

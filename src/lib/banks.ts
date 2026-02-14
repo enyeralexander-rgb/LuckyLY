@@ -10,7 +10,7 @@ export type BankInfo = {
 };
 
 /**
- * Cada banco tiene un enumValue que corresponde al enum Bank de Prisma.
+ * Cada banco tiene un enumValue que corresponde al enum Bank en la base de datos.
  * Ahora todos los bancos tienen un valor único en el enum.
  */
 export const VENEZUELAN_BANKS: BankInfo[] = [
@@ -83,7 +83,7 @@ export function formatBankDisplay(bank: string | null): string {
 }
 
 /**
- * Mapea el nombre del banco al valor del enum Bank de Prisma
+ * Mapea el nombre del banco al valor del enum Bank en la base de datos
  */
 export function mapBankNameToEnum(bankName: string): string | null {
   if (!bankName) return null;

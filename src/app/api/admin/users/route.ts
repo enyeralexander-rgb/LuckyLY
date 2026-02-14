@@ -1,116 +1,83 @@
 import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
-import { prisma } from "../../../../lib/prisma";
-import { requireAuth, AuthError } from "../../../../lib/auth";
-import { logger } from "../../../../lib/logger";
-import { Role } from "@prisma/client";
+import { users } from "@/lib/db";
+import { requireAuth, AuthError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
+import type { Role } from "@/lib/db-types";
+
+const ADMIN_ROLES: Role[] = ["SUPERADMIN", "MASTER"];
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.SUPERADMIN, Role.MASTER]);
+    requireAuth(request, ADMIN_ROLES);
     const { searchParams } = new URL(request.url);
-    
-    // Parámetros de búsqueda
-    const search = searchParams.get("search") || "";
-    const searchName = searchParams.get("name") || "";
-    const searchEmail = searchParams.get("email") || "";
-    const searchCedula = searchParams.get("cedula") || "";
-    const searchTelefono = searchParams.get("telefono") || "";
-    const searchBanco = searchParams.get("banco") || "";
-    const searchFecha = searchParams.get("fecha") || "";
-    
-    // Parámetros de paginación
-    const page = parseInt(searchParams.get("page") || "1", 10);
+
+    const search = searchParams.get("search") ?? "";
+    const searchName = searchParams.get("name") ?? "";
+    const searchEmail = searchParams.get("email") ?? "";
+    const searchCedula = searchParams.get("cedula") ?? "";
+    const searchTelefono = searchParams.get("telefono") ?? "";
+    const searchBanco = searchParams.get("banco") ?? "";
+    const searchFecha = searchParams.get("fecha") ?? "";
+
+    const page = parseInt(searchParams.get("page") ?? "1", 10);
     const limit = 10;
     const skip = (page - 1) * limit;
 
-    // Construir filtros
-    const where: any = {
-      role: "USER"
-    };
-
-    // Búsqueda general (nombre, email, cédula, teléfono). bank es enum: no admite contains.
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-        { nationalId: { contains: search, mode: "insensitive" } },
-        { phoneNumber: { contains: search, mode: "insensitive" } }
-      ];
-      // Si el término coincide con un valor del enum Bank, incluirlo en la búsqueda
-      const bankValues = ["BANESCO", "VENEZUELA", "MERCANTIL", "BOD", "PROVINCIAL", "BICENTENARIO", "OTRA"];
-      const matchBank = bankValues.find((b) => b.toLowerCase().includes(search.toLowerCase()));
-      if (matchBank) {
-        where.OR = [...(where.OR as object[]), { bank: { equals: matchBank } }];
-      }
-    } else {
-      // Búsquedas específicas
-      if (searchName) {
-        where.name = { contains: searchName, mode: "insensitive" };
-      }
-      if (searchEmail) {
-        where.email = { contains: searchEmail, mode: "insensitive" };
-      }
-      if (searchCedula) {
-        where.nationalId = { contains: searchCedula, mode: "insensitive" };
-      }
-      if (searchTelefono) {
-        where.phoneNumber = { contains: searchTelefono, mode: "insensitive" };
-      }
-      if (searchBanco) {
-        const bankValues = ["BANESCO", "VENEZUELA", "MERCANTIL", "BOD", "PROVINCIAL", "BICENTENARIO", "OTRA"];
-        const matchBank = bankValues.find((b) => b.toLowerCase().includes(searchBanco.toLowerCase()));
-        if (matchBank) {
-          where.bank = { equals: matchBank };
-        }
-      }
-      if (searchFecha) {
-        // Buscar por fecha de registro (formato: YYYY-MM-DD)
-        const fechaInicio = new Date(searchFecha);
-        fechaInicio.setHours(0, 0, 0, 0);
-        const fechaFin = new Date(searchFecha);
-        fechaFin.setHours(23, 59, 59, 999);
-        where.createdAt = {
-          gte: fechaInicio,
-          lte: fechaFin
-        };
-      }
+    let createdAtGte: Date | undefined;
+    let createdAtLte: Date | undefined;
+    if (searchFecha) {
+      const fechaInicio = new Date(searchFecha);
+      fechaInicio.setHours(0, 0, 0, 0);
+      const fechaFin = new Date(searchFecha);
+      fechaFin.setHours(23, 59, 59, 999);
+      createdAtGte = fechaInicio;
+      createdAtLte = fechaFin;
     }
 
-    // Obtener total de usuarios (para paginación)
-    const total = await prisma.user.count({ where });
+    const [userList, total] = await Promise.all([
+      users.findManyAdmin({
+        search: search || undefined,
+        name: searchName || undefined,
+        email: searchEmail || undefined,
+        nationalId: searchCedula || undefined,
+        phoneNumber: searchTelefono || undefined,
+        bank: searchBanco || undefined,
+        createdAtGte,
+        createdAtLte,
+        skip,
+        take: limit,
+      }),
+      users.countAdmin({
+        search: search || undefined,
+        name: searchName || undefined,
+        email: searchEmail || undefined,
+        nationalId: searchCedula || undefined,
+        phoneNumber: searchTelefono || undefined,
+        bank: searchBanco || undefined,
+        createdAtGte,
+        createdAtLte,
+      }),
+    ]);
 
-    // Obtener usuarios con paginación
-    const users = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        documentId: true,
-        phoneNumber: true,
-        nationalId: true,
-        nationalIdType: true,
-        bank: true,
-        suspended: true,
-        suspendedReason: true,
-        createdAt: true
-      },
-      orderBy: { createdAt: "desc" },
-      skip,
-      take: limit
-    });
+    const list = userList.map((u) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      documentId: u.documentId,
+      phoneNumber: u.phoneNumber,
+      nationalId: u.nationalId,
+      nationalIdType: u.nationalIdType,
+      bank: u.bank,
+      suspended: u.suspended,
+      suspendedReason: u.suspendedReason,
+      createdAt: u.createdAt,
+    }));
 
     const totalPages = Math.ceil(total / limit);
 
     return NextResponse.json({
-      users,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages
-      }
+      users: list,
+      pagination: { page, limit, total, totalPages },
     });
   } catch (err) {
     if (err instanceof AuthError) {

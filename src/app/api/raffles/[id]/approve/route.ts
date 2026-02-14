@@ -1,57 +1,43 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../lib/prisma";
-import { requireAuth, AuthError } from "../../../../../lib/auth";
-import { logger } from "../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import * as db from "@/lib/db";
+import { requireAuth, AuthError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
+import { newId } from "@/lib/id";
+import type { Role } from "@/lib/db-types";
 
-// Aprobar un sorteo para que sea visible a los usuarios
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+const ROLES: Role[] = ["AGENT", "SUPERADMIN", "MASTER"];
+
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
+    const auth = requireAuth(request, ROLES);
     const raffleId = params.id;
 
-    // Verificar que el sorteo existe
-    const raffle = await prisma.raffle.findUnique({
-      where: { id: raffleId }
-    });
-
+    const raffle = await db.raffles.findById(raffleId);
     if (!raffle) {
       return NextResponse.json({ error: "Sorteo no encontrado" }, { status: 404 });
     }
-
     if (raffle.approved) {
       return NextResponse.json({ error: "El sorteo ya está aprobado" }, { status: 400 });
     }
 
-    // Aprobar el sorteo
-    const updatedRaffle = await prisma.raffle.update({
-      where: { id: raffleId },
-      data: {
-        approved: true,
-        approvedAt: new Date(),
-        approvedById: auth.userId
-      }
+    await db.raffles.update(raffleId, {
+      approved: true,
+      approvedAt: new Date(),
+      approvedById: auth.userId,
     });
+    const updatedRaffle = await db.raffles.findById(raffleId);
 
-    // Registrar en audit log
     try {
       const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
-      await prisma.auditLog.create({
-        data: {
-          actorId: auth.userId,
-          actorRole: auth.role,
-          action: "RAFFLE_APPROVED",
-          entity: "Raffle",
-          entityId: raffleId,
-          ip,
-          meta: {
-            raffleTitle: raffle.title,
-            raffleType: raffle.type
-          }
-        }
+      await db.auditLog.create({
+        id: newId(),
+        actorId: auth.userId,
+        actorRole: auth.role,
+        action: "RAFFLE_APPROVED",
+        entity: "Raffle",
+        entityId: raffleId,
+        ip,
+        meta: { raffleTitle: raffle.title, raffleType: raffle.type },
       });
     } catch (logError) {
       logger.error("Error al registrar audit log", { error: logError instanceof Error ? logError.message : String(logError) });
@@ -60,7 +46,7 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       message: "Sorteo aprobado exitosamente",
-      raffle: updatedRaffle
+      raffle: updatedRaffle,
     });
   } catch (err) {
     if (err instanceof AuthError) {

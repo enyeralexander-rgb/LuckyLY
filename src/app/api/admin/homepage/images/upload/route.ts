@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
 import { logger } from "../../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../../lib/db-types";
 
+const ROLES: Role[] = ["AGENT", "SUPERADMIN", "MASTER"];
 const PREFIX = "carousel/";
 
 export async function POST(request: Request) {
   try {
-    requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
+    requireAuth(request, ROLES);
 
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) {

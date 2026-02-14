@@ -38,8 +38,8 @@ export default function HomePage() {
 
   useEffect(() => {
     setMounted(true);
-    // Cargar configuración de orden y visibilidad de secciones
-    fetch("/api/public/homepage")
+    // Cargar configuración de orden y visibilidad de secciones (sin caché para ver datos actualizados)
+    fetch("/api/public/homepage", { cache: "no-store" })
       .then((r) => {
         if (!r.ok) return null;
         return r.json();

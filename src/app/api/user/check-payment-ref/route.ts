@@ -1,23 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { tickets } from "../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../lib/auth";
 import { logger } from "../../../../lib/logger";
-import { Role, Bank } from "@prisma/client";
+import type { Role, Bank } from "../../../../lib/db-types";
 
 export const dynamic = "force-dynamic";
 
 const REF_MIN_LENGTH = 6;
 const REF_MAX_LENGTH = 12;
-const VALID_BANKS: string[] = Object.values(Bank);
 
-/**
- * GET - Comprueba si la combinación Banco + Referencia + Fecha ya existe en la base de datos.
- * Query: ref (requerido), bank (requerido), date (opcional, YYYY-MM-DD; por defecto hoy).
- * Si existe un ticket con la misma combinación, la referencia no puede usarse.
- */
+const VALID_BANKS: string[] = [
+  "BANESCO", "VENEZUELA", "MERCANTIL", "BOD", "PROVINCIAL", "BICENTENARIO", "OTRA", "BANCO_100", "BANCAMIGA",
+  "BANCARIBE", "BANCO_ACTIVO", "BANCO_AGRICOLA", "BANCO_CARONI", "BANFANB", "BANCO_TESORO", "BANCO_EXTERIOR",
+  "BFC", "BANCO_INTERNACIONAL_DESARROLLO", "BNC", "BANCO_PLAZA", "BANCO_SOFITASA", "BANCRECER", "BANGENTE",
+  "BANPLUS", "DELSUR", "MI_BANCO", "N58_BANCO_DIGITAL",
+];
+
 export async function GET(request: NextRequest) {
   try {
-    requireAuth(request, [Role.USER]);
+    requireAuth(request, ["USER" as Role]);
     const ref = request.nextUrl.searchParams.get("ref")?.trim() || "";
     const bank = request.nextUrl.searchParams.get("bank")?.trim() || "";
     const dateParam = request.nextUrl.searchParams.get("date")?.trim() || "";
@@ -25,18 +26,15 @@ export async function GET(request: NextRequest) {
     if (!ref) {
       return NextResponse.json({ error: "Falta el parámetro ref" }, { status: 400 });
     }
-
     if (!/^\d+$/.test(ref)) {
       return NextResponse.json({ error: "La referencia debe contener solo dígitos" }, { status: 400 });
     }
-
     if (ref.length < REF_MIN_LENGTH || ref.length > REF_MAX_LENGTH) {
       return NextResponse.json(
         { error: `La referencia debe tener entre ${REF_MIN_LENGTH} y ${REF_MAX_LENGTH} dígitos` },
         { status: 400 }
       );
     }
-
     if (!bank || !VALID_BANKS.includes(bank)) {
       return NextResponse.json(
         { error: "Falta o es inválido el parámetro bank. Valores: " + VALID_BANKS.join(", ") },
@@ -44,7 +42,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fecha a verificar: hoy o la pasada por parámetro (YYYY-MM-DD)
     let dayStart: Date;
     let dayEnd: Date;
     if (dateParam) {
@@ -62,13 +59,11 @@ export async function GET(request: NextRequest) {
       dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
     }
 
-    const existing = await prisma.ticket.findFirst({
-      where: {
-        paymentMobileRef: ref,
-        paymentMobileBank: bank as Bank,
-        purchasedAt: { gte: dayStart, lt: dayEnd }
-      },
-      select: { id: true }
+    const existing = await tickets.findFirstByPaymentRef({
+      ref,
+      bank: bank as Bank,
+      dayStart,
+      dayEnd,
     });
 
     return NextResponse.json({ used: !!existing });

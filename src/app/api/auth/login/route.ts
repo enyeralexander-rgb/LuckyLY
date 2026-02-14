@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
+import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { prisma } from "../../../../lib/prisma";
+import { users, twoFactorAuth, auditLog } from "../../../../lib/db";
+import { newId } from "../../../../lib/id";
 import { loginSchema } from "../../../../lib/validators";
 import { logger } from "../../../../lib/logger";
-import { Role } from "@prisma/client";
-import crypto from "crypto";
+import type { Role } from "../../../../lib/db-types";
+
+const ADMIN_ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
 // Fallo rápido en desarrollo (npm run dev) si falta JWT_SECRET; en build (NODE_ENV=production) no se lanza
 if (process.env.NODE_ENV === "development" && !process.env.JWT_SECRET) {
@@ -37,10 +40,7 @@ export async function POST(request: Request) {
     }
 
     const { email, password } = parsed.data;
-    const user = await prisma.user.findUnique({ 
-      where: { email },
-      include: { twoFactorAuth: true }
-    });
+    const user = await users.findByEmail(email);
     if (!user) {
       return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
     }
@@ -60,14 +60,12 @@ export async function POST(request: Request) {
       }, { status: 403 });
     }
 
-    // Verificar si el administrador tiene 2FA habilitado
-    const adminRoles: Role[] = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER];
-    const isAdmin = adminRoles.includes(user.role);
-    if (isAdmin && user.twoFactorAuth?.enabled) {
-      // Generar token temporal para 2FA (válido por 5 minutos)
+    const twoFactor = await twoFactorAuth.findUnique({ userId: user.id });
+    const isAdmin = ADMIN_ROLES.includes(user.role);
+    if (isAdmin && twoFactor?.enabled) {
+      // Generar token temporal para 2FA (válido por 5 minutos). node:crypto es compatible en Node/Next.
       const tempToken = crypto.randomBytes(32).toString("hex");
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutos
-      
       // Guardar token temporal en la base de datos o en memoria
       // Usamos un token JWT corto para pasar al frontend
       const twoFactorToken = jwt.sign(
@@ -87,25 +85,21 @@ export async function POST(request: Request) {
       }, { status: 200 });
     }
 
-    const token = jwt.sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: "12h" });
+    const JWT_EXPIRES_IN = "12h"; // Debe coincidir con la validación en auth.ts (jwt.verify rechaza tokens expirados)
+    const token = jwt.sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     
-    // Registrar log de inicio de sesión para administradores
     if (isAdmin) {
       try {
         const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
-        await prisma.auditLog.create({
-          data: {
-            actorId: user.id,
-            actorRole: user.role,
-            action: "LOGIN",
-            entity: "User",
-            entityId: user.id,
-            ip,
-            meta: {
-              email: user.email,
-              status: "ACTIVE"
-            }
-          }
+        await auditLog.create({
+          id: newId(),
+          actorId: user.id,
+          actorRole: user.role,
+          action: "LOGIN",
+          entity: "User",
+          entityId: user.id,
+          ip,
+          meta: { email: user.email, status: "ACTIVE" }
         });
       } catch (logError) {
         // Si falla el log, no afectar el login
@@ -122,12 +116,13 @@ export async function POST(request: Request) {
       } 
     }, { status: 200 });
     
-    res.cookies.set("auth_token", token, { 
-      httpOnly: true, 
-      path: "/", 
+    res.cookies.set("auth_token", token, {
+      httpOnly: true,
+      path: "/",
       maxAge: 60 * 60 * 12,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production"
+      secure: process.env.NODE_ENV === "production",
+      // Sin domain para que use el host actual (localhost / producción)
     });
     
     return res;

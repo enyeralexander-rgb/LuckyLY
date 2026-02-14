@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import * as db from "../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../lib/auth";
 import { parsePrizeValue } from "../../../../lib/validators";
-import { Role, DrawType } from "@prisma/client";
+import { newId } from "../../../../lib/id";
+import type { Role, DrawType } from "../../../../lib/db-types";
 
-// Obtener todas las plantillas
+const ROLES: Role[] = ["AGENT", "SUPERADMIN", "MASTER"];
+
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
-    
-    const templates = await prisma.raffleTemplate.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-
+    requireAuth(request, ROLES);
+    const templates = await db.raffleTemplate.findMany();
     return NextResponse.json(templates);
   } catch (err) {
     if (err instanceof AuthError) {
@@ -22,12 +20,10 @@ export async function GET(request: Request) {
   }
 }
 
-// Crear nueva plantilla (misma regla del 70% que Crear Sorteo)
 export async function POST(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
+    const auth = requireAuth(request, ROLES);
     const body = await request.json();
-    
     const { name, description, type, pricePerSlot, slots, winnersCount, mirrorMode, prizes } = body;
 
     if (!name || !type || !pricePerSlot || !slots) {
@@ -50,32 +46,32 @@ export async function POST(request: Request) {
       }
       const totalIncome = numSlots * numPrice;
       const requiredPrizePool = totalIncome * 0.7;
-      const currentPrizePool = values.reduce((a, b) => a + b, 0);
+      const currentPrizePool = values.reduce((a: number, b: number) => a + b, 0);
       if (Math.abs(currentPrizePool - requiredPrizePool) >= 0.1) {
         return NextResponse.json(
-          {
-            error:
-              "El valor total de los premios debe ser exactamente el 70% del valor total del sorteo (Cupos * Precio)",
-          },
+          { error: "El valor total de los premios debe ser exactamente el 70% del valor total del sorteo (Cupos * Precio)" },
           { status: 400 }
         );
       }
     }
 
-    const template = await prisma.raffleTemplate.create({
-      data: {
-        name,
-        description: description || null,
-        type: type as DrawType,
-        pricePerSlot: parseFloat(pricePerSlot),
-        slots: parseInt(slots),
-        winnersCount: parseInt(winnersCount || "1"),
-        mirrorMode: mirrorMode === true,
-        prizes: prizes || null,
-        createdById: auth.userId,
-      },
+    const id = newId();
+    await db.raffleTemplate.create({
+      id,
+      name,
+      description: description || null,
+      type: type as DrawType,
+      pricePerSlot: numPrice,
+      slots: numSlots,
+      winnersCount: parseInt(winnersCount || "1", 10),
+      mirrorMode: mirrorMode === true,
+      prizes: prizeList.length ? prizeList : undefined,
+      createdById: auth.userId,
     });
-
+    const template = await db.raffleTemplate.findById(id);
+    if (!template) {
+      return NextResponse.json({ error: "Error al crear plantilla" }, { status: 500 });
+    }
     return NextResponse.json(template, { status: 201 });
   } catch (err) {
     if (err instanceof AuthError) {

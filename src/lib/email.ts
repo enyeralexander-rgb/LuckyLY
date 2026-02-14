@@ -1,6 +1,5 @@
 // @ts-ignore - nodemailer puede no estar instalado
 import nodemailer from "nodemailer";
-import { join } from "path";
 import { logger } from "./logger";
 
 // Configuración de email (usar variables de entorno en producción)
@@ -14,7 +13,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendEmail(to: string, subject: string, html: string, text?: string, attachments?: Array<{ filename: string; path: string }>) {
+export type EmailAttachment = { filename: string; path?: string; content?: Buffer };
+export async function sendEmail(to: string, subject: string, html: string, text?: string, attachments?: EmailAttachment[]) {
   try {
     // Si no hay configuración de SMTP, solo loguear en desarrollo
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
@@ -32,7 +32,7 @@ export async function sendEmail(to: string, subject: string, html: string, text?
     };
 
     if (attachments && attachments.length > 0) {
-      mailOptions.attachments = attachments;
+      mailOptions.attachments = attachments.map((a) => (a.content != null ? { filename: a.filename, content: a.content } : { filename: a.filename, path: a.path }));
     }
 
     const info = await transporter.sendMail(mailOptions);
@@ -203,7 +203,21 @@ Si no creaste una cuenta en LuckyLY, puedes ignorar este mensaje de forma segura
   return sendEmail(email, "Confirma tu correo electrónico - LuckyLY", html, text);
 }
 
-export async function sendPrizePaymentEmail(email: string, userName: string, raffleTitle: string, proofPath?: string) {
+export async function sendPrizePaymentEmail(
+  email: string,
+  userName: string,
+  raffleTitle: string,
+  bodyTemplate: string | null,
+  proofBuffer?: Buffer,
+  proofFilename?: string
+) {
+  const defaultBody = `¡Felicidades, ${userName}! 🌟
+Ganaste en LuckyLY. Te envío adjunto el comprobante de pago de tu premio.
+¡Gracias por confiar en nosotros, por ser parte de nuestra comunidad y a disfrutarlo! 🥳
+Sorteo: ${raffleTitle}`;
+  const bodyText = (bodyTemplate || defaultBody)
+    .replace(/\{\{userName\}\}/g, userName)
+    .replace(/\{\{raffleTitle\}\}/g, raffleTitle);
   const html = `
     <!DOCTYPE html>
     <html>
@@ -217,10 +231,7 @@ export async function sendPrizePaymentEmail(email: string, userName: string, raf
     </head>
     <body>
       <div class="container">
-        <h1>¡Felicidades, ${userName}! 🌟</h1>
-        <p>Ganaste en LuckyLY. Te envío adjunto el comprobante de pago de tu premio.</p>
-        <p>¡Gracias por confiar en nosotros, por ser parte de nuestra comunidad y a disfrutarlo! 🥳</p>
-        <p><strong>Sorteo:</strong> ${raffleTitle}</p>
+        <pre style="white-space: pre-wrap; font-family: inherit;">${bodyText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
         <div class="footer">
           <p>© ${new Date().getFullYear()} LuckyLY. Todos los derechos reservados.</p>
         </div>
@@ -229,9 +240,13 @@ export async function sendPrizePaymentEmail(email: string, userName: string, raf
     </html>
   `;
 
-  const attachments = proofPath ? [{ filename: "comprobante-pago.jpg", path: join(process.cwd(), "public", proofPath) }] : undefined;
+  const attachments: EmailAttachment[] = [];
+  if (proofBuffer && proofBuffer.length > 0) {
+    const ext = proofFilename?.match(/\.(jpg|jpeg|png|gif|webp)$/i)?.[1] || "jpg";
+    attachments.push({ filename: `comprobante-pago.${ext}`, content: proofBuffer });
+  }
 
-  return sendEmail(email, "Comprobante de Pago - LuckyLY", html, undefined, attachments);
+  return sendEmail(email, "Comprobante de Pago - LuckyLY", html, undefined, attachments.length ? attachments : undefined);
 }
 
 export async function sendIncorrectBankDataEmail(email: string, userName: string, raffleTitle: string) {

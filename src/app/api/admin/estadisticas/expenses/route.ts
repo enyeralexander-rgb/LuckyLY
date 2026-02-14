@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
-import { prisma } from "../../../../../lib/prisma";
+export const dynamic = "force-dynamic";
+import * as db from "../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { logger } from "../../../../../lib/logger";
-import { parsePeriodRange } from "../../../../../lib/dateRange";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../lib/db-types";
 
-/**
- * GET /api/admin/estadisticas/expenses
- * Lista paginada de EGRESOS (premios pagados) con filtros.
- */
+const ROLES: Role[] = ["CONTABLE", "MASTER"];
+
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.CONTABLE, Role.MASTER]);
+    requireAuth(request, ROLES);
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "50", 10);
@@ -24,92 +21,78 @@ export async function GET(request: Request) {
     const raffleId = searchParams.get("raffleId");
     const paymentRef = searchParams.get("paymentRef");
 
-    // Filtro de fecha por processedAt (fecha de pago del premio)
-    const where: any = { status: "PAID" };
-    if (startDate || endDate) {
-      where.processedAt = {};
-      if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        where.processedAt.gte = start;
+    let processedAtGte: Date | undefined;
+    let processedAtLte: Date | undefined;
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      processedAtGte = start;
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      processedAtLte = end;
+    }
+
+    const claims = await db.prizeClaims.findMany({
+      where: { status: "PAID", processedAtGte, processedAtLte },
+      take: 10000,
+    });
+
+    let filtered = claims;
+    if (userId) filtered = filtered.filter((c) => c.userId === userId);
+    if (raffleId || paymentRef) {
+      const ticketIds = [...new Set(claims.map((c) => c.ticketId))];
+      const ticketList = await db.tickets.findManyByIds(ticketIds);
+      const ticketMap = Object.fromEntries(ticketList.map((t) => [t.id, t]));
+      if (raffleId) filtered = filtered.filter((c) => ticketMap[c.ticketId]?.raffleId === raffleId);
+      if (paymentRef) {
+        const term = paymentRef.toLowerCase();
+        filtered = filtered.filter((c) => (c.paymentRef ?? "").toLowerCase().includes(term));
       }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        where.processedAt.lte = end;
-      }
     }
 
-    if (userId) {
-      where.userId = userId;
-    }
+    const total = filtered.length;
+    const totalSum = filtered.reduce((s, c) => s + Number(c.paidAmount ?? 0), 0);
+    const paginated = filtered.slice(skip, skip + limit);
 
-    if (raffleId) {
-      where.ticket = { raffleId };
-    }
-
-    if (paymentRef) {
-      where.paymentRef = { contains: paymentRef, mode: "insensitive" };
-    }
-
-    const [claims, total, totalSumAgg] = await Promise.all([
-      prisma.prizeClaim.findMany({
-        where,
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-          ticket: {
-            select: {
-              id: true,
-              totalPaid: true,
-              items: true,
-              raffle: { select: { id: true, title: true, type: true, winningItem: true, prizes: true } }
-            }
-          }
-        },
-        orderBy: { processedAt: "desc" },
-        skip,
-        take: limit
-      }),
-      prisma.prizeClaim.count({ where }),
-      prisma.prizeClaim.aggregate({
-        where,
-        _sum: { paidAmount: true }
-      })
+    const ticketIds = [...new Set(paginated.map((c) => c.ticketId))];
+    const [ticketList, userList] = await Promise.all([
+      db.tickets.findManyByIds(ticketIds),
+      db.users.findManyByIds([...new Set(paginated.map((c) => c.userId))]),
     ]);
+    const raffleIds = [...new Set(ticketList.map((t) => t.raffleId))];
+    const raffles = await Promise.all(raffleIds.map((id) => db.raffles.findById(id)));
+    const ticketMap = Object.fromEntries(ticketList.map((t) => [t.id, t]));
+    const userMap = Object.fromEntries(userList.map((u) => [u.id, u]));
+    const raffleMap = Object.fromEntries(raffles.filter(Boolean).map((r) => [r!.id, r!]));
 
-    const expenses = claims.map((claim) => {
+    const expenses = paginated.map((claim) => {
+      const ticket = ticketMap[claim.ticketId];
+      const raffle = ticket ? raffleMap[ticket.raffleId] : null;
+      const user = userMap[claim.userId];
       let amount = Number(claim.paidAmount ?? 0);
-      // Fallback para claims sin paidAmount
-      if (claim.paidAmount == null && claim.ticket.raffle?.prizes) {
-        amount = estimatePrize(
-          claim.ticket.raffle.winningItem,
-          claim.ticket.raffle.prizes,
-          claim.ticket.items
-        );
+      if (claim.paidAmount == null && raffle?.prizes) {
+        amount = estimatePrize(raffle.winningItem, raffle.prizes, ticket?.items);
       }
       return {
         id: claim.id,
         fecha: claim.processedAt?.toISOString() || "",
-        nombreGanador: claim.user.name,
-        emailGanador: claim.user.email,
-        tituloSorteo: claim.ticket.raffle?.title || "N/A",
-        tipoSorteo: claim.ticket.raffle?.type || "N/A",
+        nombreGanador: user?.name ?? "-",
+        emailGanador: user?.email ?? "-",
+        tituloSorteo: raffle?.title ?? "N/A",
+        tipoSorteo: raffle?.type ?? "N/A",
         referenciaPago: claim.paymentRef || null,
         montoPagado: amount,
-        montoCompra: Number(claim.ticket.totalPaid),
-        sorteoId: claim.ticket.raffle?.id || ""
+        montoCompra: ticket ? Number(ticket.totalPaid) : 0,
+        sorteoId: raffle?.id ?? "",
       };
     });
 
     return NextResponse.json({
       expenses,
-      totalSum: Number(totalSumAgg._sum.paidAmount ?? 0),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+      totalSum: Number(totalSum.toFixed(2)),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (err) {
     if (err instanceof AuthError) {
@@ -120,15 +103,10 @@ export async function GET(request: Request) {
   }
 }
 
-/** Estima el premio desde raffle.prizes (fallback para paidAmount NULL) */
-function estimatePrize(
-  winningItem: string | null,
-  prizes: unknown,
-  ticketItems: unknown
-): number {
+function estimatePrize(winningItem: string | null, prizes: unknown, ticketItems: unknown): number {
   if (!winningItem || !prizes || !Array.isArray(prizes) || prizes.length === 0) return 0;
-  const winners = winningItem.split(",").map(s => s.trim()).filter(Boolean);
-  const items = Array.isArray(ticketItems) ? ticketItems.filter((x): x is string => typeof x === "string") : [];
+  const winners = winningItem.split(",").map((s) => s.trim()).filter(Boolean);
+  const items = Array.isArray(ticketItems) ? (ticketItems as unknown[]).filter((x): x is string => typeof x === "string") : [];
   let winnerIndex = -1;
   for (const item of items) {
     const idx = winners.indexOf(item);

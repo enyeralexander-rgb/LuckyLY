@@ -1,30 +1,29 @@
 import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
-import { prisma } from "../../../../lib/prisma";
+export const dynamic = "force-dynamic";
+import { users } from "../../../../lib/db";
 import { getClientIP, checkRateLimit } from "../../../../lib/rateLimit";
 import { logger } from "../../../../lib/logger";
 
 export async function GET(request: Request) {
   try {
-    // Rate limiting: verificar límite de solicitudes por IP
     const clientIP = getClientIP(request);
     const rateLimitResult = checkRateLimit(clientIP);
 
     if (!rateLimitResult.allowed) {
       const retryAfter = Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000);
       return NextResponse.json(
-        { 
+        {
           error: "Demasiados intentos. Por favor espera un momento.",
-          retryAfter 
+          retryAfter,
         },
-        { 
+        {
           status: 429,
           headers: {
             "Retry-After": retryAfter.toString(),
             "X-RateLimit-Limit": "10",
             "X-RateLimit-Remaining": "0",
             "X-RateLimit-Reset": new Date(rateLimitResult.resetAt).toISOString(),
-          }
+          },
         }
       );
     }
@@ -37,7 +36,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Campo y valor son requeridos" }, { status: 400 });
     }
 
-    // Validar que el campo sea uno de los permitidos
     const allowedFields = ["email", "username", "documentId"];
     if (!allowedFields.includes(field)) {
       return NextResponse.json({ error: "Campo no permitido" }, { status: 400 });
@@ -48,28 +46,24 @@ export async function GET(request: Request) {
 
     switch (field) {
       case "email":
-        exists = !!(await prisma.user.findUnique({ where: { email: cleanValue } }));
+        exists = !!(await users.findByEmail(cleanValue));
         break;
       case "username":
-        const cleanUsername = cleanValue.toLowerCase();
-        exists = !!(await prisma.user.findUnique({ where: { username: cleanUsername } }));
+        exists = !!(await users.findByUsername(cleanValue.toLowerCase()));
         break;
       case "documentId":
-        exists = !!(await prisma.user.findUnique({ where: { documentId: cleanValue } }));
+        exists = !!(await users.findByDocumentId(cleanValue));
         break;
     }
 
     return NextResponse.json(
-      { 
-        available: !exists,
-        exists 
-      },
+      { available: !exists, exists },
       {
         headers: {
           "X-RateLimit-Limit": "10",
           "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
           "X-RateLimit-Reset": new Date(rateLimitResult.resetAt).toISOString(),
-        }
+        },
       }
     );
   } catch (err) {

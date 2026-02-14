@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { termsAndConditions } from "../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../lib/auth";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../lib/db-types";
+import { newId } from "../../../../lib/id";
+
+const MASTER: Role = "MASTER";
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.MASTER]);
-    let terms = await prisma.termsAndConditions.findFirst();
+    requireAuth(request, [MASTER]);
+    let terms = await termsAndConditions.findFirst();
     if (!terms) {
-      terms = await prisma.termsAndConditions.create({
-        data: { content: "" }
-      });
+      terms = await termsAndConditions.create({ id: newId(), content: "" });
     }
     return NextResponse.json({ content: terms.content });
   } catch (err) {
@@ -23,20 +24,15 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.MASTER]);
+    const auth = requireAuth(request, [MASTER]);
     const { content } = await request.json();
-    let terms = await prisma.termsAndConditions.findFirst();
+    let terms = await termsAndConditions.findFirst();
     if (!terms) {
-      terms = await prisma.termsAndConditions.create({
-        data: { content, updatedById: auth.userId }
-      });
+      terms = await termsAndConditions.create({ id: newId(), content, updatedById: auth.userId });
     } else {
-      terms = await prisma.termsAndConditions.update({
-        where: { id: terms.id },
-        data: { content, updatedById: auth.userId }
-      });
+      await termsAndConditions.update(terms.id, { content, updatedById: auth.userId });
     }
-    return NextResponse.json({ content: terms.content });
+    return NextResponse.json({ content });
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
@@ -44,4 +40,3 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Error al actualizar términos" }, { status: 500 });
   }
 }
-

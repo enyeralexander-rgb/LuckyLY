@@ -1,63 +1,50 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../lib/prisma";
+import * as db from "../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../lib/db-types";
+
+const ROLES: Role[] = ["SUPERADMIN", "MASTER"];
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.SUPERADMIN, Role.MASTER]);
-    
-    // Obtener parámetros de filtro por fecha
+    requireAuth(request, ROLES);
     const { searchParams } = new URL(request.url);
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
-    
-    // Construir filtro de fecha
-    const dateFilter: any = {};
-    if (dateFrom) {
-      dateFilter.gte = new Date(dateFrom);
-    }
+
+    let createdAtGte: Date | undefined;
+    let createdAtLte: Date | undefined;
+    if (dateFrom) createdAtGte = new Date(dateFrom);
     if (dateTo) {
-      const toDate = new Date(dateTo);
-      toDate.setHours(23, 59, 59, 999); // Incluir todo el día
-      dateFilter.lte = toDate;
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      createdAtLte = to;
     }
-    
-    const whereClause: any = {
-      actorRole: { in: [Role.AGENT, Role.SUPERADMIN] }
-    };
-    
-    if (Object.keys(dateFilter).length > 0) {
-      whereClause.createdAt = dateFilter;
-    }
-    
-    const logs = await prisma.auditLog.findMany({
-      where: whereClause,
-      include: {
-        actor: {
-          select: {
-            name: true,
-            email: true,
-            role: true
-          }
-        }
+
+    const logs = await db.auditLog.findMany({
+      where: {
+        actorRoleIn: ["AGENT", "SUPERADMIN"] as Role[],
+        createdAtGte,
+        createdAtLte,
       },
-      orderBy: { createdAt: "desc" },
-      take: 1000
+      take: 1000,
     });
-    
-    // Asegurar que todos los campos estén presentes
+
+    const actorIds = [...new Set(logs.map((l) => l.actorId).filter(Boolean))] as string[];
+    const actors = actorIds.length ? await db.users.findManyByIds(actorIds) : [];
+    const actorMap = Object.fromEntries(actors.map((u) => [u.id, u]));
+
     const formattedLogs = logs.map((log) => ({
       id: log.id,
       action: log.action,
       entity: log.entity,
       entityId: log.entityId,
-      createdAt: log.createdAt.toISOString(),
+      createdAt: new Date(log.createdAt).toISOString(),
       ip: log.ip,
-      actor: log.actor,
-      meta: log.meta
+      actor: log.actorId && actorMap[log.actorId] ? { name: actorMap[log.actorId].name, email: actorMap[log.actorId].email, role: actorMap[log.actorId].role } : null,
+      meta: log.meta,
     }));
-    
+
     return NextResponse.json(formattedLogs);
   } catch (err) {
     if (err instanceof AuthError) {
@@ -66,4 +53,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Error al obtener logs" }, { status: 500 });
   }
 }
-
