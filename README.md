@@ -114,13 +114,71 @@ No subas `.env` ni `.env.local` al repo; todo se configura en Vercel.
 
 Haz push a la rama conectada o despliega desde el dashboard. Vercel ejecutará `npm run build` (db:push + next build) y desplegará.
 
-### 5. Post-despliegue
+### 5. Post-despliegue: crear el primer usuario MASTER
 
-1. Crear el primer MASTER:
-   - `POST https://tu-app.vercel.app/api/setup/create-master`  
-     Body (JSON): `email`, `password`, `documentId`, `name`  
-     Header o query: `MASTER_SETUP_SECRET` según cómo lo tengas configurado en el API.
-2. Entrar en `/auth/login` con ese usuario y comprobar el panel admin en `/admin`.
+En Vercel debes tener definidas al menos **`MASTER_SETUP_SECRET`** y, si quieres que el API use credenciales desde el servidor, **`MASTER_INITIAL_EMAIL`** y **`MASTER_INITIAL_PASSWORD`**.
+
+**Opción A – Llamar al API (recomendado)**  
+Una sola petición crea el MASTER usando las variables de entorno:
+
+1. En Vercel → Project → Settings → Environment Variables, añade:
+   - `MASTER_SETUP_SECRET`: un secreto largo y aleatorio (solo para esta acción).
+   - `MASTER_INITIAL_EMAIL`: email del primer administrador.
+   - `MASTER_INITIAL_PASSWORD`: contraseña del primer administrador.
+   - Opcionales: `MASTER_INITIAL_NAME`, `MASTER_INITIAL_DOCUMENT_ID`.
+
+2. Redeploy si acabas de añadir variables (para que estén disponibles en runtime).
+
+3. Llama al endpoint con el secreto (el email y la contraseña se leen de las variables anteriores):
+
+   ```bash
+   curl -X POST "https://tu-app.vercel.app/api/setup/create-master" \
+     -H "Content-Type: application/json" \
+     -d '{"secret":"EL_VALOR_DE_MASTER_SETUP_SECRET"}'
+   ```
+
+   O envía todo en el body (el secret puede ir también en el header `x-master-setup-secret`):
+
+   ```bash
+   curl -X POST "https://tu-app.vercel.app/api/setup/create-master" \
+     -H "Content-Type: application/json" \
+     -d '{"secret":"TU_SECRET","email":"admin@tudominio.com","password":"tu_contraseña_segura"}'
+   ```
+
+   Si la respuesta es 400 con "Faltan email y/o contraseña", comprueba que `MASTER_INITIAL_EMAIL` y `MASTER_INITIAL_PASSWORD` estén definidas en Vercel para el entorno correcto (Production/Preview) y que hayas hecho redeploy.
+
+**Opción B – Script desde tu máquina contra la BD de producción**  
+Sin tocar archivos del proyecto, pasando la URL y las credenciales solo en la terminal:
+
+```bash
+DATABASE_URL="postgresql://..." \
+MASTER_INITIAL_EMAIL="admin@tudominio.com" \
+MASTER_INITIAL_PASSWORD="tu_contraseña" \
+npx tsx scripts/create-master-vercel.ts
+```
+
+Sustituye `DATABASE_URL` por la de producción (la misma que en Vercel). El script crea o actualiza el usuario MASTER en esa base.
+
+**Opción C – SQL generado e inyectado (sin variables de entorno en el servidor)**  
+Generas un archivo SQL con el usuario MASTER y lo aplicas contra la base de producción. El archivo `initial-master.sql` está en `.gitignore` y no se sube al repo.
+
+1. Generar el SQL (solo una vez, desde tu máquina):
+
+   ```bash
+   MASTER_EMAIL="admin@tudominio.com" MASTER_PASSWORD="tu_contraseña" npm run db:generate-initial-master
+   ```
+
+   Se crea `initial-master.sql` en la raíz del proyecto. Opcionales: `MASTER_NAME`, `MASTER_DOCUMENT_ID`.
+
+2. Inyectar en la base de producción (sin escribir la URL en ningún archivo):
+
+   ```bash
+   DATABASE_URL="postgresql://usuario:contraseña@host/neondb?sslmode=require" npm run db:apply-initial-master
+   ```
+
+   O con `psql` si lo tienes instalado: `psql "$DATABASE_URL" -f initial-master.sql`
+
+4. Entra en `https://tu-app.vercel.app/auth/login` con ese email y contraseña y comprueba el panel en `/admin`.
 
 ---
 
@@ -146,6 +204,8 @@ La sesión (cookie + localStorage) se cierra **automáticamente tras 5 minutos d
 | `npm run start` | Servidor de producción (tras `build`) |
 | `npm run lint` | Linter |
 | `npm run db:push` | Aplica `schema/00-initial.sql` a la BD de `DATABASE_URL` |
+| `npm run db:generate-initial-master` | Genera `initial-master.sql` con el usuario MASTER (MASTER_EMAIL, MASTER_PASSWORD en env) |
+| `npm run db:apply-initial-master` | Aplica `initial-master.sql` a la BD (DATABASE_URL en env) |
 | `npm run db:verify` | Comprueba conexión a la BD |
 | `npm run db:create-master` | Crea usuario MASTER (requiere env de MASTER_INITIAL_*) |
 

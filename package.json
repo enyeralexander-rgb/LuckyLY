@@ -24,6 +24,8 @@
     "db:push": "node scripts/db-push-neon.js",
     "db:seed": "npx tsx scripts/seed-neon.ts",
     "db:create-master": "npx tsx scripts/create-master-vercel.ts",
+    "db:generate-initial-master": "node scripts/generate-initial-master-sql.js",
+    "db:apply-initial-master": "node scripts/apply-initial-master.js",
     "check-env": "node scripts/check-env.js"
   },
   "ts-node": {

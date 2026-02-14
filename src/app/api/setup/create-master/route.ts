@@ -13,21 +13,30 @@ import bcrypt from "bcryptjs";
  */
 export const dynamic = 'force-dynamic';
 
+function normalizeSecret(value: unknown): string {
+  return String(value ?? "").trim();
+}
+
+function secretMatches(provided: unknown, envSecret: string): boolean {
+  return envSecret !== "" && normalizeSecret(provided) === normalizeSecret(envSecret);
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     // En producción, exigir MASTER_SETUP_SECRET definido y distinto del placeholder
     if (process.env.NODE_ENV === "production") {
-      const envSecret = process.env.MASTER_SETUP_SECRET;
-      if (!envSecret || envSecret.trim() === "" || envSecret === "CHANGE_THIS_IN_PRODUCTION") {
+      const envSecret = normalizeSecret(process.env.MASTER_SETUP_SECRET ?? "");
+      if (!envSecret || envSecret === "CHANGE_THIS_IN_PRODUCTION") {
         return NextResponse.json(
-          { error: "Endpoint no configurado. Defina MASTER_SETUP_SECRET en el servidor." },
+          { error: "Endpoint no configurado. Defina MASTER_SETUP_SECRET en el servidor (Vercel → Project → Settings → Environment Variables)." },
           { status: 503 }
         );
       }
-      if (body.secret !== envSecret) {
+      const providedSecret = body.secret ?? request.headers.get("x-master-setup-secret");
+      if (!secretMatches(providedSecret, envSecret)) {
         return NextResponse.json(
-          { error: "No autorizado. Se requiere clave secreta." },
+          { error: "No autorizado. Incluya el secreto en el body (secret) o en el header (x-master-setup-secret)." },
           { status: 401 }
         );
       }
@@ -41,7 +50,10 @@ export async function POST(request: Request) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Se requieren email y contraseña. Envíalos en el body o define MASTER_INITIAL_EMAIL y MASTER_INITIAL_PASSWORD en el servidor." },
+        {
+          error: "Faltan email y/o contraseña.",
+          hint: "Envíalos en el body (email, password) o configura MASTER_INITIAL_EMAIL y MASTER_INITIAL_PASSWORD en Vercel (Project → Settings → Environment Variables) y vuelve a llamar con solo el secret.",
+        },
         { status: 400 }
       );
     }
@@ -100,17 +112,17 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     if (process.env.NODE_ENV === "production") {
-      const envSecret = process.env.MASTER_SETUP_SECRET;
-      if (!envSecret || envSecret.trim() === "" || envSecret === "CHANGE_THIS_IN_PRODUCTION") {
+      const envSecret = normalizeSecret(process.env.MASTER_SETUP_SECRET ?? "");
+      if (!envSecret || envSecret === "CHANGE_THIS_IN_PRODUCTION") {
         return NextResponse.json(
-          { error: "Endpoint no configurado. Defina MASTER_SETUP_SECRET en el servidor." },
+          { error: "Endpoint no configurado. Defina MASTER_SETUP_SECRET en el servidor (Vercel → Environment Variables)." },
           { status: 503 }
         );
       }
       const secret = url.searchParams.get("secret");
-      if (secret !== envSecret) {
+      if (!secretMatches(secret, envSecret)) {
         return NextResponse.json(
-          { error: "No autorizado. Se requiere clave secreta en la URL: ?secret=YOUR_SECRET" },
+          { error: "No autorizado. Añada ?secret=TU_MASTER_SETUP_SECRET a la URL." },
           { status: 401 }
         );
       }
@@ -123,7 +135,10 @@ export async function GET(request: Request) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Se requieren email y contraseña (query ?email=...&password=... o variables MASTER_INITIAL_EMAIL y MASTER_INITIAL_PASSWORD)." },
+        {
+          error: "Faltan email y/o contraseña.",
+          hint: "Añada ?email=...&password=... a la URL o configure MASTER_INITIAL_EMAIL y MASTER_INITIAL_PASSWORD en Vercel y llame solo con ?secret=...",
+        },
         { status: 400 }
       );
     }

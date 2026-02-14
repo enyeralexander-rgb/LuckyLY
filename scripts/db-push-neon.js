@@ -12,10 +12,24 @@ import pg from "pg";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-dotenv.config({ path: path.join(root, ".env") });
-dotenv.config({ path: path.join(root, ".env.local") });
+dotenv.config({ path: path.join(root, ".env"), quiet: true });
+dotenv.config({ path: path.join(root, ".env.local"), quiet: true });
 
-const url = process.env.DATABASE_URL;
+function normalizeConnectionUrl(u) {
+  if (!u) return u;
+  try {
+    const url = new URL(u);
+    const p = url.searchParams;
+    if (["require", "prefer", "verify-ca"].includes(p.get("sslmode") || "")) p.set("sslmode", "verify-full");
+    url.search = p.toString();
+    return url.toString();
+  } catch {
+    return u.replace(/\bsslmode=require\b/, "sslmode=verify-full");
+  }
+}
+
+let url = process.env.DATABASE_URL;
+url = normalizeConnectionUrl(url);
 if (!url) {
   const isBuild = process.env.VERCEL === "1" || process.env.CI === "true";
   if (isBuild) {

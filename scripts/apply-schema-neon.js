@@ -13,8 +13,8 @@ import dotenv from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
-dotenv.config({ path: join(root, ".env") });
-dotenv.config({ path: join(root, ".env.local") });
+dotenv.config({ path: join(root, ".env"), quiet: true });
+dotenv.config({ path: join(root, ".env.local"), quiet: true });
 
 const url = process.env.DATABASE_URL;
 if (!url) {
