@@ -17,10 +17,10 @@ function getAppUrl(): string {
   return "http://localhost:3000";
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ["USER"] as Role[]);
-    const ticketId = params.id;
+    const { id: ticketId } = await params;
 
     const ticket = await db.tickets.findById(ticketId);
     if (!ticket || ticket.userId !== auth.userId) {

@@ -227,12 +227,12 @@ function LogsAdminsPageContent() {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   }
 
-  function formatMetaData(meta: any, action: string): JSX.Element {
+  function formatMetaData(meta: any, action: string): React.ReactElement {
     if (!meta || typeof meta !== "object") {
       return <span style={{ color: "var(--text-secondary)" }}>Sin detalles adicionales</span>;
     }
 
-    const elements: JSX.Element[] = [];
+    const elements: React.ReactElement[] = [];
 
     // Información general
     if (meta.title) {

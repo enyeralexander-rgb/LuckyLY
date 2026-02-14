@@ -7,10 +7,10 @@ import type { Role } from "@/lib/db-types";
 
 const ROLES: Role[] = ["AGENT", "SUPERADMIN", "MASTER"];
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ROLES);
-    const raffleId = params.id;
+    const { id: raffleId } = await params;
 
     const raffle = await db.raffles.findById(raffleId);
     if (!raffle) {

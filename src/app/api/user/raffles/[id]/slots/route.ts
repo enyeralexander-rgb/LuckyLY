@@ -3,10 +3,10 @@ import { tickets, ticketItems } from "@/lib/db";
 import { requireAuth, AuthError } from "@/lib/auth";
 import type { Role } from "@/lib/db-types";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ["USER"] as Role[]);
-    const raffleId = params.id;
+    const { id: raffleId } = await params;
 
     const userTickets = await tickets.findMany({
       where: {

@@ -7,10 +7,11 @@ import type { Role } from "../../../../../../../lib/db-types";
 
 const ADMIN_ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ["MASTER"] as Role[]);
-    const admin = await db.users.findById(params.id);
+    const { id } = await params;
+    const admin = await db.users.findById(id);
     if (!admin) {
       return NextResponse.json({ error: "Administrador no encontrado" }, { status: 404 });
     }
@@ -25,7 +26,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
 
     const isSuspended = admin.suspended;
-    await db.users.update(params.id, { suspended: !isSuspended });
+    await db.users.update(id, { suspended: !isSuspended });
 
     const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
     await db.auditLog.create({
@@ -34,7 +35,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       actorRole: auth.role,
       action: isSuspended ? "REACTIVATE_ADMIN" : "SUSPEND_ADMIN",
       entity: "User",
-      entityId: params.id,
+      entityId: id,
       ip,
       meta: { adminEmail: admin.email, adminName: admin.name, adminRole: admin.role, action: isSuspended ? "REACTIVADO" : "SUSPENDIDO" },
     });

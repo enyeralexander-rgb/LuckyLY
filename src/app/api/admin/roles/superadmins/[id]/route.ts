@@ -4,10 +4,11 @@ import { requireAuth, AuthError } from "../../../../../../lib/auth";
 import { newId } from "../../../../../../lib/id";
 import type { Role } from "../../../../../../lib/db-types";
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ["MASTER"] as Role[]);
-    const superadmin = await db.users.findById(params.id);
+    const { id } = await params;
+    const superadmin = await db.users.findById(id);
     if (!superadmin || superadmin.role !== "SUPERADMIN") {
       return NextResponse.json({ error: "Superadmin no encontrado" }, { status: 404 });
     }
@@ -15,7 +16,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       return NextResponse.json({ error: "No puedes borrarte a ti mismo" }, { status: 400 });
     }
 
-    await db.users.deleteById(params.id);
+    await db.users.deleteById(id);
 
     await db.auditLog.create({
       id: newId(),
@@ -23,7 +24,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       actorRole: auth.role,
       action: "DELETE_SUPERADMIN",
       entity: "User",
-      entityId: params.id,
+      entityId: id,
     });
 
     return NextResponse.json({ success: true });

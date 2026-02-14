@@ -8,11 +8,12 @@ import { sendIncorrectBankDataEmail } from "../../../../../../lib/email";
 
 const ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ROLES);
+    const { id } = await params;
 
-    const claim = await prizeClaims.findById(params.id);
+    const claim = await prizeClaims.findById(id);
     if (!claim) {
       return NextResponse.json({ error: "Reclamo no encontrado" }, { status: 404 });
     }
@@ -32,7 +33,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       actorRole: auth.role,
       action: "MARK_CLAIM_INCORRECT_DATA",
       entity: "PrizeClaim",
-      entityId: params.id,
+      entityId: id,
       ip,
       meta: {
         userId: claim.userId,

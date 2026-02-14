@@ -8,11 +8,11 @@ import { getPrizeWinnerEmailTemplate } from "../../../../../../lib/prizeEmailTem
 
 const ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ROLES);
-
-    const claimId = typeof params?.id === "string" ? params.id.trim() : "";
+    const { id } = await params;
+    const claimId = typeof id === "string" ? id.trim() : "";
     if (!claimId) {
       return NextResponse.json({ error: "ID de reclamo inválido" }, { status: 400 });
     }

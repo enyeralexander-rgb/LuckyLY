@@ -1,4 +1,5 @@
 "use client";
+import { use } from "react";
 import { AuthGuard } from "../../../../components/AuthGuard";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
@@ -7,7 +8,7 @@ import Link from "next/link";
 import { getItemWithEmoji } from "../../../../lib/raffleEmojis";
 
 type Props = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 type Raffle = {
@@ -34,6 +35,7 @@ type UserProfile = {
 };
 
 export default function RaffleDetailPage({ params }: Props) {
+  const resolvedParams = use(params);
   const router = useRouter();
   const [auth, setAuth] = useState<any>(null);
   const [raffle, setRaffle] = useState<Raffle | null>(null);
@@ -73,14 +75,14 @@ export default function RaffleDetailPage({ params }: Props) {
     fetch(`/api/raffles`)
       .then((r) => r.json())
       .then((data) => {
-        const found = data.find((r: Raffle) => r.id === params.id);
+        const found = data.find((r: Raffle) => r.id === resolvedParams.id);
         if (found) {
           setRaffle(found);
         }
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   // Obtener cupos comprados por el usuario en este sorteo
   useEffect(() => {

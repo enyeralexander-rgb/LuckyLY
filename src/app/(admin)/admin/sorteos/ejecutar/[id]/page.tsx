@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { AdminNavBar } from "../../../../../../components/AdminNavBar";
 import { AuthGuard } from "../../../../../../components/AuthGuard";
 import { useEffect, useState, useRef, useMemo } from "react";
@@ -633,10 +634,11 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
   );
 }
 
-export default function EjecutarRafflePage({ params }: { params: { id: string } }) {
+export default function EjecutarRafflePage({ params }: { params: Promise<{ id: string }> }) {
+  const resolved = React.use(params);
   return (
     <AuthGuard requiredRole={["AGENT", "SUPERADMIN", "MASTER"]}>
-      <EjecutarRafflePageContent params={params} />
+      <EjecutarRafflePageContent params={resolved} />
     </AuthGuard>
   );
 }

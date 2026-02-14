@@ -8,9 +8,10 @@ import type { Role } from "../../../../../../lib/db-types";
 
 const ROLES: Role[] = ["AGENT", "SUPERADMIN", "MASTER"];
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ROLES);
+    const { id } = await params;
     const body = await request.json();
     const parsed = createRaffleFromTemplateSchema.safeParse(body);
     if (!parsed.success) {
@@ -19,7 +20,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
     const { title, description, startsAt, closesAt, autoExecute } = parsed.data;
 
-    const template = await db.raffleTemplate.findById(params.id);
+    const template = await db.raffleTemplate.findById(id);
     if (!template) {
       return NextResponse.json({ error: "Plantilla no encontrada" }, { status: 404 });
     }
@@ -55,7 +56,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       entity: "Raffle",
       entityId: raffle.id,
       ip,
-      meta: { templateId: params.id, title: raffle.title, templateName: template.name },
+      meta: { templateId: id, title: raffle.title, templateName: template.name },
     });
     return NextResponse.json(raffle, { status: 201 });
   } catch (err) {
