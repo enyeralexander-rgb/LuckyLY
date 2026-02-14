@@ -8,9 +8,10 @@ import type { Role } from "../../../../../../lib/db-types";
 const PREFIX = "payment-proofs/";
 const ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     requireAuth(request, ROLES);
+    const { id } = await params;
 
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) {
@@ -35,19 +36,19 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ error: "El archivo no puede ser mayor a 5MB" }, { status: 400 });
     }
 
-    const claim = await prizeClaims.findById(params.id);
+    const claim = await prizeClaims.findById(id);
     if (!claim) {
       return NextResponse.json({ error: "Reclamo no encontrado" }, { status: 404 });
     }
 
     const timestamp = Date.now();
     const extension = file.name.split(".").pop() || "png";
-    const safeName = `${params.id}-${timestamp}.${extension}`;
+    const safeName = `${id}-${timestamp}.${extension}`;
     const pathname = `${PREFIX}${safeName}`;
 
     const blob = await put(pathname, file, { access: "public", token });
 
-    await prizeClaims.update(params.id, { paymentProof: blob.url });
+    await prizeClaims.update(id, { paymentProof: blob.url });
 
     return NextResponse.json({ success: true, proofUrl: blob.url });
   } catch (err) {

@@ -6,9 +6,10 @@ import { logger } from "../../../../../../lib/logger";
 import { parsePeriodRange } from "../../../../../../lib/dateRange";
 import type { Role } from "../../../../../../lib/db-types";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     requireAuth(request, ["MASTER"] as Role[]);
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "7d";
     const startDate = searchParams.get("startDate");
@@ -16,7 +17,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const { dateStart, dateEnd } = parsePeriodRange(period, startDate ?? undefined, endDate ?? undefined);
 
-    const user = await db.users.findById(params.id);
+    const user = await db.users.findById(id);
     if (!user) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }

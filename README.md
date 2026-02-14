@@ -99,13 +99,20 @@ No subas `.env` ni `.env.local` al repo; todo se configura en Vercel.
 ### 3. Base de datos de producción
 
 - Crea un **nuevo proyecto** o una **nueva rama** en Neon para producción.
-- Aplica el esquema **una sola vez** en esa BD:
-  - Desde tu máquina: pon en `.env.local` la `DATABASE_URL` de producción y ejecuta `npm run db:push`.
-  - O en Neon SQL Editor: pega y ejecuta el contenido de `schema/00-initial.sql`.
+- **En cada deploy**, el comando `npm run build` en Vercel ejecuta primero `db:push` con la `DATABASE_URL` configurada en las variables de entorno del proyecto. Así el esquema se aplica o actualiza automáticamente y las credenciales de login (usuarios en la BD) funcionan desde el primer despliegue.
+- Si en un deploy no hay `DATABASE_URL` (por ejemplo en un preview sin BD), el paso de base de datos se omite y el build continúa.
+
+  **Opcional – aplicar el esquema manualmente** (sin tocar archivos del proyecto):
+
+  ```bash
+  DATABASE_URL="postgresql://usuario:contraseña@host/prod_db?sslmode=require" npm run db:push
+  ```
+
+  **Alternativa:** En Neon → SQL Editor, pega y ejecuta el contenido de `schema/00-initial.sql` en la base de producción.
 
 ### 4. Deploy
 
-Haz push a la rama conectada o despliega desde el dashboard. Vercel ejecutará `npm run build` y desplegará.
+Haz push a la rama conectada o despliega desde el dashboard. Vercel ejecutará `npm run build` (db:push + next build) y desplegará.
 
 ### 5. Post-despliegue
 

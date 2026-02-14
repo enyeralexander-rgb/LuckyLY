@@ -545,7 +545,7 @@ CREATE INDEX "LiveConfig_updatedById_idx" ON "LiveConfig"("updatedById");
 -- CreateIndex
 CREATE INDEX "_TemplateRaffles_B_index" ON "_TemplateRaffles"("B");
 
--- AddForeignKey (política: hijos con CASCADE; referencias opcionales updatedById/actorId/createdById con SET NULL; ReferralLink/AutomationRule RESTRICT para no borrar User con datos asociados)
+-- AddForeignKey (política: hijos con CASCADE, referencias opcionales updatedById/actorId/createdById con SET NULL, ReferralLink/AutomationRule RESTRICT para no borrar User con datos asociados)
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 

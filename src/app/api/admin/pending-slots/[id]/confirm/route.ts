@@ -6,10 +6,10 @@ import { newId } from "../../../../../../lib/id";
 
 const ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ROLES);
-    const itemId = params.id;
+    const { id: itemId } = await params;
 
     const item = await ticketItems.findById(itemId);
     if (!item) {

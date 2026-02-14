@@ -13,10 +13,10 @@ const VALID_BANKS: string[] = [
   "DELSUR", "MI_BANCO", "N58_BANCO_DIGITAL",
 ];
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ["USER"] as Role[]);
-    const raffleId = params.id;
+    const { id: raffleId } = await params;
     const body = await request.json();
     const parsed = ticketPurchaseSchema.safeParse(body);
     if (!parsed.success) {

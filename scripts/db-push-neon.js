@@ -17,6 +17,11 @@ dotenv.config({ path: path.join(root, ".env.local") });
 
 const url = process.env.DATABASE_URL;
 if (!url) {
+  const isBuild = process.env.VERCEL === "1" || process.env.CI === "true";
+  if (isBuild) {
+    console.warn("⚠️ DATABASE_URL no definida en este entorno; se omite db:push (ej. preview sin BD).");
+    process.exit(0);
+  }
   console.error("❌ DATABASE_URL no definida. Configura .env.local con la URL de Neon.");
   process.exit(1);
 }
@@ -27,7 +32,12 @@ async function main() {
     await client.connect();
     console.log("✅ Conexión a Neon OK.");
     const schemaPath = path.join(root, "schema", "00-initial.sql");
-    const sql = readFileSync(schemaPath, "utf8");
+    let sql = readFileSync(schemaPath, "utf8");
+    // Quitar líneas que son solo comentarios (evita que ";" dentro de comentarios se ejecute como SQL)
+    sql = sql
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("--"))
+      .join("\n");
     const statements = sql
       .split(";")
       .map((s) => s.trim())

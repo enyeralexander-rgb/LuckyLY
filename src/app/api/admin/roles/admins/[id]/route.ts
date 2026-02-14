@@ -8,13 +8,14 @@ import type { Role } from "../../../../../../lib/db-types";
 
 const ADMIN_ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ["MASTER"] as Role[]);
+    const { id } = await params;
     const body = await request.json();
     const { name, email, username, role, password } = body;
 
-    const admin = await db.users.findById(params.id);
+    const admin = await db.users.findById(id);
     if (!admin) {
       return NextResponse.json({ error: "Administrador no encontrado" }, { status: 404 });
     }
@@ -59,8 +60,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json(admin);
     }
 
-    await db.users.update(params.id, updateData);
-    const updated = await db.users.findById(params.id);
+    await db.users.update(id, updateData);
+    const updated = await db.users.findById(id);
     if (!updated) {
       return NextResponse.json({ error: "Error al actualizar" }, { status: 500 });
     }
@@ -93,10 +94,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ["MASTER"] as Role[]);
-    const admin = await db.users.findById(params.id);
+    const { id } = await params;
+    const admin = await db.users.findById(id);
     if (!admin) {
       return NextResponse.json({ error: "Administrador no encontrado" }, { status: 404 });
     }
@@ -107,7 +109,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       return NextResponse.json({ error: "No puedes eliminar tu propia cuenta" }, { status: 400 });
     }
 
-    await db.users.deleteById(params.id);
+    await db.users.deleteById(id);
 
     await db.auditLog.create({
       id: newId(),
@@ -115,7 +117,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       actorRole: auth.role,
       action: "DELETE_ADMIN",
       entity: "User",
-      entityId: params.id,
+      entityId: id,
       meta: { deletedEmail: admin.email, deletedName: admin.name, deletedRole: admin.role },
     });
 

@@ -4,15 +4,16 @@ import { requireAuth, AuthError } from "../../../../../../../lib/auth";
 import { newId } from "../../../../../../../lib/id";
 import type { Role } from "../../../../../../../lib/db-types";
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ["SUPERADMIN", "MASTER"] as Role[]);
-    const agent = await db.users.findById(params.id);
+    const { id } = await params;
+    const agent = await db.users.findById(id);
     if (!agent || agent.role !== "AGENT") {
       return NextResponse.json({ error: "Agente no encontrado" }, { status: 404 });
     }
 
-    await db.users.update(params.id, { role: "USER" });
+    await db.users.update(id, { role: "USER" });
 
     await db.auditLog.create({
       id: newId(),
@@ -20,7 +21,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       actorRole: auth.role,
       action: "SUSPEND_AGENT",
       entity: "User",
-      entityId: params.id,
+      entityId: id,
     });
 
     return NextResponse.json({ success: true });

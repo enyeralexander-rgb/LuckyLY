@@ -6,13 +6,14 @@ import type { Role } from "@/lib/db-types";
 
 const ROLES: Role[] = ["AGENT", "SUPERADMIN", "MASTER"];
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ROLES);
+    const { id } = await params;
     const body = await request.json().catch(() => ({}));
     const providedWinners = (body.winners || []) as string[];
 
-    const raffle = await db.raffles.findById(params.id);
+    const raffle = await db.raffles.findById(id);
     if (!raffle) {
       return NextResponse.json({ error: "Sorteo no encontrado" }, { status: 404 });
     }
@@ -20,7 +21,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ error: "El sorteo ya fue ejecutado" }, { status: 409 });
     }
 
-    const ticketItemsList = await db.ticketItems.findMany({ raffleId: params.id });
+    const ticketItemsList = await db.ticketItems.findMany({ raffleId: id });
     const confirmedItems = ticketItemsList.filter((t) => t.status === "CONFIRMED");
     const pendingItems = ticketItemsList.filter((t) => t.status === "PENDING");
     const rejectedItems = ticketItemsList.filter((t) => t.status === "REJECTED");
@@ -53,14 +54,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     const winner = winners.join(", ");
 
-    await db.raffles.update(params.id, {
+    await db.raffles.update(id, {
       status: "FINISHED",
       executedAt: new Date(),
       winningItem: winner,
     });
 
     const winningItemsSet = new Set(winners);
-    const allTickets = await db.tickets.findMany({ where: { raffleId: params.id }, take: 10000 });
+    const allTickets = await db.tickets.findMany({ where: { raffleId: id }, take: 10000 });
 
     for (const ticket of allTickets) {
       const ticketItems = Array.isArray(ticket.items)
@@ -89,7 +90,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         actorRole: auth.role,
         action: "EXECUTE_RAFFLE",
         entity: "Raffle",
-        entityId: params.id,
+        entityId: id,
         ip,
         meta: {
           title: raffle.title,

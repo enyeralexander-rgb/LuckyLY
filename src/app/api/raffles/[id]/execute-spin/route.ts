@@ -5,17 +5,18 @@ import type { Role } from "@/lib/db-types";
 
 const ROLES: Role[] = ["AGENT", "SUPERADMIN", "MASTER"];
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     requireAuth(request, ROLES);
+    const { id } = await params;
     const { blockedItems = [], spinNumber } = await request.json().catch(() => ({}));
 
-    const raffle = await db.raffles.findById(params.id);
+    const raffle = await db.raffles.findById(id);
     if (!raffle) {
       return NextResponse.json({ error: "Sorteo no encontrado" }, { status: 404 });
     }
 
-    const allItems = await db.ticketItems.findMany({ raffleId: params.id });
+    const allItems = await db.ticketItems.findMany({ raffleId: id });
     const availableItems = allItems
       .filter((t) => t.status === "CONFIRMED")
       .map((t) => t.value)

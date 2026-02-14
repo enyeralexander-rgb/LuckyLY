@@ -7,10 +7,10 @@ import { newId } from "@/lib/id";
 
 const ADMIN_ROLES: Role[] = ["SUPERADMIN", "MASTER"];
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(req, ADMIN_ROLES);
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { suspended, reason } = body;
 

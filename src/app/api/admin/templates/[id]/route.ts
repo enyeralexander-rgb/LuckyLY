@@ -7,10 +7,11 @@ import type { Role, DrawType } from "../../../../../lib/db-types";
 
 const ROLES: Role[] = ["AGENT", "SUPERADMIN", "MASTER"];
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     requireAuth(request, ROLES);
-    const template = await db.raffleTemplate.findById(params.id);
+    const { id } = await params;
+    const template = await db.raffleTemplate.findById(id);
     if (!template) {
       return NextResponse.json({ error: "Plantilla no encontrada" }, { status: 404 });
     }
@@ -23,13 +24,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     requireAuth(request, ROLES);
+    const { id } = await params;
     const body = await request.json();
     const { name, description, type, pricePerSlot, slots, winnersCount, mirrorMode, prizes } = body;
 
-    const existing = await db.raffleTemplate.findById(params.id);
+    const existing = await db.raffleTemplate.findById(id);
     if (!existing) {
       return NextResponse.json({ error: "Plantilla no encontrada" }, { status: 404 });
     }
@@ -68,7 +70,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     if (mirrorMode !== undefined) updateData.mirrorMode = mirrorMode;
     if (prizes !== undefined) updateData.prizes = prizes;
 
-    const template = await db.raffleTemplate.update(params.id, updateData);
+    const template = await db.raffleTemplate.update(id, updateData);
     return NextResponse.json(template);
   } catch (err) {
     if (err instanceof AuthError) {
@@ -79,14 +81,15 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     requireAuth(request, ROLES);
-    const template = await db.raffleTemplate.findById(params.id);
+    const { id } = await params;
+    const template = await db.raffleTemplate.findById(id);
     if (!template) {
       return NextResponse.json({ error: "Plantilla no encontrada" }, { status: 404 });
     }
-    await db.raffleTemplate.deleteById(params.id);
+    await db.raffleTemplate.deleteById(id);
     return NextResponse.json({ success: true, message: "Plantilla eliminada" });
   } catch (err) {
     if (err instanceof AuthError) {

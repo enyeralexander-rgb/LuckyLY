@@ -7,15 +7,16 @@ import type { Role } from "../../../../../lib/db-types";
 
 const ROLES: Role[] = ["SUPERADMIN", "MASTER"];
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = requireAuth(request, ROLES);
-    const link = await db.referralLink.findById(params.id);
+    const { id } = await params;
+    const link = await db.referralLink.findById(id);
     if (!link) {
       return NextResponse.json({ error: "Link de referido no encontrado" }, { status: 404 });
     }
 
-    await db.referralLink.deleteById(params.id);
+    await db.referralLink.deleteById(id);
 
     await db.auditLog.create({
       id: newId(),
@@ -23,7 +24,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       actorRole: auth.role,
       action: "DELETE_REFERRAL_LINK",
       entity: "ReferralLink",
-      entityId: params.id,
+      entityId: id,
       meta: { code: link.code, name: link.name },
     });
 

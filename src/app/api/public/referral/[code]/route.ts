@@ -4,9 +4,9 @@ import { getCountryFromIP } from "../../../../../lib/geolocation";
 import { logger } from "../../../../../lib/logger";
 import { newId } from "../../../../../lib/id";
 
-export async function GET(request: Request, { params }: { params: { code: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
-    const code = params.code;
+    const { code } = await params;
 
     const link = await referralLink.findUnique({ code });
 
