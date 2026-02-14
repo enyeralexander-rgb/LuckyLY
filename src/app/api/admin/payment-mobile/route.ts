@@ -24,7 +24,9 @@ export async function GET(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+export const dynamic = 'force-dynamic';
+
+export async function POST(request: Request) {
   try {
     const auth = requireAuth(request, [Role.MASTER]);
     
