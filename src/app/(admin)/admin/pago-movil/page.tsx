@@ -87,7 +87,7 @@ function PagoMovilPageContent() {
       formData.append("destino", destino);
 
       const res = await fetch("/api/admin/payment-mobile", {
-        method: "PUT",
+        method: "POST",
         headers: {
           Authorization: `Bearer ${auth.token}`
         },
@@ -118,7 +118,7 @@ function PagoMovilPageContent() {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/payment-mobile", {
-        method: "PUT",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${auth.token}`

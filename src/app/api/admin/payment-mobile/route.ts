@@ -24,7 +24,9 @@ export async function GET(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+export const dynamic = 'force-dynamic';
+
+export async function POST(request: Request) {
   try {
     const auth = requireAuth(request, [Role.MASTER]);
     
@@ -69,8 +71,10 @@ export async function PUT(request: Request) {
       destino = body.destino;
     }
 
-    // Buscar registro existente
-    let paymentMobile = await prisma.paymentMobile.findFirst();
+    // Buscar el registro más reciente (igual que en GET) para asegurar que editamos el que se muestra
+    let paymentMobile = await prisma.paymentMobile.findFirst({
+      orderBy: { updatedAt: "desc" }
+    });
     
     const updateData: Record<string, unknown> = {
       updatedById: auth.userId
