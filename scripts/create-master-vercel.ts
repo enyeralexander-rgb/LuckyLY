@@ -11,8 +11,8 @@ import bcrypt from "bcryptjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
-dotenv.config({ path: path.join(root, ".env") });
-dotenv.config({ path: path.join(root, ".env.local") });
+dotenv.config({ path: path.join(root, ".env"), quiet: true });
+dotenv.config({ path: path.join(root, ".env.local"), quiet: true });
 
 async function main() {
   if (!process.env.DATABASE_URL) {
