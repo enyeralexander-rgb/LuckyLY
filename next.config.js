@@ -2,13 +2,12 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin';
 
 // Cargar .env y .env.local desde la raíz del proyecto (donde está next.config.js)
 // para que el servidor lea las variables aunque next dev se ejecute desde otro cwd
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, ".env") });
-dotenv.config({ path: path.join(__dirname, ".env.local") });
+dotenv.config({ path: path.join(__dirname, ".env"), quiet: true });
+dotenv.config({ path: path.join(__dirname, ".env.local"), quiet: true });
 
 const nextConfig = {
   // Solo usar standalone en producción explícitamente (evitar en desarrollo)
@@ -64,12 +63,7 @@ const nextConfig = {
   },
 
   // Configuración de webpack para mejorar la estabilidad y evitar errores de resolución
-  webpack: (config, { dev, isServer, webpack }) => {
-    // Agregar plugin de Prisma para incluir binarios en el bundle
-    if (isServer) {
-      config.plugins = [...(config.plugins || []), new PrismaPlugin()];
-    }
-    
+  webpack: (config, { dev }) => {
     // Mejorar la resolución de módulos
     if (!config.resolve) {
       config.resolve = {};
@@ -141,11 +135,7 @@ const nextConfig = {
     return config;
   },
   
-  // Configuración experimental para mejorar la estabilidad
-  experimental: {
-    // Mejorar la estabilidad del bundling
-    optimizePackageImports: ['@prisma/client'],
-  },
+  experimental: {},
 };
 
 export default nextConfig;

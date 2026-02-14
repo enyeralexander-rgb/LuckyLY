@@ -9,6 +9,12 @@ import Link from "next/link";
 import { NotificationBadge } from "../../../components/ui/NotificationBadge";
 import { useNotificationStats } from "../../../hooks/useNotificationStats";
 
+const DASHBOARD_LOADING = (
+  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh", color: "var(--text-primary)", opacity: 0.8 }}>
+    Cargando dashboard...
+  </div>
+);
+
 function AdminHomePageContent() {
   const [role, setRole] = useState<string | null>(null);
   const { stats } = useNotificationStats();
@@ -21,6 +27,28 @@ function AdminHomePageContent() {
     }
     setRole(auth.user.role ?? null);
   }, []);
+
+  // Fallback: si el rol sigue null (p. ej. condición de carrera con AuthGuard), reintentar tras sincronización
+  useEffect(() => {
+    if (role !== null) return;
+    const t = setTimeout(() => {
+      const auth = getStoredAuth();
+      if (auth?.user?.role) setRole(auth.user.role);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [role]);
+
+  if (role === null) {
+    return (
+      <>
+        <AdminNavBar />
+        <main className="container admin-main-with-footer" style={{ paddingTop: "2rem" }}>
+          {DASHBOARD_LOADING}
+        </main>
+        <AdminFooter />
+      </>
+    );
+  }
 
   const isAgent = role === "AGENT";
   const isContable = role === "CONTABLE";

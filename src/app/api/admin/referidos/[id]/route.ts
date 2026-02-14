@@ -1,35 +1,31 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../lib/prisma";
+import * as db from "../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { logger } from "../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import { newId } from "../../../../../lib/id";
+import type { Role } from "../../../../../lib/db-types";
 
-// Eliminar link de referido
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+const ROLES: Role[] = ["SUPERADMIN", "MASTER"];
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = requireAuth(request, [Role.SUPERADMIN, Role.MASTER]);
-
-    const link = await prisma.referralLink.findUnique({
-      where: { id: params.id }
-    });
-
+    const auth = requireAuth(request, ROLES);
+    const { id } = await params;
+    const link = await db.referralLink.findById(id);
     if (!link) {
       return NextResponse.json({ error: "Link de referido no encontrado" }, { status: 404 });
     }
 
-    await prisma.referralLink.delete({
-      where: { id: params.id }
-    });
+    await db.referralLink.deleteById(id);
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: auth.userId,
-        actorRole: auth.role,
-        action: "DELETE_REFERRAL_LINK",
-        entity: "ReferralLink",
-        entityId: params.id,
-        meta: { code: link.code, name: link.name }
-      }
+    await db.auditLog.create({
+      id: newId(),
+      actorId: auth.userId,
+      actorRole: auth.role,
+      action: "DELETE_REFERRAL_LINK",
+      entity: "ReferralLink",
+      entityId: id,
+      meta: { code: link.code, name: link.name },
     });
 
     return NextResponse.json({ success: true });

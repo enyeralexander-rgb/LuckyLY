@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireAuth, AuthError } from "../../../../lib/auth";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../lib/db-types";
+
+const ALLOWED_ROLES: Role[] = ["USER", "AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
 // Server-Sent Events para notificaciones en tiempo real
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.USER, Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER]);
+    requireAuth(request, ALLOWED_ROLES);
     
     const stream = new ReadableStream({
       start(controller) {

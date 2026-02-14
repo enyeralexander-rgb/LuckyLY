@@ -91,3 +91,17 @@ export const profileUpdateSchema = z.object({
   phoneNumber: z.string().min(11, "El teléfono debe tener al menos 11 caracteres")
 });
 
+/** Body para crear link de referido (admin) */
+export const referidoCreateSchema = z.object({
+  name: z.string().min(1, "El nombre del link es requerido").transform((s) => s.trim()).refine((s) => s.length > 0, "El nombre del link es requerido")
+});
+
+/** Body para crear sorteo desde plantilla (admin) */
+export const createRaffleFromTemplateSchema = z.object({
+  title: z.string().min(3, "El título debe tener al menos 3 caracteres"),
+  description: z.string().optional(),
+  startsAt: z.coerce.date().nullable().optional(),
+  closesAt: z.coerce.date().nullable().optional(),
+  autoExecute: z.boolean().optional()
+});
+

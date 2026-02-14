@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { rules } from "../../../../lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const rules = await prisma.rules.findFirst();
-    const res = NextResponse.json({ content: rules?.content || "" });
+    const rulesData = await rules.findFirst();
+    const res = NextResponse.json({ content: rulesData?.content || "" });
     res.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=60");
     return res;
   } catch (error) {

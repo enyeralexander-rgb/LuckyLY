@@ -1,58 +1,69 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { tickets, raffles, prizeClaims, ticketItems } from "../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../lib/auth";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../lib/db-types";
+
+const USER: Role = "USER";
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.USER]);
+    const auth = requireAuth(request, [USER]);
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = 20;
     const skip = (page - 1) * limit;
 
-    const [tickets, total] = await Promise.all([
-      prisma.ticket.findMany({
-        where: { userId: auth.userId },
-        include: {
-          raffle: {
-            select: {
-              id: true,
-              title: true,
-              type: true,
-              winningItem: true,
-              executedAt: true,
-            },
-          },
-          prizeClaim: {
-            select: {
-              id: true,
-              status: true,
-              processedAt: true,
-            },
-          },
-        },
-        orderBy: { purchasedAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.ticket.count({
-        where: { userId: auth.userId },
-      }),
+    const [ticketList, total] = await Promise.all([
+      tickets.findMany({ where: { userId: auth.userId }, take: limit, skip }),
+      tickets.count({ userId: auth.userId }),
     ]);
 
-    const payments = tickets.map((ticket) => ({
-      id: ticket.id,
-      raffle: ticket.raffle,
-      items: Array.isArray(ticket.items) ? ticket.items : [],
-      totalPaid: Number(ticket.totalPaid),
-      paymentMethod: ticket.paymentMethod,
-      paymentMobileRef: ticket.paymentMobileRef,
-      status: ticket.status,
-      purchasedAt: ticket.purchasedAt,
-      isWinner: ticket.status === "WIN",
-      prizeClaim: ticket.prizeClaim,
-    }));
+    const raffleIds = [...new Set(ticketList.map((t) => t.raffleId))];
+    const raffleMap = new Map<string | null, Awaited<ReturnType<typeof raffles.findById>>>();
+    await Promise.all(
+      raffleIds.map(async (id) => {
+        const r = await raffles.findById(id);
+        raffleMap.set(id, r);
+      })
+    );
+    const claimMap = new Map<string, Awaited<ReturnType<typeof prizeClaims.findUnique>>>();
+    await Promise.all(
+      ticketList.map(async (t) => {
+        const c = await prizeClaims.findUnique({ ticketId: t.id });
+        claimMap.set(t.id, c ?? null);
+      })
+    );
+    const itemsMap = new Map<string, Awaited<ReturnType<typeof ticketItems.findMany>>>();
+    await Promise.all(
+      ticketList.map(async (t) => {
+        const items = await ticketItems.findMany({ ticketId: t.id });
+        itemsMap.set(t.id, items);
+      })
+    );
+
+    const payments = ticketList.map((ticket) => {
+      const raffle = raffleMap.get(ticket.raffleId) ?? null;
+      const prizeClaim = claimMap.get(ticket.id) ?? null;
+      const items = itemsMap.get(ticket.id) ?? [];
+      const raffleSelect = raffle
+        ? { id: raffle.id, title: raffle.title, type: raffle.type, winningItem: raffle.winningItem, executedAt: raffle.executedAt }
+        : null;
+      const claimSelect = prizeClaim
+        ? { id: prizeClaim.id, status: prizeClaim.status, processedAt: prizeClaim.processedAt }
+        : null;
+      return {
+        id: ticket.id,
+        raffle: raffleSelect,
+        items: Array.isArray(ticket.items) ? ticket.items : items,
+        totalPaid: Number(ticket.totalPaid),
+        paymentMethod: ticket.paymentMethod,
+        paymentMobileRef: ticket.paymentMobileRef,
+        status: ticket.status,
+        purchasedAt: ticket.purchasedAt,
+        isWinner: ticket.status === "WIN",
+        prizeClaim: claimSelect,
+      };
+    });
 
     return NextResponse.json({
       payments,

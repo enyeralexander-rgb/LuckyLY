@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../lib/prisma";
-import { requireAuth, AuthError } from "../../../../../lib/auth";
-import { logger } from "../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import * as db from "@/lib/db";
+import { requireAuth, AuthError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
+import type { Role } from "@/lib/db-types";
 
 function normalizeBaseUrl(url: string): string {
   const u = url.trim();
@@ -17,40 +17,36 @@ function getAppUrl(): string {
   return "http://localhost:3000";
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = requireAuth(request, [Role.USER]);
-    const ticketId = params.id;
+    const auth = requireAuth(request, ["USER"] as Role[]);
+    const { id: ticketId } = await params;
 
-    const ticket = await prisma.ticket.findUnique({
-      where: { id: ticketId },
-      include: {
-        raffle: true,
-        user: true
-      }
-    });
-
+    const ticket = await db.tickets.findById(ticketId);
     if (!ticket || ticket.userId !== auth.userId) {
       return NextResponse.json({ error: "Ticket no encontrado" }, { status: 404 });
     }
 
-    // Obtener términos y condiciones y reglas
-    const [terms, rules] = await Promise.all([
-      prisma.termsAndConditions.findFirst(),
-      prisma.rules.findFirst()
+    const [raffle, user, terms, rules] = await Promise.all([
+      db.raffles.findById(ticket.raffleId),
+      db.users.findById(ticket.userId),
+      db.termsAndConditions.findFirst(),
+      db.rules.findFirst(),
     ]);
 
-    // Obtener URL del logo
+    if (!raffle || !user) {
+      return NextResponse.json({ error: "Datos del ticket no encontrados" }, { status: 404 });
+    }
+
     const logoUrl = `${getAppUrl()}/images/LuckyLy-Logo.png`;
 
-    // Generar HTML del ticket con previsualización y opción de imprimir
     const html = `
       <!DOCTYPE html>
       <html lang="es">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Ticket - ${ticket.raffle.title}</title>
+          <title>Ticket - ${raffle.title}</title>
           <style>
             * { box-sizing: border-box; }
             body {
@@ -211,12 +207,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
               <div class="section">
                 <h3>📋 Información del Sorteo</h3>
                 <table>
-                  <tr><td>Título:</td><td>${ticket.raffle.title}</td></tr>
-                  <tr><td>Tipo:</td><td>${ticket.raffle.type}</td></tr>
-                  <tr><td>Precio por cupo:</td><td>Bs. ${Number(ticket.raffle.pricePerSlot).toFixed(2)}</td></tr>
+                  <tr><td>Título:</td><td>${raffle.title}</td></tr>
+                  <tr><td>Tipo:</td><td>${raffle.type}</td></tr>
+                  <tr><td>Precio por cupo:</td><td>Bs. ${Number(raffle.pricePerSlot).toFixed(2)}</td></tr>
                   <tr><td>Total pagado:</td><td style="color: #228D57; font-size: 1.2rem;">Bs. ${Number(ticket.totalPaid).toFixed(2)}</td></tr>
-                  ${ticket.raffle.prizes && Array.isArray(ticket.raffle.prizes) ? `
-                  <tr><td>Premios:</td><td>${ticket.raffle.prizes.join(", ")}</td></tr>
+                  ${raffle.prizes && Array.isArray(raffle.prizes) ? `
+                  <tr><td>Premios:</td><td>${(raffle.prizes as string[]).join(", ")}</td></tr>
                   ` : ""}
                 </table>
               </div>
@@ -224,15 +220,15 @@ export async function GET(request: Request, { params }: { params: { id: string }
               <div class="section">
                 <h3>🎲 Cupos Comprados</h3>
                 <div class="cupos">
-                  ${Array.isArray(ticket.items) ? ticket.items.map((item) => `<span class="cupo">${String(item)}</span>`).join("") : "N/A"}
+                  ${Array.isArray(ticket.items) ? (ticket.items as unknown[]).map((item) => `<span class="cupo">${String(item)}</span>`).join("") : "N/A"}
                 </div>
               </div>
 
               <div class="section">
                 <h3>👤 Información del Usuario</h3>
                 <table>
-                  <tr><td>Nombre:</td><td>${ticket.user.name}</td></tr>
-                  <tr><td>Email:</td><td>${ticket.user.email}</td></tr>
+                  <tr><td>Nombre:</td><td>${user.name}</td></tr>
+                  <tr><td>Email:</td><td>${user.email}</td></tr>
                 </table>
               </div>
 
@@ -254,11 +250,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
       </html>
     `;
 
-    // Retornar HTML para previsualización (se abre en nueva pestaña)
     return new NextResponse(html, {
-      headers: {
-        "Content-Type": "text/html; charset=utf-8"
-      }
+      headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   } catch (err) {
     if (err instanceof AuthError) {
@@ -268,4 +261,3 @@ export async function GET(request: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: "Error al generar ticket" }, { status: 500 });
   }
 }
-

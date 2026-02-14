@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../lib/prisma";
+import { users } from "../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { logger } from "../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../lib/db-types";
 import bcrypt from "bcryptjs";
+
+const USER: Role = "USER";
 
 export async function DELETE(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.USER]);
+    const auth = requireAuth(request, [USER]);
     const body = await request.json();
     const { password } = body;
 
@@ -15,26 +17,17 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Contraseña requerida para eliminar la cuenta" }, { status: 400 });
     }
 
-    // Obtener usuario con contraseña
-    const user = await prisma.user.findUnique({
-      where: { id: auth.userId },
-      select: { passwordHash: true }
-    });
-
+    const user = await users.findById(auth.userId);
     if (!user) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    // Verificar contraseña
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
     if (!isValidPassword) {
       return NextResponse.json({ error: "Contraseña incorrecta" }, { status: 401 });
     }
 
-    // Eliminar usuario (las relaciones se eliminarán en cascada según el schema)
-    await prisma.user.delete({
-      where: { id: auth.userId }
-    });
+    await users.deleteById(auth.userId);
 
     return NextResponse.json({ success: true, message: "Cuenta eliminada exitosamente" });
   } catch (err) {

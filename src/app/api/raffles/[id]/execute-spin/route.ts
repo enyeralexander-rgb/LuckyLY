@@ -1,33 +1,31 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../lib/prisma";
-import { requireAuth, AuthError } from "../../../../../lib/auth";
-import { Role } from "@prisma/client";
+import * as db from "@/lib/db";
+import { requireAuth, AuthError } from "@/lib/auth";
+import type { Role } from "@/lib/db-types";
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+const ROLES: Role[] = ["AGENT", "SUPERADMIN", "MASTER"];
+
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
-    const { blockedItems = [], spinNumber } = await request.json();
+    requireAuth(request, ROLES);
+    const { id } = await params;
+    const { blockedItems = [], spinNumber } = await request.json().catch(() => ({}));
 
-    const raffle = await prisma.raffle.findUnique({
-      where: { id: params.id },
-      include: { ticketItems: true }
-    });
-
+    const raffle = await db.raffles.findById(id);
     if (!raffle) {
       return NextResponse.json({ error: "Sorteo no encontrado" }, { status: 404 });
     }
 
-    // Filtrar items disponibles (excluir bloqueados y solo usar confirmados)
-    const availableItems = raffle.ticketItems
+    const allItems = await db.ticketItems.findMany({ raffleId: id });
+    const availableItems = allItems
       .filter((t) => t.status === "CONFIRMED")
       .map((t) => t.value)
-      .filter((value) => !blockedItems.includes(value));
+      .filter((value: string) => !(blockedItems as string[]).includes(value));
 
     if (availableItems.length === 0) {
       return NextResponse.json({ error: "No hay cupos disponibles" }, { status: 400 });
     }
 
-    // Seleccionar ganador aleatorio de los disponibles
     const randomIndex = Math.floor(Math.random() * availableItems.length);
     const winner = availableItems[randomIndex];
 
@@ -39,4 +37,3 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: "Error al ejecutar giro" }, { status: 500 });
   }
 }
-

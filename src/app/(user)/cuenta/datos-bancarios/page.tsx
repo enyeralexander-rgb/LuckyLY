@@ -25,6 +25,7 @@ export default function DatosBancariosPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [formData, setFormData] = useState({
     nationalIdType: "V",
     nationalId: "",
@@ -40,78 +41,91 @@ export default function DatosBancariosPage() {
   }, []);
 
   useEffect(() => {
-    if (auth?.token) {
-      setLoading(true);
-      fetch("/api/user/profile", { headers: { Authorization: `Bearer ${auth.token}` } })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.error) {
-            console.error("Error:", data.error);
-            setLoading(false);
-            return;
-          }
-          setUserData(data);
-          // El nationalId se deriva automáticamente del documentId en el backend
-          // Solo necesitamos mostrar los datos bancarios editables
-          setFormData({
-            nationalIdType: data.nationalIdType || "V",
-            nationalId: data.nationalId || "",
-            bank: data.bank || "",
-            phoneNumber: data.phoneNumber || ""
-          });
+    if (!auth?.token) return;
+    setLoading(true);
+    fetch("/api/user/profile", {
+      headers: { Authorization: `Bearer ${auth.token}` },
+      cache: "no-store",
+      credentials: "same-origin",
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) {
+          console.error("Error:", data.error);
           setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Error al cargar perfil:", err);
-          setLoading(false);
+          return;
+        }
+        setUserData(data);
+        setFormData({
+          nationalIdType: data.nationalIdType || "V",
+          nationalId: data.nationalId || "",
+          bank: data.bank ?? "",
+          phoneNumber: data.phoneNumber ?? "",
         });
-    }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error al cargar perfil:", err);
+        setLoading(false);
+      });
   }, [auth]);
 
   async function handleSave() {
     if (!auth?.token || saving) return;
 
-    if (!formData.bank || !formData.phoneNumber || formData.phoneNumber.trim().length < 11) {
-      alert("Todos los campos son obligatorios. El teléfono debe tener al menos 11 números.");
+    const phoneDigits = formData.phoneNumber.replace(/\D/g, "");
+    if (!formData.bank || !formData.phoneNumber.trim()) {
+      setMessage({ type: "error", text: "Banco y teléfono son obligatorios." });
+      return;
+    }
+    if (phoneDigits.length < 11) {
+      setMessage({ type: "error", text: "El teléfono debe tener al menos 11 dígitos." });
       return;
     }
 
+    setMessage(null);
     setSaving(true);
     try {
-      // El backend extrae automáticamente nationalId y nationalIdType del documentId
-      // Solo enviamos los campos editables: bank y phoneNumber
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.token}`
+          Authorization: `Bearer ${auth.token}`,
         },
+        credentials: "same-origin",
+        cache: "no-store",
         body: JSON.stringify({
           bank: formData.bank,
-          phoneNumber: formData.phoneNumber.trim()
-        })
+          phoneNumber: phoneDigits,
+        }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (res.ok) {
-        const updated = await res.json();
-        setUserData(updated);
-        alert("Datos bancarios guardados exitosamente");
+        setUserData(data);
+        setFormData({
+          nationalIdType: data.nationalIdType || "V",
+          nationalId: data.nationalId || "",
+          bank: data.bank ?? formData.bank,
+          phoneNumber: data.phoneNumber ?? phoneDigits,
+        });
+        setMessage({ type: "success", text: "Datos bancarios guardados exitosamente" });
+        setTimeout(() => setMessage(null), 5000);
       } else {
-        const error = await res.json();
-        alert(error.error || "Error al guardar datos");
+        setMessage({ type: "error", text: data.error || "Error al guardar datos" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al guardar datos");
+      setMessage({ type: "error", text: "Error al guardar datos" });
     } finally {
       setSaving(false);
     }
   }
 
   function hasCompleteData(): boolean {
-    // Solo validar bank y phoneNumber ya que documentId es readonly
-    // El teléfono debe tener mínimo 11 números
-    return !!(formData.bank && formData.phoneNumber && formData.phoneNumber.trim().length >= 11);
+    const phoneDigits = formData.phoneNumber.replace(/\D/g, "");
+    return !!(formData.bank && formData.phoneNumber.trim() && phoneDigits.length >= 11);
   }
 
   // Calcular restricción de 1 semana para datos bancarios
@@ -172,6 +186,12 @@ export default function DatosBancariosPage() {
             )}
           </div>
 
+          {message && (
+            <p role="alert" style={{ margin: 0, padding: "0.75rem", borderRadius: "8px", background: message.type === "success" ? "rgba(34, 197, 94, 0.15)" : "rgba(239, 68, 68, 0.15)", color: message.type === "success" ? "#15803d" : "#b91c1c", fontWeight: 500 }}>
+              {message.text}
+            </p>
+          )}
+
           <div>
             <p style={{ margin: "0 0 1rem", color: "var(--text-primary)", fontSize: ".875rem", opacity: 0.8 }}>
               Estos datos se utilizarán para pagos de cupos y retiros de premios mediante Pago Móvil.
@@ -231,18 +251,20 @@ export default function DatosBancariosPage() {
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
+              <label htmlFor="phone-datos-bancarios" style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 Teléfono (Pago Móvil) *
               </label>
               <input
-                type="text"
+                id="phone-datos-bancarios"
+                type="tel"
+                inputMode="numeric"
                 value={formData.phoneNumber}
                 onChange={(e) => {
-                  // Solo permitir números (sin mostrarlo visiblemente)
                   const value = e.target.value.replace(/\D/g, "");
                   setFormData({ ...formData, phoneNumber: value });
+                  if (message) setMessage(null);
                 }}
-                placeholder="Ej: 04121234567"
+                placeholder="Ej: 04121234567 (mín. 11 dígitos)"
                 style={{
                   width: "100%",
                   padding: ".75rem",

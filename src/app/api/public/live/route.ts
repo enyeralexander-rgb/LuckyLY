@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { liveConfig } from "../../../../lib/db";
 
 const DEFAULT_STREAM_URL = "https://player.kick.com/luckylywin";
 const DEFAULT_CHAT_URL =
@@ -7,17 +7,15 @@ const DEFAULT_CHAT_URL =
 
 export async function GET() {
   try {
-    const config = await prisma.liveConfig.findFirst({
-      orderBy: { updatedAt: "desc" }
-    });
+    const config = await liveConfig.findFirst({ orderBy: { updatedAt: "desc" } });
     return NextResponse.json({
       streamUrl: config?.streamUrl ?? DEFAULT_STREAM_URL,
-      chatIframeUrl: config?.chatIframeUrl ?? DEFAULT_CHAT_URL
+      chatIframeUrl: config?.chatIframeUrl ?? DEFAULT_CHAT_URL,
     });
   } catch {
     return NextResponse.json({
       streamUrl: DEFAULT_STREAM_URL,
-      chatIframeUrl: DEFAULT_CHAT_URL
+      chatIframeUrl: DEFAULT_CHAT_URL,
     });
   }
 }

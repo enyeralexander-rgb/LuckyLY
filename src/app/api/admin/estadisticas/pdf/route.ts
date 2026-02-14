@@ -1,63 +1,65 @@
 import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
-import { prisma } from "../../../../../lib/prisma";
+export const dynamic = "force-dynamic";
+import * as db from "../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { logger } from "../../../../../lib/logger";
 import { getContabilidadGlobal } from "../../../../../lib/accounting";
 import { parsePeriodRange } from "../../../../../lib/dateRange";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../lib/db-types";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
+const ROLES: Role[] = ["CONTABLE", "MASTER"];
+
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.CONTABLE, Role.MASTER]);
+    const auth = requireAuth(request, ROLES);
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "7d";
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    const { dateStart, dateEnd } = parsePeriodRange(period, startDate, endDate);
+    const { dateStart, dateEnd } = parsePeriodRange(period, startDate ?? undefined, endDate ?? undefined);
 
-    // Obtener datos del administrador
-    const admin = await prisma.user.findUnique({
-      where: { id: auth.userId },
-      select: { name: true, email: true }
-    });
-
-    // Contabilidad del período (fuente única: lib/accounting)
+    const admin = await db.users.findById(auth.userId);
     const contabilidad = await getContabilidadGlobal({ dateStart, dateEnd });
     const { ingresos, egresos, ganancias } = contabilidad;
 
-    // Listados para tablas del PDF
-    const tickets = await prisma.ticket.findMany({
-      where: {
-        status: "CONFIRMED",
-        purchasedAt: { gte: dateStart, lte: dateEnd }
-      },
-      include: {
-        user: { select: { name: true, email: true } },
-        raffle: { select: { title: true } }
-      },
-      orderBy: { purchasedAt: "desc" }
+    const ticketList = await db.tickets.findMany({
+      where: { status: "CONFIRMED", purchasedAtGte: dateStart, purchasedAtLte: dateEnd },
+      take: 5000,
     });
+    const userIdsT = [...new Set(ticketList.map((t) => t.userId))];
+    const raffleIdsT = [...new Set(ticketList.map((t) => t.raffleId))];
+    const [usersT, rafflesT] = await Promise.all([
+      db.users.findManyByIds(userIdsT),
+      Promise.all(raffleIdsT.map((id) => db.raffles.findById(id))),
+    ]);
+    const userMapT = Object.fromEntries(usersT.map((u) => [u.id, u]));
+    const raffleMapT = Object.fromEntries(rafflesT.filter(Boolean).map((r) => [r!.id, r!]));
+    const tickets = ticketList.map((t) => ({
+      ...t,
+      user: userMapT[t.userId] ? { name: userMapT[t.userId].name, email: userMapT[t.userId].email } : { name: "-", email: "-" },
+      raffle: raffleMapT[t.raffleId] ? { title: raffleMapT[t.raffleId].title } : { title: "-" },
+    })).sort((a, b) => new Date(b.purchasedAt).getTime() - new Date(a.purchasedAt).getTime());
 
-    const paidClaims = await prisma.prizeClaim.findMany({
-      where: {
-        status: "PAID",
-        processedAt: { gte: dateStart, lte: dateEnd }
-      },
-      include: {
-        user: { select: { name: true, email: true } },
-        ticket: {
-          select: {
-            totalPaid: true,
-            raffle: { select: { title: true } }
-          }
-        }
-      },
-      orderBy: { processedAt: "desc" }
+    const paidClaimsRaw = await db.prizeClaims.findMany({
+      where: { status: "PAID", processedAtGte: dateStart, processedAtLte: dateEnd },
+      take: 5000,
     });
+    const ticketIdsC = [...new Set(paidClaimsRaw.map((c) => c.ticketId))];
+    const ticketListC = await db.tickets.findManyByIds(ticketIdsC);
+    const raffleIdsC = [...new Set(ticketListC.map((t) => t.raffleId))];
+    const rafflesC = await Promise.all(raffleIdsC.map((id) => db.raffles.findById(id)));
+    const userListC = await db.users.findManyByIds([...new Set(paidClaimsRaw.map((c) => c.userId))]);
+    const ticketMapC = Object.fromEntries(ticketListC.map((t) => [t.id, t]));
+    const raffleMapC = Object.fromEntries(rafflesC.filter(Boolean).map((r) => [r!.id, r!]));
+    const userMapC = Object.fromEntries(userListC.map((u) => [u.id, u]));
+    const paidClaims = paidClaimsRaw.map((c) => ({
+      ...c,
+      user: userMapC[c.userId] ? { name: userMapC[c.userId].name, email: userMapC[c.userId].email } : { name: "-", email: "-" },
+      ticket: ticketMapC[c.ticketId] ? { totalPaid: ticketMapC[c.ticketId].totalPaid, raffle: raffleMapC[ticketMapC[c.ticketId].raffleId] ? { title: raffleMapC[ticketMapC[c.ticketId].raffleId].title } : { title: "-" } } : { totalPaid: 0, raffle: { title: "-" } },
+    })).sort((a, b) => (b.processedAt ? new Date(b.processedAt).getTime() : 0) - (a.processedAt ? new Date(a.processedAt).getTime() : 0));
 
     // Crear PDF
     const doc = new jsPDF();

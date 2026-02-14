@@ -1,36 +1,30 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../../lib/prisma";
+import * as db from "../../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
-import { Role } from "@prisma/client";
+import { newId } from "../../../../../../lib/id";
+import type { Role } from "../../../../../../lib/db-types";
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = requireAuth(request, [Role.MASTER]);
-    const superadmin = await prisma.user.findUnique({
-      where: { id: params.id },
-      select: { role: true, id: true }
-    });
-
-    if (!superadmin || superadmin.role !== Role.SUPERADMIN) {
+    const auth = requireAuth(request, ["MASTER"] as Role[]);
+    const { id } = await params;
+    const superadmin = await db.users.findById(id);
+    if (!superadmin || superadmin.role !== "SUPERADMIN") {
       return NextResponse.json({ error: "Superadmin no encontrado" }, { status: 404 });
     }
-
     if (superadmin.id === auth.userId) {
       return NextResponse.json({ error: "No puedes borrarte a ti mismo" }, { status: 400 });
     }
 
-    await prisma.user.delete({
-      where: { id: params.id }
-    });
+    await db.users.deleteById(id);
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: auth.userId,
-        actorRole: auth.role,
-        action: "DELETE_SUPERADMIN",
-        entity: "User",
-        entityId: params.id
-      }
+    await db.auditLog.create({
+      id: newId(),
+      actorId: auth.userId,
+      actorRole: auth.role,
+      action: "DELETE_SUPERADMIN",
+      entity: "User",
+      entityId: id,
     });
 
     return NextResponse.json({ success: true });
@@ -41,4 +35,3 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     return NextResponse.json({ error: "Error al borrar superadmin" }, { status: 500 });
   }
 }
-

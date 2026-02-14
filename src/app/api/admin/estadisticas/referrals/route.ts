@@ -1,114 +1,79 @@
 import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
-import { prisma } from "../../../../../lib/prisma";
+export const dynamic = "force-dynamic";
+import * as db from "../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { logger } from "../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../lib/db-types";
+
+const ROLES: Role[] = ["CONTABLE", "MASTER"];
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.CONTABLE, Role.MASTER]);
+    requireAuth(request, ROLES);
     const { searchParams } = new URL(request.url);
-    
-    // Filtros
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const linkId = searchParams.get("linkId");
     const country = searchParams.get("country");
-    const getCountries = searchParams.get("getCountries") === "true"; // Para obtener lista de países únicos
+    const getCountries = searchParams.get("getCountries") === "true";
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "50", 10);
     const skip = (page - 1) * limit;
 
-    // Construir filtros
-    const where: any = {};
-
-    // Filtro por fecha
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) {
-        where.createdAt.gte = new Date(startDate);
-      }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        where.createdAt.lte = end;
-      }
-    }
-
-    // Filtro por link de referencia
-    if (linkId) {
-      where.referralLinkId = linkId;
-    }
-
-    // Filtro por país
-    if (country && country !== "all" && country !== "") {
-      where.country = country;
-    }
-
-    // Si se solicita solo la lista de países únicos
     if (getCountries) {
-      const uniqueCountries = await prisma.referralVisit.findMany({
-        where: {
-          country: { not: null }
-        },
-        select: {
-          country: true
-        },
-        distinct: ["country"]
+      const allVisits = await db.referralVisit.findMany({ take: 50000 });
+      const countriesSet = new Set<string>();
+      allVisits.forEach((v) => {
+        if (v.country) countriesSet.add(v.country);
       });
-      
-      const countriesList = uniqueCountries
-        .map(v => v.country)
-        .filter((c): c is string => c !== null)
-        .sort();
-      
-      return NextResponse.json({ countries: countriesList });
+      return NextResponse.json({ countries: Array.from(countriesSet).sort() });
     }
 
-    // Obtener visitas con información del link
-    const [visits, filteredTotal] = await Promise.all([
-      prisma.referralVisit.findMany({
-        where,
-        include: {
-          referralLink: {
-            select: {
-              id: true,
-              name: true,
-              code: true
-            }
-          }
-        },
-        orderBy: {
-          createdAt: "desc"
-        },
-        skip,
-        take: limit
-      }),
-      prisma.referralVisit.count({ where })
-    ]);
+    let createdAtGte: Date | undefined;
+    let createdAtLte: Date | undefined;
+    if (startDate) createdAtGte = new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setUTCHours(23, 59, 59, 999);
+      createdAtLte = end;
+    }
 
-    // Formatear datos
-    const referralVisits = visits.map(visit => ({
+    let visits: Awaited<ReturnType<typeof db.referralVisit.findMany>>;
+    if (linkId) {
+      visits = await db.referralVisit.findMany({ where: { referralLinkId: linkId }, take: 50000 });
+    } else if (createdAtGte != null && createdAtLte != null) {
+      visits = await db.referralVisit.findMany({ where: { createdAtGte, createdAtLte }, take: 50000 });
+    } else {
+      visits = await db.referralVisit.findMany({ take: 50000 });
+    }
+
+    let filtered = visits;
+    if (linkId) filtered = filtered.filter((v) => v.referralLinkId === linkId);
+    if (country && country !== "all" && country !== "") filtered = filtered.filter((v) => v.country === country);
+    if (createdAtGte) filtered = filtered.filter((v) => new Date(v.createdAt) >= createdAtGte!);
+    if (createdAtLte) filtered = filtered.filter((v) => new Date(v.createdAt) <= createdAtLte!);
+
+    const total = filtered.length;
+    const paginated = filtered.slice(skip, skip + limit);
+    const linkIds = [...new Set(paginated.map((v) => v.referralLinkId))];
+    const links = await Promise.all(linkIds.map((id) => db.referralLink.findById(id)));
+    const linkMap = Object.fromEntries(links.filter(Boolean).map((l) => [l!.id, l!]));
+
+    const referralVisits = paginated.map((visit) => ({
       id: visit.id,
-      fecha: visit.createdAt.toISOString(),
-      nombreLink: visit.referralLink?.name || "Link eliminado",
-      codigoLink: visit.referralLink?.code || "N/A",
-      direccionIP: visit.ip || "N/A",
-      pais: visit.country || "N/A", // Usar el país almacenado en la base de datos
-      userAgent: visit.userAgent || "N/A",
+      fecha: new Date(visit.createdAt).toISOString(),
+      nombreLink: linkMap[visit.referralLinkId]?.name ?? "Link eliminado",
+      codigoLink: linkMap[visit.referralLinkId]?.code ?? "N/A",
+      direccionIP: visit.ip ?? "N/A",
+      pais: visit.country ?? "N/A",
+      userAgent: visit.userAgent ?? "N/A",
       registrado: visit.registered,
-      comprado: visit.purchased
+      comprado: visit.purchased,
     }));
 
     return NextResponse.json({
       visits: referralVisits,
-      pagination: {
-        page,
-        limit,
-        total: filteredTotal,
-        totalPages: Math.ceil(filteredTotal / limit)
-      }
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (err) {
     if (err instanceof AuthError) {

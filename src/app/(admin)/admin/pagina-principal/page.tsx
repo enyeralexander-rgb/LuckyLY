@@ -11,7 +11,6 @@ import { useUnsavedChanges } from "./hooks/useUnsavedChanges";
 import { ToastProvider, useToast } from "./components/ToastContext";
 import { HeroCarouselSection } from "./components/HeroCarouselSection";
 import { HeroAppearanceSection } from "./components/HeroAppearanceSection";
-import { InstagramVideoSection } from "./components/InstagramVideoSection";
 import { PreviewSection } from "./components/PreviewSection";
 import { validateHomePageConfig } from "./types";
 
@@ -114,34 +113,6 @@ function PaginaPrincipalContent() {
       addToast("success", "Imagen eliminada exitosamente");
     } else {
       addToast("error", result.error ?? "No se pudo eliminar la imagen");
-    }
-  }
-
-  async function handleInstagramUpload(file: File) {
-    if (!auth?.token) return;
-    if (file.size > 50 * 1024 * 1024) {
-      addToast("error", "El archivo debe ser menor a 50MB");
-      return;
-    }
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("/api/admin/homepage/images/upload", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${auth.token}` },
-        body: formData,
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setConfig((c) => ({ ...c, instagramVideoUrl: data.url }));
-        await loadAvailableImages();
-        addToast("success", "Archivo subido exitosamente");
-      } else {
-        addToast("error", data.error || "Error al subir archivo");
-      }
-    } catch (err) {
-      console.error("Error:", err);
-      addToast("error", "Error al subir archivo");
     }
   }
 
@@ -249,13 +220,6 @@ function PaginaPrincipalContent() {
           config={config}
           setConfig={setConfig}
           validationError={validationErrors.heroAutoSlideInterval}
-        />
-        <InstagramVideoSection
-          config={config}
-          setConfig={setConfig}
-          availableImages={availableImages}
-          onUploadMedia={handleInstagramUpload}
-          validationError={validationErrors.instagramVideoUrl}
         />
         <PreviewSection
           config={config}

@@ -1,5 +1,7 @@
 import jwt from "jsonwebtoken";
-import { Role } from "@prisma/client";
+import type { Role } from "./db-types";
+
+// jwt.verify() rechaza automáticamente tokens expirados (lanza y se devuelve 401).
 
 // Helper to get secret lazily
 function getJwtSecret(): string {

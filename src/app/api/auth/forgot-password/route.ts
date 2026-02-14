@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { users, passwordResetToken } from "../../../../lib/db";
 import { sendPasswordResetEmail } from "../../../../lib/email";
 import { logger } from "../../../../lib/logger";
+import { newId } from "../../../../lib/id";
 import crypto from "crypto";
 
 export async function POST(request: Request) {
@@ -12,39 +13,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email inválido" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await users.findByEmail(email);
 
     if (!user) {
-      // No revelar si el email existe o no (seguridad)
       return NextResponse.json({
         success: true,
         message: "Si el email existe, recibirás un enlace para restablecer tu contraseña",
       });
     }
 
-    // Generar token seguro
     const resetToken = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1); // Expira en 1 hora
+    expiresAt.setHours(expiresAt.getHours() + 1);
 
-    // Invalidar tokens anteriores
-    await prisma.passwordResetToken.updateMany({
-      where: { userId: user.id, used: false },
-      data: { used: true },
+    await passwordResetToken.updateMany({ userId: user.id }, { used: true });
+    await passwordResetToken.create({
+      id: newId(),
+      userId: user.id,
+      token: resetToken,
+      expiresAt,
     });
 
-    // Crear nuevo token
-    await prisma.passwordResetToken.create({
-      data: {
-        userId: user.id,
-        token: resetToken,
-        expiresAt,
-      },
-    });
-
-    // Enviar email
     await sendPasswordResetEmail(user.email, resetToken);
 
     return NextResponse.json({

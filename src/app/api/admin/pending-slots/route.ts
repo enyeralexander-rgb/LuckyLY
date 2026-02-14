@@ -1,74 +1,73 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { ticketItems, tickets, users, raffles } from "../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../lib/auth";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../lib/db-types";
+
+const ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER]);
-    
-    const pendingItems = await prisma.ticketItem.findMany({
-      where: {
-        status: "PENDING",
-        ticket: {
-          paymentMethod: "MOBILE"
-        }
-      },
-      include: {
-        ticket: {
-          select: {
-            id: true,
-            purchasedAt: true,
-            totalPaid: true,
-            paymentMobileRef: true,
-            user: {
-              select: {
-                name: true,
-                email: true
-              }
-            }
-          }
-        },
-        raffle: {
-          select: {
-            id: true,
-            title: true,
-            type: true,
-            pricePerSlot: true
-          }
-        }
-      },
-      orderBy: {
-        ticket: {
-          purchasedAt: "desc"
-        }
-      }
-    });
+    requireAuth(request, ROLES);
 
-    // Agrupar por ticketId para mostrar compras completas
-    const groupedByTicket: Record<string, {
-      ticketId: string;
-      items: Array<{ id: string; value: string }>;
-      ticket: any;
-      raffle: any;
-    }> = {};
-
-    for (const item of pendingItems) {
-      const ticketId = item.ticket.id;
-      if (!groupedByTicket[ticketId]) {
-        groupedByTicket[ticketId] = {
-          ticketId,
-          items: [],
-          ticket: item.ticket,
-          raffle: item.raffle
-        };
-      }
-      groupedByTicket[ticketId].items.push({ id: item.id, value: item.value });
+    const pendingItems = await ticketItems.findMany({ status: "PENDING" });
+    if (pendingItems.length === 0) {
+      return NextResponse.json([]);
     }
 
-    // Convertir a array y ordenar por fecha
-    const grouped = Object.values(groupedByTicket).sort((a, b) => 
-      new Date(b.ticket.purchasedAt).getTime() - new Date(a.ticket.purchasedAt).getTime()
+    const ticketIds = [...new Set(pendingItems.map((i) => i.ticketId))];
+    const ticketList = await Promise.all(ticketIds.map((id) => tickets.findById(id)));
+    const ticketMap = new Map<string, NonNullable<Awaited<ReturnType<typeof tickets.findById>>>>();
+    ticketList.forEach((t) => {
+      if (t && t.paymentMethod === "MOBILE") ticketMap.set(t.id, t);
+    });
+
+    const mobileTicketIds = [...ticketMap.keys()];
+    if (mobileTicketIds.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    const userIds = [...new Set([...ticketMap.values()].map((t) => t.userId))];
+    const raffleIds = [...new Set([...ticketMap.values()].map((t) => t.raffleId))];
+    const userMap = new Map<string, Awaited<ReturnType<typeof users.findById>>>();
+    const raffleMap = new Map<string, Awaited<ReturnType<typeof raffles.findById>>>();
+    await Promise.all([
+      ...userIds.map(async (id) => userMap.set(id, (await users.findById(id)) ?? null)),
+      ...raffleIds.map(async (id) => raffleMap.set(id, (await raffles.findById(id)) ?? null)),
+    ]);
+
+    const groupedByTicket: Record<
+      string,
+      { ticketId: string; items: Array<{ id: string; value: string }>; ticket: unknown; raffle: unknown }
+    > = {};
+
+    for (const item of pendingItems) {
+      const ticket = ticketMap.get(item.ticketId);
+      if (!ticket) continue;
+      const user = userMap.get(ticket.userId);
+      const raffle = raffleMap.get(ticket.raffleId);
+      const ticketPayload = {
+        id: ticket.id,
+        purchasedAt: ticket.purchasedAt,
+        totalPaid: ticket.totalPaid,
+        paymentMobileRef: ticket.paymentMobileRef,
+        user: user ? { name: user.name, email: user.email } : null,
+      };
+      const rafflePayload = raffle
+        ? { id: raffle.id, title: raffle.title, type: raffle.type, pricePerSlot: raffle.pricePerSlot }
+        : null;
+      if (!groupedByTicket[ticket.id]) {
+        groupedByTicket[ticket.id] = {
+          ticketId: ticket.id,
+          items: [],
+          ticket: ticketPayload,
+          raffle: rafflePayload,
+        };
+      }
+      groupedByTicket[ticket.id].items.push({ id: item.id, value: item.value });
+    }
+
+    const grouped = Object.values(groupedByTicket).sort(
+      (a, b) => new Date((b.ticket as { purchasedAt: Date }).purchasedAt).getTime() - new Date((a.ticket as { purchasedAt: Date }).purchasedAt).getTime()
     );
 
     return NextResponse.json(grouped);
@@ -79,4 +78,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Error al obtener cupos pendientes" }, { status: 500 });
   }
 }
-

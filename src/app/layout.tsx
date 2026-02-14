@@ -32,15 +32,15 @@ export const metadata: Metadata = {
       { url: "/images/LuckyLy-Logo-BLANCO-SIN-FONDO.png", media: "(prefers-color-scheme: dark)" },
       { url: "/images/LuckyLy-Logo-VERDE-SIN-FONDO.png", media: "(prefers-color-scheme: light)" },
     ],
-    shortcut: "/images/LuckyLy-Isotipo.png",
-    apple: "/images/LuckyLy-Isotipo.png",
+    shortcut: "/images/LuckyLy-Logo-VERDE-SIN-FONDO.png",
+    apple: "/images/LuckyLy-Logo-VERDE-SIN-FONDO.png",
   }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${fredoka.variable} ${oswald.variable}`} suppressHydrationWarning>
-      <body className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
+      <body className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors" suppressHydrationWarning>
         <ThemeProvider>
           <TutorialProvider>
             <Header />

@@ -1,25 +1,22 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../lib/prisma";
+import * as db from "../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { parsePrizeValue } from "../../../../../lib/validators";
 import { logger } from "../../../../../lib/logger";
-import { Role, DrawType } from "@prisma/client";
+import type { Role, DrawType } from "../../../../../lib/db-types";
 
-// Obtener plantilla específica
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+const ROLES: Role[] = ["AGENT", "SUPERADMIN", "MASTER"];
+
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
-    
-    const template = await prisma.raffleTemplate.findUnique({
-      where: { id: params.id },
-    });
-
+    requireAuth(request, ROLES);
+    const { id } = await params;
+    const template = await db.raffleTemplate.findById(id);
     if (!template) {
       return NextResponse.json({ error: "Plantilla no encontrada" }, { status: 404 });
     }
-
     return NextResponse.json(template);
-  } catch (err: any) {
+  } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
@@ -27,17 +24,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-// Actualizar plantilla (misma regla del 70% que Crear Sorteo)
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
+    requireAuth(request, ROLES);
+    const { id } = await params;
     const body = await request.json();
-    
     const { name, description, type, pricePerSlot, slots, winnersCount, mirrorMode, prizes } = body;
 
-    const existing = await prisma.raffleTemplate.findUnique({
-      where: { id: params.id },
-    });
+    const existing = await db.raffleTemplate.findById(id);
     if (!existing) {
       return NextResponse.json({ error: "Plantilla no encontrada" }, { status: 404 });
     }
@@ -57,34 +51,28 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       }
       const totalIncome = numSlots * numPrice;
       const requiredPrizePool = totalIncome * 0.7;
-      const currentPrizePool = values.reduce((a, b) => a + b, 0);
+      const currentPrizePool = values.reduce((a: number, b: number) => a + b, 0);
       if (Math.abs(currentPrizePool - requiredPrizePool) >= 0.1) {
         return NextResponse.json(
-          {
-            error:
-              "El valor total de los premios debe ser exactamente el 70% del valor total del sorteo (Cupos * Precio)",
-          },
+          { error: "El valor total de los premios debe ser exactamente el 70% del valor total del sorteo (Cupos * Precio)" },
           { status: 400 }
         );
       }
     }
 
-    const template = await prisma.raffleTemplate.update({
-      where: { id: params.id },
-      data: {
-        name,
-        description: description !== undefined ? description : undefined,
-        type: type ? (type as DrawType) : undefined,
-        pricePerSlot: pricePerSlot ? parseFloat(pricePerSlot) : undefined,
-        slots: slots ? parseInt(slots) : undefined,
-        winnersCount: winnersCount ? parseInt(winnersCount) : undefined,
-        mirrorMode: mirrorMode !== undefined ? mirrorMode : undefined,
-        prizes: prizes !== undefined ? prizes : undefined,
-      },
-    });
+    const updateData: Parameters<typeof db.raffleTemplate.update>[1] = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (type) updateData.type = type as DrawType;
+    if (pricePerSlot != null) updateData.pricePerSlot = parseFloat(pricePerSlot);
+    if (slots != null) updateData.slots = parseInt(slots, 10);
+    if (winnersCount != null) updateData.winnersCount = parseInt(winnersCount, 10);
+    if (mirrorMode !== undefined) updateData.mirrorMode = mirrorMode;
+    if (prizes !== undefined) updateData.prizes = prizes;
 
+    const template = await db.raffleTemplate.update(id, updateData);
     return NextResponse.json(template);
-  } catch (err: any) {
+  } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
@@ -93,17 +81,17 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-// Eliminar plantilla
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
-    
-    await prisma.raffleTemplate.delete({
-      where: { id: params.id },
-    });
-
+    requireAuth(request, ROLES);
+    const { id } = await params;
+    const template = await db.raffleTemplate.findById(id);
+    if (!template) {
+      return NextResponse.json({ error: "Plantilla no encontrada" }, { status: 404 });
+    }
+    await db.raffleTemplate.deleteById(id);
     return NextResponse.json({ success: true, message: "Plantilla eliminada" });
-  } catch (err: any) {
+  } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }

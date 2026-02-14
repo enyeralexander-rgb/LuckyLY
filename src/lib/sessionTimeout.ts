@@ -1,39 +1,33 @@
-// Sistema de timeout de sesión por inactividad (5 minutos)
+/**
+ * Cierre de sesión automático por inactividad (5 minutos).
+ * Limpia localStorage (auth_token, auth_user) y cookie de sesión vía API.
+ */
+import { clearStoredAuth, getStoredAuth } from "./clientAuth";
 
-const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutos en milisegundos
+const INACTIVITY_MINUTES = 5;
+const INACTIVITY_TIMEOUT = INACTIVITY_MINUTES * 60 * 1000;
 
-let inactivityTimer: NodeJS.Timeout | null = null;
+let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
 let isInitialized = false;
 
 export function initSessionTimeout() {
   if (isInitialized || typeof window === "undefined") return;
   isInitialized = true;
 
-  function resetTimer() {
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-    }
-
-    inactivityTimer = setTimeout(() => {
-      // Cerrar sesión después de 5 minutos de inactividad
-      const auth = localStorage.getItem("auth");
-      if (auth) {
-        // Limpiar sesión
-        localStorage.removeItem("auth");
-        // Redirigir a login
-        window.location.href = "/auth/login?timeout=true";
-      }
-    }, INACTIVITY_TIMEOUT);
+  function logoutByInactivity() {
+    if (!getStoredAuth()) return;
+    clearStoredAuth();
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    window.location.href = "/?timeout=1";
   }
 
-  // Eventos que indican actividad del usuario
-  const events = ["mousedown", "mousemove", "keypress", "scroll", "touchstart", "click"];
+  function resetTimer() {
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(logoutByInactivity, INACTIVITY_TIMEOUT);
+  }
 
-  events.forEach((event) => {
-    document.addEventListener(event, resetTimer, true);
-  });
-
-  // Iniciar el timer
+  const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart", "click"];
+  events.forEach((ev) => document.addEventListener(ev, resetTimer, true));
   resetTimer();
 }
 

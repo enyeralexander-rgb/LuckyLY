@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../lib/prisma";
+import { users, twoFactorAuth } from "../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../lib/db-types";
 import { verify } from "../../../../../lib/totp";
+
+const ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
 export async function POST(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER]);
+    const auth = requireAuth(request, ROLES);
     const body = await request.json();
     const { token } = body;
 
@@ -14,35 +16,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Token requerido para desactivar 2FA" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: auth.userId },
-      include: { twoFactorAuth: true },
-    });
+    const user = await users.findById(auth.userId);
+    const tfa = user ? await twoFactorAuth.findUnique({ userId: auth.userId }) : null;
 
-    if (!user || !user.twoFactorAuth || !user.twoFactorAuth.enabled) {
+    if (!user || !tfa || !tfa.enabled) {
       return NextResponse.json({ error: "2FA no está habilitado" }, { status: 400 });
     }
 
-    // Verificar token antes de desactivar
-    const isValid = verify({
-      token,
-      secret: user.twoFactorAuth.secret,
-    });
-
+    const isValid = verify({ token, secret: tfa.secret });
     if (!isValid) {
       return NextResponse.json({ error: "Token inválido" }, { status: 400 });
     }
 
-    // Desactivar 2FA
-    await prisma.twoFactorAuth.update({
-      where: { userId: auth.userId },
-      data: { enabled: false },
-    });
+    await twoFactorAuth.update({ userId: auth.userId }, { enabled: false });
 
-    return NextResponse.json({
-      success: true,
-      message: "2FA desactivado exitosamente",
-    });
+    return NextResponse.json({ success: true, message: "2FA desactivado exitosamente" });
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

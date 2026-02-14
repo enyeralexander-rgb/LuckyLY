@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { users } from "../../../../lib/db";
 import { logger } from "../../../../lib/logger";
-import { Role } from "@prisma/client";
+import { newId } from "../../../../lib/id";
 import bcrypt from "bcryptjs";
 
 /**
@@ -13,15 +13,30 @@ import bcrypt from "bcryptjs";
  */
 export const dynamic = 'force-dynamic';
 
+function normalizeSecret(value: unknown): string {
+  return String(value ?? "").trim();
+}
+
+function secretMatches(provided: unknown, envSecret: string): boolean {
+  return envSecret !== "" && normalizeSecret(provided) === normalizeSecret(envSecret);
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    // En producción, requerir una clave secreta
+    // En producción, exigir MASTER_SETUP_SECRET definido y distinto del placeholder
     if (process.env.NODE_ENV === "production") {
-      const secret = process.env.MASTER_SETUP_SECRET || "CHANGE_THIS_IN_PRODUCTION";
-      if (body.secret !== secret) {
+      const envSecret = normalizeSecret(process.env.MASTER_SETUP_SECRET ?? "");
+      if (!envSecret || envSecret === "CHANGE_THIS_IN_PRODUCTION") {
         return NextResponse.json(
-          { error: "No autorizado. Se requiere clave secreta." },
+          { error: "Endpoint no configurado. Defina MASTER_SETUP_SECRET en el servidor (Vercel → Project → Settings → Environment Variables)." },
+          { status: 503 }
+        );
+      }
+      const providedSecret = body.secret ?? request.headers.get("x-master-setup-secret");
+      if (!secretMatches(providedSecret, envSecret)) {
+        return NextResponse.json(
+          { error: "No autorizado. Incluya el secreto en el body (secret) o en el header (x-master-setup-secret)." },
           { status: 401 }
         );
       }
@@ -35,31 +50,28 @@ export async function POST(request: Request) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Se requieren email y contraseña. Envíalos en el body o define MASTER_INITIAL_EMAIL y MASTER_INITIAL_PASSWORD en el servidor." },
+        {
+          error: "Faltan email y/o contraseña.",
+          hint: "Envíalos en el body (email, password) o configura MASTER_INITIAL_EMAIL y MASTER_INITIAL_PASSWORD en Vercel (Project → Settings → Environment Variables) y vuelve a llamar con solo el secret.",
+        },
         { status: 400 }
       );
     }
 
     const finalDocumentId = documentId || `V-MASTER-${Date.now()}`;
 
-    const existingMaster = await prisma.user.findUnique({
-      where: { email }
-    });
-
+    const existingMaster = await users.findByEmail(email);
     const passwordHash = await bcrypt.hash(password, 10);
 
     if (existingMaster) {
-      await prisma.user.update({
-        where: { email },
-        data: {
-          passwordHash,
-          role: Role.MASTER,
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          suspended: false,
-          documentId: existingMaster.documentId || finalDocumentId,
-          name: name || existingMaster.name
-        }
+      await users.update(existingMaster.id, {
+        passwordHash,
+        role: "MASTER",
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+        suspended: false,
+        documentId: existingMaster.documentId || finalDocumentId,
+        name: name || existingMaster.name
       });
 
       return NextResponse.json({
@@ -68,17 +80,16 @@ export async function POST(request: Request) {
         email
       });
     } else {
-      await prisma.user.create({
-        data: {
-          email,
-          passwordHash,
-          name: name || "Administrador Master",
-          username: "master",
-          role: Role.MASTER,
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          documentId: finalDocumentId
-        }
+      await users.create({
+        id: newId(),
+        email,
+        passwordHash,
+        name: name || "Administrador Master",
+        username: "master",
+        role: "MASTER",
+        documentId: finalDocumentId,
+        emailVerified: true,
+        emailVerifiedAt: new Date()
       });
 
       return NextResponse.json({
@@ -90,7 +101,7 @@ export async function POST(request: Request) {
   } catch (error) {
     logger.error("Error al crear/actualizar usuario MASTER", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
-      { error: "Error al crear/actualizar usuario MASTER", details: error instanceof Error ? error.message : String(error) },
+      { error: "Error al crear/actualizar usuario MASTER" },
       { status: 500 }
     );
   }
@@ -101,11 +112,17 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     if (process.env.NODE_ENV === "production") {
-      const secret = url.searchParams.get("secret");
-      const requiredSecret = process.env.MASTER_SETUP_SECRET || "CHANGE_THIS_IN_PRODUCTION";
-      if (secret !== requiredSecret) {
+      const envSecret = normalizeSecret(process.env.MASTER_SETUP_SECRET ?? "");
+      if (!envSecret || envSecret === "CHANGE_THIS_IN_PRODUCTION") {
         return NextResponse.json(
-          { error: "No autorizado. Se requiere clave secreta en la URL: ?secret=YOUR_SECRET" },
+          { error: "Endpoint no configurado. Defina MASTER_SETUP_SECRET en el servidor (Vercel → Environment Variables)." },
+          { status: 503 }
+        );
+      }
+      const secret = url.searchParams.get("secret");
+      if (!secretMatches(secret, envSecret)) {
+        return NextResponse.json(
+          { error: "No autorizado. Añada ?secret=TU_MASTER_SETUP_SECRET a la URL." },
           { status: 401 }
         );
       }
@@ -118,31 +135,28 @@ export async function GET(request: Request) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Se requieren email y contraseña (query ?email=...&password=... o variables MASTER_INITIAL_EMAIL y MASTER_INITIAL_PASSWORD)." },
+        {
+          error: "Faltan email y/o contraseña.",
+          hint: "Añada ?email=...&password=... a la URL o configure MASTER_INITIAL_EMAIL y MASTER_INITIAL_PASSWORD en Vercel y llame solo con ?secret=...",
+        },
         { status: 400 }
       );
     }
 
     const finalDocumentId = documentId || `V-MASTER-${Date.now()}`;
 
-    const existingMaster = await prisma.user.findUnique({
-      where: { email }
-    });
-
+    const existingMaster = await users.findByEmail(email);
     const passwordHash = await bcrypt.hash(password, 10);
 
     if (existingMaster) {
-      await prisma.user.update({
-        where: { email },
-        data: {
-          passwordHash,
-          role: Role.MASTER,
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          suspended: false,
-          documentId: existingMaster.documentId || finalDocumentId,
-          name: name || existingMaster.name
-        }
+      await users.update(existingMaster.id, {
+        passwordHash,
+        role: "MASTER",
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+        suspended: false,
+        documentId: existingMaster.documentId || finalDocumentId,
+        name: name || existingMaster.name
       });
 
       return NextResponse.json({
@@ -151,17 +165,16 @@ export async function GET(request: Request) {
         email
       });
     } else {
-      await prisma.user.create({
-        data: {
-          email,
-          passwordHash,
-          name: name || "Administrador Master",
-          username: "master",
-          role: Role.MASTER,
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          documentId: finalDocumentId
-        }
+      await users.create({
+        id: newId(),
+        email,
+        passwordHash,
+        name: name || "Administrador Master",
+        username: "master",
+        role: "MASTER",
+        documentId: finalDocumentId,
+        emailVerified: true,
+        emailVerifiedAt: new Date()
       });
 
       return NextResponse.json({
@@ -173,7 +186,7 @@ export async function GET(request: Request) {
   } catch (error) {
     logger.error("Error al crear/actualizar usuario MASTER", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
-      { error: "Error al crear/actualizar usuario MASTER", details: error instanceof Error ? error.message : String(error) },
+      { error: "Error al crear/actualizar usuario MASTER" },
       { status: 500 }
     );
   }

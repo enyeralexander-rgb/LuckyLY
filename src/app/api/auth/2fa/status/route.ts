@@ -1,24 +1,24 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../lib/prisma";
+import { users, twoFactorAuth } from "../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../lib/db-types";
+
+const ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER]);
-    
-    const user = await prisma.user.findUnique({
-      where: { id: auth.userId },
-      include: { twoFactorAuth: true },
-    });
+    const auth = requireAuth(request, ROLES);
 
+    const user = await users.findById(auth.userId);
     if (!user) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
+    const tfa = await twoFactorAuth.findUnique({ userId: auth.userId });
+
     return NextResponse.json({
-      enabled: user.twoFactorAuth?.enabled || false,
-      configured: !!user.twoFactorAuth,
+      enabled: tfa?.enabled ?? false,
+      configured: !!tfa,
     });
   } catch (err) {
     if (err instanceof AuthError) {

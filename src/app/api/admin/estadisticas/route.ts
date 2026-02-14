@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
-import { prisma } from "../../../../lib/prisma";
+export const dynamic = "force-dynamic";
+import * as db from "../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../lib/auth";
 import { logger } from "../../../../lib/logger";
 import { getContabilidadGlobal } from "../../../../lib/accounting";
 import { parsePeriodRange } from "../../../../lib/dateRange";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../lib/db-types";
+
+const ROLES: Role[] = ["CONTABLE", "MASTER"];
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.CONTABLE, Role.MASTER]);
+    const auth = requireAuth(request, ROLES);
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "7d";
     const startDate = searchParams.get("startDate");
@@ -24,12 +26,9 @@ export async function GET(request: Request) {
       const { ingresos, egresos, ganancias } = contabilidad;
 
       // Ingresos por día (compras confirmadas)
-      const tickets = await prisma.ticket.findMany({
-        where: {
-          status: "CONFIRMED",
-          purchasedAt: { gte: dateStart, lte: dateEnd }
-        },
-        select: { totalPaid: true, purchasedAt: true }
+      const tickets = await db.tickets.findMany({
+        where: { status: "CONFIRMED", purchasedAtGte: dateStart, purchasedAtLte: dateEnd },
+        take: 50000,
       });
       const incomeByDay: Record<string, number> = {};
       tickets.forEach((ticket) => {
@@ -37,35 +36,27 @@ export async function GET(request: Request) {
         incomeByDay[date] = (incomeByDay[date] || 0) + Number(ticket.totalPaid);
       });
 
-      // Egresos por día (premios pagados) — incluye fallback para paidAmount NULL
-      const paidClaims = await prisma.prizeClaim.findMany({
-        where: {
-          status: "PAID",
-          processedAt: { gte: dateStart, lte: dateEnd }
-        },
-        select: {
-          paidAmount: true,
-          processedAt: true,
-          ticket: {
-            select: {
-              items: true,
-              raffle: { select: { winningItem: true, prizes: true, pricePerSlot: true, slots: true } }
-            }
-          }
-        }
+      // Egresos por día (premios pagados)
+      const paidClaims = await db.prizeClaims.findMany({
+        where: { status: "PAID", processedAtGte: dateStart, processedAtLte: dateEnd },
+        take: 10000,
       });
+      const ticketIds = [...new Set(paidClaims.map((c) => c.ticketId))];
+      const ticketList = ticketIds.length ? await db.tickets.findManyByIds(ticketIds) : [];
+      const raffleIds = [...new Set(ticketList.map((t) => t.raffleId))];
+      const raffles = await Promise.all(raffleIds.map((id) => db.raffles.findById(id)));
+      const ticketMap = Object.fromEntries(ticketList.map((t) => [t.id, t]));
+      const raffleMap = Object.fromEntries(raffles.filter(Boolean).map((r) => [r!.id, r!]));
+
       const egresosByDay: Record<string, number> = {};
       paidClaims.forEach((claim) => {
         if (claim.processedAt) {
           const date = new Date(claim.processedAt).toISOString().split("T")[0];
           let amount = Number(claim.paidAmount ?? 0);
-          // Fallback para claims legacy sin paidAmount
-          if (claim.paidAmount == null && claim.ticket.raffle?.prizes) {
-            amount = estimateChartPrize(
-              claim.ticket.raffle.winningItem,
-              claim.ticket.raffle.prizes,
-              claim.ticket.items
-            );
+          const ticket = ticketMap[claim.ticketId];
+          const raffle = ticket ? raffleMap[ticket.raffleId] : null;
+          if (claim.paidAmount == null && raffle?.prizes) {
+            amount = estimateChartPrize(raffle.winningItem, raffle.prizes, ticket?.items);
           }
           egresosByDay[date] = (egresosByDay[date] || 0) + amount;
         }
@@ -90,23 +81,23 @@ export async function GET(request: Request) {
         netGrowthPercentage = ((gananciasLast48 - gananciasPrev48) / Math.abs(gananciasPrev48)) * 100;
       }
 
-      const previousPeriodStart = new Date(dateStart);
-      previousPeriodStart.setTime(previousPeriodStart.getTime() - (dateEnd.getTime() - dateStart.getTime()));
-      const contPrevious = await getContabilidadGlobal({ dateStart: previousPeriodStart, dateEnd: dateStart });
+      const previousPeriodStart = new Date(dateStart.getTime() - (dateEnd.getTime() - dateStart.getTime()));
+      const previousPeriodEnd = new Date(dateStart.getTime() - 1);
+      const contPrevious = await getContabilidadGlobal({ dateStart: previousPeriodStart, dateEnd: previousPeriodEnd });
       const growthPercentage = contPrevious.ingresos > 0
         ? ((ingresos - contPrevious.ingresos) / contPrevious.ingresos) * 100
         : ingresos > 0 ? 100 : 0;
 
-      // Gráfico: todos los días del período con ingresos y egresos (sin huecos)
+      // Gráfico: todos los días del período con ingresos y egresos (sin huecos). Iteración por día UTC.
       const chartData: Array<{ date: string; ingresos: number; egresos: number; ganancias: number }> = [];
       const end = new Date(dateEnd);
-      end.setHours(23, 59, 59, 999);
+      end.setUTCHours(23, 59, 59, 999);
       const maxChartDays = 400;
       const rangeMs = end.getTime() - dateStart.getTime();
       const chartStart = rangeMs > maxChartDays * 24 * 60 * 60 * 1000
         ? new Date(end.getTime() - maxChartDays * 24 * 60 * 60 * 1000)
         : new Date(dateStart);
-      chartStart.setHours(0, 0, 0, 0);
+      chartStart.setUTCHours(0, 0, 0, 0);
       const current = new Date(chartStart);
       while (current <= end) {
         const dateStr = current.toISOString().split("T")[0];
@@ -118,7 +109,7 @@ export async function GET(request: Request) {
           egresos: dayEgresos,
           ganancias: Number((dayIngresos - dayEgresos).toFixed(2))
         });
-        current.setDate(current.getDate() + 1);
+        current.setUTCDate(current.getUTCDate() + 1);
       }
 
       return NextResponse.json({
@@ -134,95 +125,53 @@ export async function GET(request: Request) {
         }
       });
     } else if (type === "referrals") {
-      // Estadísticas de referencias
-      const visits = await prisma.referralVisit.findMany({
-        where: {
-          createdAt: {
-            gte: dateStart,
-            lte: dateEnd
-          }
-        },
-        include: {
-          referralLink: true
-        }
+      const visits = await db.referralVisit.findMany({
+        where: { createdAtGte: dateStart, createdAtLte: dateEnd },
+        take: 50000,
       });
+      const linkIds = [...new Set(visits.map((v) => v.referralLinkId))];
+      const links = await Promise.all(linkIds.map((id) => db.referralLink.findById(id)));
+      const linkMap = Object.fromEntries(links.filter(Boolean).map((l) => [l!.id, l!]));
+      const withReferral = visits.filter((v) => linkMap[v.referralLinkId]).length;
 
-      const withReferral = visits.filter(v => v.referralLink).length;
-      const withoutReferral = await prisma.user.count({
-        where: {
-          createdAt: {
-            gte: dateStart,
-            lte: dateEnd
-          },
-          referralVisits: {
-            none: {}
-          }
-        }
+      const allVisitsForUserCheck = await db.referralVisit.findMany({ take: 200000 });
+      const userIdsWithVisits = new Set(allVisitsForUserCheck.map((v) => v.userId).filter(Boolean));
+      const usersInRange = await db.users.findManyAdmin({
+        createdAtGte: dateStart,
+        createdAtLte: dateEnd,
+        skip: 0,
+        take: 50000,
       });
+      const withoutReferral = usersInRange.filter((u) => !userIdsWithVisits.has(u.id)).length;
 
-      // Calcular crecimiento
-      const previousPeriodStart = new Date(dateStart);
-      previousPeriodStart.setTime(previousPeriodStart.getTime() - (dateEnd.getTime() - dateStart.getTime()));
-      const previousPeriodEnd = dateStart;
+      const previousPeriodStart = new Date(dateStart.getTime() - (dateEnd.getTime() - dateStart.getTime()));
+      const previousPeriodEnd = new Date(dateStart.getTime() - 1);
 
-      const previousVisits = await prisma.referralVisit.count({
-        where: {
-          createdAt: {
-            gte: previousPeriodStart,
-            lte: previousPeriodEnd
-          }
-        }
+      const previousVisitsList = await db.referralVisit.findMany({
+        where: { createdAtGte: previousPeriodStart, createdAtLte: previousPeriodEnd },
+        take: 50000,
       });
-
-      const previousUsers = await prisma.user.count({
-        where: {
-          createdAt: {
-            gte: previousPeriodStart,
-            lte: previousPeriodEnd
-          }
-        }
+      const previousUsersList = await db.users.findManyAdmin({
+        createdAtGte: previousPeriodStart,
+        createdAtLte: previousPeriodEnd,
+        skip: 0,
+        take: 50000,
       });
-
+      const previousTotal = previousVisitsList.length + previousUsersList.length;
       const currentTotal = withReferral + withoutReferral;
-      const previousTotal = previousVisits + previousUsers;
-      const growthPercentage = previousTotal > 0 
-        ? ((currentTotal - previousTotal) / previousTotal) * 100 
-        : 0;
+      const growthPercentage = previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal) * 100 : 0;
 
-      // Datos por día
       const referralsByDay: Record<string, { withReferral: number; withoutReferral: number }> = {};
-      
       visits.forEach((visit) => {
         const date = new Date(visit.createdAt).toISOString().split("T")[0];
-        if (!referralsByDay[date]) {
-          referralsByDay[date] = { withReferral: 0, withoutReferral: 0 };
-        }
-        if (visit.referralLink) {
-          referralsByDay[date].withReferral++;
-        }
+        if (!referralsByDay[date]) referralsByDay[date] = { withReferral: 0, withoutReferral: 0 };
+        if (linkMap[visit.referralLinkId]) referralsByDay[date].withReferral++;
       });
 
-      // Agregar usuarios sin referral
-      const usersWithoutReferral = await prisma.user.findMany({
-        where: {
-          createdAt: {
-            gte: dateStart,
-            lte: dateEnd
-          },
-          referralVisits: {
-            none: {}
-          }
-        },
-        select: {
-          createdAt: true
-        }
-      });
-
-      usersWithoutReferral.forEach((user) => {
+      const usersWithoutReferralInRange = usersInRange.filter((u) => !userIdsWithVisits.has(u.id));
+      usersWithoutReferralInRange.forEach((user) => {
         const date = new Date(user.createdAt).toISOString().split("T")[0];
-        if (!referralsByDay[date]) {
-          referralsByDay[date] = { withReferral: 0, withoutReferral: 0 };
-        }
+        if (!referralsByDay[date]) referralsByDay[date] = { withReferral: 0, withoutReferral: 0 };
         referralsByDay[date].withoutReferral++;
       });
 
@@ -247,51 +196,42 @@ export async function GET(request: Request) {
         }
       });
     } else if (type === "topUsers") {
-      // Top usuarios (solo MASTER)
-      if (auth.role !== Role.MASTER) {
+      if (auth.role !== "MASTER") {
         return NextResponse.json({ error: "Solo MASTER puede ver top usuarios" }, { status: 403 });
       }
 
-      const users = await prisma.user.findMany({
-        where: {
-          role: "USER",
-          tickets: {
-            some: {
-              status: "CONFIRMED",
-              purchasedAt: {
-                gte: dateStart,
-                lte: dateEnd
-              }
-            }
-          }
-        },
-        include: {
-          tickets: {
-            where: {
-              status: "CONFIRMED",
-              purchasedAt: {
-                gte: dateStart,
-                lte: dateEnd
-              }
-            },
-            select: {
-              totalPaid: true,
-              purchasedAt: true
-            }
-          }
-        }
+      const ticketsInRange = await db.tickets.findMany({
+        where: { status: "CONFIRMED", purchasedAtGte: dateStart, purchasedAtLte: dateEnd },
+        take: 100000,
+      });
+      const userIds = [...new Set(ticketsInRange.map((t) => t.userId))];
+      const userList = userIds.length ? await db.users.findManyByIds(userIds) : [];
+      const userMap = Object.fromEntries(userList.map((u) => [u.id, u]));
+
+      const totalByUser: Record<string, { totalPaid: number; count: number }> = {};
+      ticketsInRange.forEach((t) => {
+        if (!totalByUser[t.userId]) totalByUser[t.userId] = { totalPaid: 0, count: 0 };
+        totalByUser[t.userId].totalPaid += Number(t.totalPaid);
+        totalByUser[t.userId].count++;
       });
 
-      const usersWithTotal = users.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        documentId: user.documentId,
-        nationalId: user.nationalId,
-        nationalIdType: user.nationalIdType,
-        totalSpent: user.tickets.reduce((sum, t) => sum + Number(t.totalPaid), 0),
-        purchaseCount: user.tickets.length
-      })).sort((a, b) => b.totalSpent - a.totalSpent);
+      const usersWithTotal = Object.entries(totalByUser)
+        .map(([userId, data]) => {
+          const user = userMap[userId];
+          if (!user || user.role !== "USER") return null;
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            documentId: user.documentId,
+            nationalId: user.nationalId,
+            nationalIdType: user.nationalIdType,
+            totalSpent: data.totalPaid,
+            purchaseCount: data.count,
+          };
+        })
+        .filter(Boolean) as { id: string; name: string; email: string; documentId: string; nationalId: string | null; nationalIdType: string | null; totalSpent: number; purchaseCount: number }[];
+      usersWithTotal.sort((a, b) => b.totalSpent - a.totalSpent);
 
       return NextResponse.json({
         users: usersWithTotal,

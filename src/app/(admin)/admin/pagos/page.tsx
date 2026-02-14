@@ -30,16 +30,26 @@ type Claim = {
   };
 };
 
+const defaultEmailBody = `¡Felicidades, {{userName}}! 🌟
+Ganaste en LuckyLY. Te envío adjunto el comprobante de pago de tu premio.
+¡Gracias por confiar en nosotros, por ser parte de nuestra comunidad y a disfrutarlo! 🥳
+Sorteo: {{raffleTitle}}`;
+
 function PagosPageContent() {
   const auth = getStoredAuth();
   const [claims, setClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
-  const [uploadingProof, setUploadingProof] = useState<string | null>(null);
+  const [payModalClaim, setPayModalClaim] = useState<Claim | null>(null);
+  const [payRef, setPayRef] = useState("");
+  const [payFile, setPayFile] = useState<File | null>(null);
+  const [emailTemplateModal, setEmailTemplateModal] = useState(false);
+  const [emailTemplateBody, setEmailTemplateBody] = useState(defaultEmailBody);
+  const [emailTemplateSaving, setEmailTemplateSaving] = useState(false);
 
   useEffect(() => {
     if (auth?.token) {
-      fetch("/api/admin/claims", { headers: { Authorization: `Bearer ${auth.token}` } })
+      fetch("/api/admin/claims", { headers: { Authorization: `Bearer ${auth.token}` }, cache: "no-store" })
         .then((r) => r.json())
         .then((data) => {
           setClaims(data);
@@ -49,81 +59,78 @@ function PagosPageContent() {
     }
   }, [auth]);
 
-  async function handleUploadProof(claimId: string) {
-    if (!auth?.token) return;
-    
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      setUploadingProof(claimId);
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await fetch(`/api/admin/claims/${claimId}/upload-proof`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${auth.token}` },
-          body: formData,
-        });
-
-        const data = await res.json();
-        if (res.ok) {
-          alert("Comprobante subido exitosamente");
-          window.location.reload();
-        } else {
-          alert(`Error: ${data.error || "No se pudo subir el comprobante"}`);
-        }
-      } catch (err) {
-        console.error("Error:", err);
-        alert("Error al subir comprobante");
-      } finally {
-        setUploadingProof(null);
-      }
-    };
-    input.click();
+  async function handleOpenPayModal(claim: Claim) {
+    setPayModalClaim(claim);
+    setPayRef("");
+    setPayFile(null);
   }
 
-  async function handleMarkPaid(claimId: string) {
-    if (!auth?.token) return;
-    
-    const claim = claims.find((c) => c.id === claimId);
-    if (!claim) return;
-
-    if (!claim.paymentProof) {
-      alert("Debe adjuntar un comprobante de pago antes de confirmar el pago");
+  async function handleSubmitPay() {
+    if (!auth?.token || !payModalClaim) return;
+    const amount = payModalClaim.suggestedPrize != null ? payModalClaim.suggestedPrize : Number(payModalClaim.ticket.totalPaid);
+    if (!payRef.trim()) {
+      alert("Ingresa la referencia de pago");
       return;
     }
-
-    const amount = claim.suggestedPrize != null ? claim.suggestedPrize : Number(claim.ticket.totalPaid);
-    const confirmMsg = `¿Marcar este reclamo como pagado?\n\nMonto del premio: Bs. ${amount.toFixed(2)}\nSorteo: ${claim.ticket.raffle.title}\nGanador: ${claim.ticket.raffle.winningItem || "N/A"}\n\nA continuación se pedirá la referencia de pago.`;
-    if (!confirm(confirmMsg)) return;
-    setProcessing(claimId);
+    if (!payFile) {
+      alert("Selecciona el comprobante de pago (imagen) para enviarlo por correo al ganador");
+      return;
+    }
+    setProcessing(payModalClaim.id);
     try {
-      const paymentRef = prompt("Ingresa la referencia de pago:");
-      if (!paymentRef || !paymentRef.trim()) {
-        setProcessing(null);
-        return;
-      }
-      const res = await fetch(`/api/admin/claims/${claimId}/pay`, {
+      const formData = new FormData();
+      formData.append("paymentRef", payRef.trim());
+      formData.append("paidAmount", String(amount));
+      formData.append("file", payFile);
+
+      const res = await fetch(`/api/admin/claims/${payModalClaim.id}/pay`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
-        body: JSON.stringify({ paymentRef: paymentRef.trim(), paidAmount: amount })
+        headers: { Authorization: `Bearer ${auth.token}` },
+        body: formData,
       });
+      const data = await res.json();
       if (res.ok) {
         alert("Reclamo marcado como pagado. El cliente recibirá un email con el comprobante.");
+        setPayModalClaim(null);
         window.location.reload();
       } else {
-        const data = await res.json();
-        alert(`Error: ${data.error || "No se pudo procesar el pago"}`);
+        alert(data.error || "No se pudo procesar el pago");
       }
     } catch {
       alert("Error al procesar pago");
     } finally {
       setProcessing(null);
+    }
+  }
+
+  function openEmailTemplateModal() {
+    setEmailTemplateModal(true);
+    fetch("/api/admin/prize-email-template", { headers: { Authorization: `Bearer ${auth?.token}` } })
+      .then((r) => r.json())
+      .then((data) => setEmailTemplateBody(data.body || defaultEmailBody))
+      .catch(() => setEmailTemplateBody(defaultEmailBody));
+  }
+
+  async function saveEmailTemplate() {
+    if (!auth?.token) return;
+    setEmailTemplateSaving(true);
+    try {
+      const res = await fetch("/api/admin/prize-email-template", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
+        body: JSON.stringify({ body: emailTemplateBody }),
+      });
+      if (res.ok) {
+        alert("Texto de email guardado");
+        setEmailTemplateModal(false);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Error al guardar");
+      }
+    } catch {
+      alert("Error al guardar");
+    } finally {
+      setEmailTemplateSaving(false);
     }
   }
 
@@ -151,13 +158,50 @@ function PagosPageContent() {
 
   const pending = claims.filter((c) => c.status === "REQUESTED" || c.status === "PROCESSING");
 
+  const modalOverlayStyle: React.CSSProperties = {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.6)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+    padding: "1rem",
+  };
+  const modalCardStyle: React.CSSProperties = {
+    background: "var(--bg-primary)",
+    borderRadius: "12px",
+    padding: "1.5rem",
+    maxWidth: "480px",
+    width: "100%",
+    maxHeight: "90vh",
+    overflow: "auto",
+    boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
+  };
+
   return (
     <>
       <AdminNavBar />
       <main className="container" style={{ paddingTop: "2rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
           <h1 style={{ margin: 0 }}>Gestión de Pagos de Premios</h1>
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={openEmailTemplateModal}
+              style={{
+                padding: "0.5rem 1rem",
+                background: "#6366f1",
+                color: "#fff",
+                border: "none",
+                borderRadius: "8px",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontSize: "0.875rem",
+              }}
+            >
+              ✉️ Configurar texto de email a ganadores
+            </button>
             <Link href="/admin" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: 600 }}>← Volver</Link>
           </div>
         </div>
@@ -183,50 +227,16 @@ function PagosPageContent() {
                   </div>
                   <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
                     <button
-                      onClick={() => handleUploadProof(claim.id)}
-                      disabled={uploadingProof === claim.id || !!claim.paymentProof}
+                      onClick={() => handleOpenPayModal(claim)}
+                      disabled={processing === claim.id}
                       style={{
                         padding: ".5rem 1rem",
-                        background: claim.paymentProof ? "#6b7280" : "#f59e0b",
+                        background: "#85BB65",
                         color: "#fff",
                         border: "none",
                         borderRadius: "8px",
-                        cursor: uploadingProof === claim.id || claim.paymentProof ? "not-allowed" : "pointer",
-                        fontWeight: 600,
-                        fontSize: "0.875rem"
-                      }}
-                    >
-                      {uploadingProof === claim.id ? "Subiendo..." : claim.paymentProof ? "✓ Comprobante Adjunto" : "📎 Adjuntar Comprobante"}
-                    </button>
-                    {claim.paymentProof && (
-                      <a
-                        href={claim.paymentProof}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          padding: ".5rem 1rem",
-                          background: "#3b82f6",
-                          color: "#fff",
-                          textDecoration: "none",
-                          borderRadius: "8px",
-                          fontWeight: 600,
-                          fontSize: "0.875rem"
-                        }}
-                      >
-                        👁️ Ver Comprobante
-                      </a>
-                    )}
-                    <button
-                      onClick={() => handleMarkPaid(claim.id)}
-                      disabled={processing === claim.id || !claim.paymentProof}
-                      style={{
-                        padding: ".5rem 1rem",
-                        background: !claim.paymentProof ? "#6b7280" : "#85BB65",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: processing === claim.id || !claim.paymentProof ? "not-allowed" : "pointer",
-                        fontWeight: 700
+                        cursor: processing === claim.id ? "not-allowed" : "pointer",
+                        fontWeight: 700,
                       }}
                     >
                       {processing === claim.id ? "Procesando..." : "Marcar Pagado"}
@@ -241,7 +251,7 @@ function PagosPageContent() {
                         border: "none",
                         borderRadius: "8px",
                         cursor: processing === claim.id ? "not-allowed" : "pointer",
-                        fontWeight: 600
+                        fontWeight: 600,
                       }}
                     >
                       Datos Incorrectos
@@ -280,6 +290,72 @@ function PagosPageContent() {
           </div>
         )}
       </main>
+
+      {payModalClaim && (
+        <div style={modalOverlayStyle} onClick={() => !processing && setPayModalClaim(null)}>
+          <div style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: "0 0 1rem" }}>Marcar como pagado</h3>
+            <p style={{ margin: "0 0 .5rem", color: "var(--text-secondary)", fontSize: ".875rem" }}>
+              Sorteo: {payModalClaim.ticket.raffle.title} | Monto: {(payModalClaim.suggestedPrize != null ? payModalClaim.suggestedPrize : Number(payModalClaim.ticket.totalPaid)).toFixed(2)} Bs.
+            </p>
+            <div style={{ display: "grid", gap: "1rem", marginBottom: "1rem" }}>
+              <div>
+                <label style={{ display: "block", marginBottom: ".25rem", fontWeight: 600 }}>Referencia de pago *</label>
+                <input
+                  type="text"
+                  value={payRef}
+                  onChange={(e) => setPayRef(e.target.value)}
+                  placeholder="Ej: 01234567890123456789"
+                  style={{ width: "100%", padding: ".5rem .75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: ".25rem", fontWeight: 600 }}>Comprobante de pago (imagen) *</label>
+                <p style={{ margin: "0 0 .5rem", fontSize: ".75rem", color: "var(--text-secondary)" }}>Se enviará por correo al ganador. No se guarda en la base de datos.</p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setPayFile(e.target.files?.[0] ?? null)}
+                  style={{ width: "100%", padding: ".5rem", borderRadius: "8px", border: "1px solid var(--border-color)" }}
+                />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: ".5rem", justifyContent: "flex-end" }}>
+              <button type="button" onClick={() => setPayModalClaim(null)} disabled={!!processing} style={{ padding: ".5rem 1rem", background: "#6b7280", color: "#fff", border: "none", borderRadius: "8px", cursor: processing ? "not-allowed" : "pointer" }}>
+                Cancelar
+              </button>
+              <button type="button" onClick={handleSubmitPay} disabled={!!processing || !payRef.trim() || !payFile} style={{ padding: ".5rem 1rem", background: "#85BB65", color: "#fff", border: "none", borderRadius: "8px", cursor: !!processing || !payRef.trim() || !payFile ? "not-allowed" : "pointer", fontWeight: 600 }}>
+                {processing ? "Procesando..." : "Confirmar y enviar email"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {emailTemplateModal && (
+        <div style={modalOverlayStyle} onClick={() => !emailTemplateSaving && setEmailTemplateModal(false)}>
+          <div style={{ ...modalCardStyle, maxWidth: "560px" }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: "0 0 0.5rem" }}>Texto del email a ganadores</h3>
+            <p style={{ margin: "0 0 1rem", fontSize: ".875rem", color: "var(--text-secondary)" }}>
+              Usa <code style={{ background: "var(--bg-secondary)", padding: "0.1rem 0.3rem", borderRadius: "4px" }}>{`{{userName}}`}</code> y <code style={{ background: "var(--bg-secondary)", padding: "0.1rem 0.3rem", borderRadius: "4px" }}>{`{{raffleTitle}}`}</code> como placeholders.
+            </p>
+            <textarea
+              value={emailTemplateBody}
+              onChange={(e) => setEmailTemplateBody(e.target.value)}
+              rows={12}
+              style={{ width: "100%", padding: ".75rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)", fontFamily: "inherit", marginBottom: "1rem" }}
+            />
+            <div style={{ display: "flex", gap: ".5rem", justifyContent: "flex-end" }}>
+              <button type="button" onClick={() => setEmailTemplateModal(false)} disabled={emailTemplateSaving} style={{ padding: ".5rem 1rem", background: "#6b7280", color: "#fff", border: "none", borderRadius: "8px", cursor: emailTemplateSaving ? "not-allowed" : "pointer" }}>
+                Cerrar
+              </button>
+              <button type="button" onClick={saveEmailTemplate} disabled={emailTemplateSaving} style={{ padding: ".5rem 1rem", background: "#85BB65", color: "#fff", border: "none", borderRadius: "8px", cursor: emailTemplateSaving ? "not-allowed" : "pointer", fontWeight: 600 }}>
+                {emailTemplateSaving ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
