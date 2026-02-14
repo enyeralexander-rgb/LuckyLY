@@ -1,17 +1,24 @@
 #!/usr/bin/env node
 
 /**
- * Script para verificar la conexión a Prisma Postgres
- * Ejecutar: node scripts/verify-connection.js
+ * Script para verificar la conexión a Neon (Postgres 17)
+ * Ejecutar: npm run db:verify  o  node scripts/verify-connection.js
  */
 
-import 'dotenv/config';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 import pg from 'pg';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, '..');
+dotenv.config({ path: path.join(root, '.env') });
+dotenv.config({ path: path.join(root, '.env.local') });
 
 const { Pool } = pg;
 
 console.log('\n═══════════════════════════════════════════════════════');
-console.log('🔌 VERIFICAR CONEXIÓN A PRISMA POSTGRES');
+console.log('🔌 VERIFICAR CONEXIÓN A BASE DE DATOS (Neon Postgres 17)');
 console.log('═══════════════════════════════════════════════════════\n');
 
 async function main() {
@@ -19,22 +26,18 @@ async function main() {
   
   if (!databaseUrl) {
     console.error('❌ ERROR: DATABASE_URL no está definida');
-    console.log('\n📝 Configura tu archivo .env con:');
-    console.log('DATABASE_URL="postgres://[username]:[password]@db.prisma.io:5432/postgres?sslmode=require"');
+    console.log('\n📝 Configura .env.local con la URL de Neon, ejemplo:');
+    console.log('DATABASE_URL="postgresql://user:pass@ep-xxx.region.aws.neon.tech/neondb?sslmode=require"');
     process.exit(1);
   }
 
-  // Detectar tipo de base de datos
-  const isPrismaPostgres = databaseUrl.includes('db.prisma.io');
   const isNeon = databaseUrl.includes('neon.tech');
-  
-  console.log('📍 Tipo de base de datos detectada:');
-  if (isPrismaPostgres) {
-    console.log('   ✅ Prisma Postgres (db.prisma.io)');
-  } else if (isNeon) {
-    console.log('   ✅ Neon (neon.tech)');
+
+  console.log('📍 Base de datos:');
+  if (isNeon) {
+    console.log('   ✅ Neon (Postgres Serverless)');
   } else {
-    console.log('   ⚠️  PostgreSQL estándar');
+    console.log('   ⚠️  PostgreSQL estándar (recomendado: Neon)');
   }
 
   // Limpiar URL
@@ -51,7 +54,7 @@ async function main() {
   };
 
   const cleanedUrl = cleanUrl(databaseUrl);
-  const requiresSSL = isPrismaPostgres || isNeon;
+  const requiresSSL = isNeon;
 
   console.log('\n🔄 Intentando conectar...\n');
 
@@ -86,7 +89,7 @@ async function main() {
       });
     } else {
       console.log('📋 No hay tablas creadas aún (schema vacío)');
-      console.log('   Ejecuta: npx prisma db push');
+      console.log('   Aplica scripts/schema-neon.sql en Neon Console (SQL Editor) o usa el flujo de despliegue.');
     }
 
     // Verificar usuario MASTER

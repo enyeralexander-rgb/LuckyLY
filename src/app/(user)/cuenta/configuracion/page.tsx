@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { AuthGuard } from "../../../../components/AuthGuard";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getStoredAuth, clearStoredAuth, setStoredAuth } from "../../../../lib/clientAuth";
 import { useRouter } from "next/navigation";
 
@@ -35,6 +35,7 @@ export default function ConfiguracionPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [emailRestriction, setEmailRestriction] = useState<{ canChange: boolean; daysRemaining: number } | null>(null);
   const [usernameRestriction, setUsernameRestriction] = useState<{ canChange: boolean; daysRemaining: number } | null>(null);
+  const [refreshingVerification, setRefreshingVerification] = useState(false);
 
   useEffect(() => {
     const storedAuth = getStoredAuth();
@@ -86,36 +87,71 @@ export default function ConfiguracionPage() {
     return { canChange: daysRemaining === 0, daysRemaining };
   }
 
+  // Cargar/actualizar perfil desde el servidor (siempre datos frescos, sin caché)
+  async function fetchProfile(showLoading = true) {
+    if (!auth?.token) return;
+    if (showLoading) setLoading(true);
+    try {
+      const r = await fetch("/api/user/profile", {
+        headers: { Authorization: `Bearer ${auth.token}` },
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      const data = await r.json();
+      if (data.error) {
+        console.error("Error:", data.error);
+        return;
+      }
+      setUserData(data);
+      setFormData((prev) => ({
+        ...prev,
+        email: data.email || "",
+        username: data.username || "",
+      }));
+      setEmailRestriction(calculateDaysRemaining(data.emailUpdatedAt));
+      setUsernameRestriction(calculateDaysRemaining(data.usernameUpdatedAt));
+    } catch (err) {
+      console.error("Error al cargar perfil:", err);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (auth?.token) {
-      setLoading(true);
-      fetch("/api/user/profile", { headers: { Authorization: `Bearer ${auth.token}` } })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.error) {
-            console.error("Error:", data.error);
-            setLoading(false);
-            return;
-          }
-          setUserData(data);
-          setFormData({
-            email: data.email || "",
-            username: data.username || "",
-            currentPassword: "",
-            newPassword: "",
-            confirmPassword: ""
-          });
-          // Calcular restricciones de cambio
-          setEmailRestriction(calculateDaysRemaining(data.emailUpdatedAt));
-          setUsernameRestriction(calculateDaysRemaining(data.usernameUpdatedAt));
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Error al cargar perfil:", err);
-          setLoading(false);
-        });
+      fetchProfile(true);
     }
-  }, [auth]);
+  }, [auth?.token]);
+
+  // Al volver a la pestaña, revalidar estado de verificación (p. ej. si verificó en otro dispositivo)
+  const fetchProfileRef = useRef(fetchProfile);
+  fetchProfileRef.current = fetchProfile;
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && auth?.token) {
+        fetchProfileRef.current?.(false);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [auth?.token]);
+
+  // Polling automático en pestaña Verificación mientras el correo no esté verificado (p. ej. usuario abrió el enlace en otro dispositivo)
+  const POLL_INTERVAL_MS = 4000;
+  useEffect(() => {
+    if (
+      activeTab !== "verification" ||
+      !auth?.token ||
+      !userData ||
+      userData.emailVerified
+    ) {
+      return;
+    }
+    const interval = setInterval(() => {
+      fetchProfileRef.current?.(false);
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [activeTab, auth?.token, userData?.id, userData?.emailVerified]);
 
   async function handleUpdateEmail() {
     if (!auth?.token || saving) return;
@@ -263,7 +299,7 @@ export default function ConfiguracionPage() {
       if (res.ok) {
         alert("Cuenta eliminada exitosamente");
         clearStoredAuth();
-        router.push("/");
+        window.location.href = "/";
       } else {
         alert(data.error || "Error al eliminar cuenta");
       }
@@ -387,6 +423,32 @@ export default function ConfiguracionPage() {
             <div style={{ display: "grid", gap: "1.5rem" }}>
               <div>
                 <h3 style={{ margin: "0 0 1rem", color: "var(--text-primary)" }}>Verificación de Correo Electrónico</h3>
+                <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setRefreshingVerification(true);
+                      await fetchProfile(false);
+                      setRefreshingVerification(false);
+                    }}
+                    disabled={refreshingVerification || !auth?.token}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      fontSize: "0.875rem",
+                      background: "var(--bg-secondary)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      color: "var(--text-primary)",
+                      cursor: refreshingVerification || !auth?.token ? "not-allowed" : "pointer",
+                      opacity: refreshingVerification || !auth?.token ? 0.7 : 1,
+                    }}
+                  >
+                    {refreshingVerification ? "Actualizando…" : "Actualizar estado"}
+                  </button>
+                  <span style={{ color: "var(--text-tertiary)", fontSize: "0.8125rem" }}>
+                    Si acabas de verificar desde otro dispositivo, pulsa aquí para refrescar.
+                  </span>
+                </div>
                 {userData?.emailVerified ? (
                   <div style={{ padding: "1.5rem", background: "rgba(133, 187, 101, 0.1)", borderRadius: "8px", textAlign: "center" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>✅</div>

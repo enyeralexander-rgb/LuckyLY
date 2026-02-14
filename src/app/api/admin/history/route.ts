@@ -1,55 +1,42 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
-import { requireAuth, AuthError } from "../../../../lib/auth";
-import { getRevenueByRaffle, getPrizesPaidByRaffle } from "../../../../lib/accounting";
-import { Role } from "@prisma/client";
+import * as db from "@/lib/db";
+import { requireAuth, AuthError } from "@/lib/auth";
+import { getRevenueByRaffle, getPrizesPaidByRaffle } from "@/lib/accounting";
+import type { Role } from "@/lib/db-types";
+
+const ADMIN_ROLES: Role[] = ["SUPERADMIN", "MASTER"];
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.SUPERADMIN, Role.MASTER]);
+    const auth = requireAuth(request, ADMIN_ROLES);
     const { searchParams } = new URL(request.url);
     const day = searchParams.get("day");
     const month = searchParams.get("month");
     const year = searchParams.get("year");
     const type = searchParams.get("type");
 
-    const where: any = {
-      status: "FINISHED",
-      executedAt: { not: null }
-    };
+    let executedAtGte: Date | undefined;
+    let executedAtLte: Date | undefined;
 
-    if (type) {
-      where.type = type;
+    if (day && month && year) {
+      const date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
+      executedAtGte = new Date(date.setHours(0, 0, 0, 0));
+      executedAtLte = new Date(date.setHours(23, 59, 59, 999));
+    } else if (month && year) {
+      executedAtGte = new Date(`${year}-${month.padStart(2, "0")}-01`);
+      executedAtLte = new Date(`${year}-${month.padStart(2, "0")}-31`);
+    } else if (year) {
+      executedAtGte = new Date(`${year}-01-01`);
+      executedAtLte = new Date(`${year}-12-31`);
     }
 
-    if (day || month || year) {
-      where.executedAt = {};
-      if (year) {
-        const startDate = new Date(`${year}-01-01`);
-        const endDate = new Date(`${year}-12-31`);
-        where.executedAt.gte = startDate;
-        where.executedAt.lte = endDate;
-      }
-      if (month && year) {
-        const startDate = new Date(`${year}-${month.padStart(2, "0")}-01`);
-        const endDate = new Date(`${year}-${month.padStart(2, "0")}-31`);
-        where.executedAt.gte = startDate;
-        where.executedAt.lte = endDate;
-      }
-      if (day && month && year) {
-        const date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
-        where.executedAt.gte = new Date(date.setHours(0, 0, 0, 0));
-        where.executedAt.lte = new Date(date.setHours(23, 59, 59, 999));
-      }
-    }
-
-    const raffles = await prisma.raffle.findMany({
-      where,
-      orderBy: { executedAt: "desc" },
-      take: 100
+    const raffles = await db.raffles.findManyHistory({
+      executedAtGte,
+      executedAtLte,
+      type: type ?? undefined,
+      take: 100,
     });
 
-    // Para cada sorteo obtener los usuarios ganadores (tickets que tienen items ganadores)
     const rafflesWithWinners = await Promise.all(
       raffles.map(async (r) => {
         const winningValues = r.winningItem
@@ -58,50 +45,29 @@ export async function GET(request: Request) {
         if (winningValues.length === 0) {
           return { ...r, winnerUsers: [] as { id: string; name: string; username: string | null }[] };
         }
-        const items = await prisma.ticketItem.findMany({
-          where: { raffleId: r.id, value: { in: winningValues } },
-          include: {
-            ticket: {
-              include: {
-                user: { select: { id: true, name: true, username: true } }
-              }
-            }
-          }
-        });
-        const seen = new Set<string>();
-        const winnerUsers = items
-          .filter((i) => {
-            const uid = i.ticket.user.id;
-            if (seen.has(uid)) return false;
-            seen.add(uid);
-            return true;
-          })
-          .map((i) => ({
-            id: i.ticket.user.id,
-            name: i.ticket.user.name,
-            username: i.ticket.user.username
-          }));
+        const items = await db.ticketItems.findMany({ raffleId: r.id });
+        const winningSet = new Set(winningValues);
+        const winningItems = items.filter((i) => winningSet.has(i.value));
+        const ticketIds = [...new Set(winningItems.map((i) => i.ticketId))];
+        const ticketList = await db.tickets.findManyByIds(ticketIds);
+        const userIds = [...new Set(ticketList.map((t) => t.userId))];
+        const winnerUsers: { id: string; name: string; username: string | null }[] = [];
+        for (const uid of userIds) {
+          const u = await db.users.findById(uid);
+          if (u) winnerUsers.push({ id: u.id, name: u.name, username: u.username });
+        }
         return { ...r, winnerUsers };
       })
     );
 
-    // Calcular contabilidad por sorteo (batch para eficiencia)
-    const raffleIds = rafflesWithWinners.map(r => r.id);
-    const [revenueMap, prizesPaidMap, ticketCountsRaw] = await Promise.all([
+    const raffleIds = rafflesWithWinners.map((r) => r.id);
+    const [revenueMap, prizesPaidMap, ticketCounts] = await Promise.all([
       getRevenueByRaffle(raffleIds),
       getPrizesPaidByRaffle(raffleIds),
-      prisma.ticket.groupBy({
-        by: ["raffleId"],
-        where: { raffleId: { in: raffleIds }, status: "CONFIRMED" },
-        _count: { id: true }
-      })
+      db.tickets.countByRaffle(raffleIds),
     ]);
-    const ticketCounts: Record<string, number> = {};
-    for (const tc of ticketCountsRaw) {
-      if (tc.raffleId) ticketCounts[tc.raffleId] = tc._count.id;
-    }
 
-    const result = rafflesWithWinners.map(r => {
+    const result = rafflesWithWinners.map((r) => {
       const ingresos = revenueMap[r.id] ?? 0;
       const egresos = prizesPaidMap[r.id] ?? 0;
       return {
@@ -110,8 +76,8 @@ export async function GET(request: Request) {
           ingresos: Number(ingresos.toFixed(2)),
           egresos: Number(egresos.toFixed(2)),
           ganancias: Number((ingresos - egresos).toFixed(2)),
-          ticketsVendidos: ticketCounts[r.id] ?? 0
-        }
+          ticketsVendidos: ticketCounts[r.id] ?? 0,
+        },
       };
     });
 
@@ -123,4 +89,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Error al obtener historial" }, { status: 500 });
   }
 }
-

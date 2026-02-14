@@ -1,50 +1,46 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
-import { requireAuth, AuthError } from "../../../../lib/auth";
-import { logger } from "../../../../lib/logger";
-import { Role } from "@prisma/client";
-import { randomBytes } from "crypto";
+import crypto from "node:crypto";
+import * as db from "@/lib/db";
+import { requireAuth, AuthError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
+import { newId } from "@/lib/id";
+import { referidoCreateSchema } from "@/lib/validators";
+import type { Role } from "@/lib/db-types";
 
-// Obtener todos los links de referidos
+const ROLES: Role[] = ["SUPERADMIN", "MASTER"];
+
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.SUPERADMIN, Role.MASTER]);
+    requireAuth(request, ROLES);
     const { searchParams } = new URL(request.url);
-    const createdById = searchParams.get("createdById");
+    const createdById = searchParams.get("createdById") ?? undefined;
 
-    const where: any = {};
-    if (createdById) {
-      where.createdById = createdById;
+    const links = await db.referralLink.findMany(createdById ? { createdById } : undefined);
+    if (links.length === 0) return NextResponse.json([]);
+
+    const linkIds = links.map((l) => l.id);
+    const createdByIds = [...new Set(links.map((l) => l.createdById))];
+    const visits = await db.referralVisit.findMany({ where: { referralLinkIds: linkIds }, take: 5000 });
+    const userIds = [...new Set([...createdByIds, ...visits.map((v) => v.userId).filter(Boolean)])] as string[];
+    const userList = userIds.length ? await db.users.findManyByIds(userIds) : [];
+    const userMap = Object.fromEntries(userList.map((u) => [u.id, u]));
+
+    const visitsByLinkId: Record<string, typeof visits> = {};
+    for (const link of links) visitsByLinkId[link.id] = [];
+    for (const v of visits) {
+      if (visitsByLinkId[v.referralLinkId]) visitsByLinkId[v.referralLinkId].push(v);
     }
 
-    const links = await prisma.referralLink.findMany({
-      where,
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        visits: {
-          orderBy: { createdAt: "desc" },
-          take: 100,
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: { createdAt: "desc" }
-    });
+    const result = links.map((link) => ({
+      ...link,
+      createdBy: link.createdById ? userMap[link.createdById] ? { id: userMap[link.createdById].id, name: userMap[link.createdById].name, email: userMap[link.createdById].email } : null : null,
+      visits: (visitsByLinkId[link.id] ?? []).slice(0, 100).map((v) => ({
+        ...v,
+        user: v.userId && userMap[v.userId] ? { id: userMap[v.userId].id, name: userMap[v.userId].name, email: userMap[v.userId].email } : null,
+      })),
+    }));
 
-    return NextResponse.json(links);
+    return NextResponse.json(result);
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
@@ -54,55 +50,53 @@ export async function GET(request: Request) {
   }
 }
 
-// Crear nuevo link de referido
 export async function POST(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.SUPERADMIN, Role.MASTER]);
+    const auth = requireAuth(request, ROLES);
     const body = await request.json();
-    const { name } = body;
-
-    if (!name || !name.trim()) {
-      return NextResponse.json({ error: "El nombre del link es requerido" }, { status: 400 });
+    const parsed = referidoCreateSchema.safeParse(body);
+    if (!parsed.success) {
+      const message = parsed.error.errors.map((e) => e.path.join(".") + ": " + e.message).join("; ");
+      return NextResponse.json({ error: message || "Datos inválidos" }, { status: 400 });
     }
+    const { name } = parsed.data;
 
-    // Generar código único
     let code: string;
     let exists = true;
     while (exists) {
-      code = randomBytes(8).toString("hex");
-      const existing = await prisma.referralLink.findUnique({ where: { code } });
+      code = crypto.randomBytes(8).toString("hex");
+      const existing = await db.referralLink.findUnique({ code });
       exists = !!existing;
     }
 
-    const link = await prisma.referralLink.create({
-      data: {
-        code: code!,
-        name: name.trim(),
-        createdById: auth.userId
-      },
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
+    const linkId = newId();
+    await db.referralLink.create({
+      id: linkId,
+      code: code!,
+      name,
+      createdById: auth.userId,
+    });
+    const link = await db.referralLink.findById(linkId);
+    if (!link) {
+      return NextResponse.json({ error: "Error al crear link" }, { status: 500 });
+    }
+
+    await db.auditLog.create({
+      id: newId(),
+      actorId: auth.userId,
+      actorRole: auth.role,
+      action: "CREATE_REFERRAL_LINK",
+      entity: "ReferralLink",
+      entityId: link.id,
+      meta: { code: link.code, name: link.name },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: auth.userId,
-        actorRole: auth.role,
-        action: "CREATE_REFERRAL_LINK",
-        entity: "ReferralLink",
-        entityId: link.id,
-        meta: { code: link.code, name: link.name }
-      }
-    });
-
-    return NextResponse.json(link, { status: 201 });
+    const createdBy = await db.users.findById(link.createdById);
+    const payload = {
+      ...link,
+      createdBy: createdBy ? { id: createdBy.id, name: createdBy.name, email: createdBy.email } : null,
+    };
+    return NextResponse.json(payload, { status: 201 });
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

@@ -1,19 +1,16 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../lib/prisma";
-import { requireAuth, AuthError } from "../../../../../lib/auth";
-import { Role } from "@prisma/client";
-import { exportRaffles } from "../../../../../lib/export";
+import * as db from "@/lib/db";
+import { requireAuth, AuthError } from "@/lib/auth";
+import { exportRaffles } from "@/lib/export";
+import type { Role } from "@/lib/db-types";
+
+const ROLES: Role[] = ["AGENT", "SUPERADMIN", "MASTER"];
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
-    
-    const raffles = await prisma.raffle.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-
+    requireAuth(request, ROLES);
+    const raffles = await db.raffles.findMany({ take: 10000 });
     const buffer = await exportRaffles(raffles);
-
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

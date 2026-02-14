@@ -1,23 +1,50 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { setStoredAuth } from "../../../lib/clientAuth";
 import { Footer } from "../../../components/Footer";
 
-export default function LoginPage() {
+function isSafeRedirect(path: string): boolean {
+  if (!path || typeof path !== "string") return false;
+  const p = path.trim();
+  if (!p.startsWith("/")) return false;
+  if (p.startsWith("//")) return false;
+  if (p.startsWith("/auth")) return false;
+  return true;
+}
+
+function LoginPageContent() {
+  const [mounted, setMounted] = useState(false);
+  const [callbackUrl, setCallbackUrl] = useState<string | undefined>(undefined);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  // Estados para 2FA
   const [requires2FA, setRequires2FA] = useState(false);
   const [twoFactorToken, setTwoFactorToken] = useState<string | null>(null);
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [pendingUser, setPendingUser] = useState<any>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      setCallbackUrl(params.get("callbackUrl") ?? undefined);
+    }
+  }, []);
+
+  // Mismo HTML en servidor y cliente para evitar hydration mismatch (sin useSearchParams en primer render)
+  if (!mounted) {
+    return (
+      <main className="container" style={{ paddingTop: "3rem", paddingBottom: "3rem", maxWidth: "420px", minHeight: "calc(100vh - 200px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ color: "var(--text-secondary)" }}>Cargando...</div>
+      </main>
+    );
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,7 +68,8 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
+        credentials: "same-origin",
       });
       
       let data;
@@ -74,11 +102,7 @@ export default function LoginPage() {
           return;
         }
         setStoredAuth({ token: data.token, user: data.user });
-        const role = data.user.role;
-        // Usar window.location.href para redirección completa y evitar problemas de caché
-        // Redirigir todos los roles de administrador al dashboard
-        const isAdmin = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"].includes(role);
-        window.location.href = isAdmin ? "/admin" : "/";
+        window.location.href = "/";
       }
     } catch (err) {
       console.error("Error al iniciar sesión:", err);
@@ -105,7 +129,8 @@ export default function LoginPage() {
         body: JSON.stringify({ 
           twoFactorToken, 
           code: twoFactorCode 
-        })
+        }),
+        credentials: "same-origin",
       });
 
       const data = await res.json();
@@ -114,9 +139,7 @@ export default function LoginPage() {
         setMessage(data.error || "Código inválido");
       } else {
         setStoredAuth({ token: data.token, user: data.user });
-        const role = data.user.role;
-        const isAdmin = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"].includes(role);
-        window.location.href = isAdmin ? "/admin" : "/";
+        window.location.href = "/";
       }
     } catch (err) {
       console.error("Error en verificación 2FA:", err);
@@ -277,11 +300,11 @@ export default function LoginPage() {
                 </button>
               </div>
             </label>
-            <button type="submit" disabled={loading} style={{ padding: ".75rem", background: "var(--button-primary)", color: "var(--button-text)", border: "none", borderRadius: "10px", fontWeight: 700, opacity: loading ? 0.7 : 1 }}>
+            <button type="submit" disabled={loading} style={{ padding: ".75rem", background: "var(--button-primary)", color: "var(--button-text)", border: "none", borderRadius: "10px", fontWeight: 700, opacity: loading ? 0.7 : 1 }} aria-label={loading ? "Entrando" : "Entrar"}>
               {loading ? "Entrando..." : "Entrar"}
             </button>
           </form>
-          {message && <p style={{ color: "var(--text-error)", margin: 0 }}>{message}</p>}
+          {message && <p role="alert" style={{ color: "var(--text-error)", margin: 0 }}>{message}</p>}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "center" }}>
             <Link href="/auth/forgot-password" style={{ color: "var(--color-primary)", fontSize: "0.875rem", textDecoration: "none" }}>
               ¿Olvidaste tu contraseña?
@@ -293,5 +316,9 @@ export default function LoginPage() {
       <Footer />
     </>
   );
+}
+
+export default function LoginPage() {
+  return <LoginPageContent />;
 }
 

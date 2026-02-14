@@ -1,18 +1,19 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { users, emailVerificationToken } from "../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../lib/auth";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../lib/db-types";
 import { sendEmailVerificationEmail } from "../../../../lib/email";
 import { logger } from "../../../../lib/logger";
+import { newId } from "../../../../lib/id";
 import crypto from "crypto";
+
+const USER: Role = "USER";
 
 export async function POST(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.USER]);
-    
-    const user = await prisma.user.findUnique({
-      where: { id: auth.userId },
-    });
+    const auth = requireAuth(request, [USER]);
+
+    const user = await users.findById(auth.userId);
 
     if (!user) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
@@ -22,27 +23,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "El email ya está verificado" }, { status: 400 });
     }
 
-    // Generar token
     const verificationToken = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24); // Expira en 24 horas
+    expiresAt.setHours(expiresAt.getHours() + 24);
 
-    // Invalidar tokens anteriores
-    await prisma.emailVerificationToken.updateMany({
-      where: { userId: user.id, used: false },
-      data: { used: true },
+    await emailVerificationToken.updateMany({ userId: user.id }, { used: true });
+    await emailVerificationToken.create({
+      id: newId(),
+      userId: user.id,
+      token: verificationToken,
+      expiresAt,
     });
 
-    // Crear nuevo token
-    await prisma.emailVerificationToken.create({
-      data: {
-        userId: user.id,
-        token: verificationToken,
-        expiresAt,
-      },
-    });
-
-    // Enviar email
     await sendEmailVerificationEmail(user.email, verificationToken);
 
     return NextResponse.json({

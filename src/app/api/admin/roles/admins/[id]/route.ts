@@ -1,49 +1,41 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../../lib/prisma";
+import * as db from "../../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
 import { logger } from "../../../../../../lib/logger";
-import { Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { newId } from "../../../../../../lib/id";
+import type { Role } from "../../../../../../lib/db-types";
 
-// Actualizar administrador (rol, nombre, email, username)
+const ADMIN_ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
+
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const auth = requireAuth(request, [Role.MASTER]);
+    const auth = requireAuth(request, ["MASTER"] as Role[]);
     const body = await request.json();
     const { name, email, username, role, password } = body;
 
-    const admin = await prisma.user.findUnique({
-      where: { id: params.id }
-    });
-
+    const admin = await db.users.findById(params.id);
     if (!admin) {
       return NextResponse.json({ error: "Administrador no encontrado" }, { status: 404 });
     }
-
-    // Verificar que sea un administrador
-    const adminRoles: Role[] = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER];
-    if (!adminRoles.includes(admin.role)) {
+    if (!ADMIN_ROLES.includes(admin.role)) {
       return NextResponse.json({ error: "El usuario no es un administrador" }, { status: 400 });
     }
 
-    // Permitir modificar MASTER (solo otros MASTER pueden modificar MASTER)
-    // No hay restricción adicional, ya que solo MASTER puede acceder a esta ruta
-
-    const updateData: any = {};
-
+    const updateData: Partial<Parameters<typeof db.users.update>[1]> = {};
     if (name) updateData.name = name;
     if (email && email !== admin.email) {
-      const existing = await prisma.user.findUnique({ where: { email } });
+      const existing = await db.users.findByEmail(email);
       if (existing) {
         return NextResponse.json({ error: "Email ya está en uso" }, { status: 400 });
       }
       updateData.email = email;
     }
     if (username !== undefined) {
-      if (username && username.trim()) {
-        const cleanUsername = username.toLowerCase().trim();
+      if (username && String(username).trim()) {
+        const cleanUsername = String(username).toLowerCase().trim();
         if (cleanUsername !== admin.username) {
-          const existing = await prisma.user.findUnique({ where: { username: cleanUsername } });
+          const existing = await db.users.findByUsername(cleanUsername);
           if (existing) {
             return NextResponse.json({ error: "Nombre de usuario ya está en uso" }, { status: 400 });
           }
@@ -54,9 +46,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       }
     }
     if (role && role !== admin.role) {
-      // Validar que el rol sea válido (ahora permitir cambiar a MASTER)
-      const validRoles: Role[] = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER];
-      if (!validRoles.includes(role as Role)) {
+      if (!ADMIN_ROLES.includes(role as Role)) {
         return NextResponse.json({ error: "Rol inválido o no permitido" }, { status: 400 });
       }
       updateData.role = role as Role;
@@ -65,36 +55,35 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       updateData.passwordHash = await bcrypt.hash(password, 10);
     }
 
-    const updated = await prisma.user.update({
-      where: { id: params.id },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        username: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
-      }
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(admin);
+    }
+
+    await db.users.update(params.id, updateData);
+    const updated = await db.users.findById(params.id);
+    if (!updated) {
+      return NextResponse.json({ error: "Error al actualizar" }, { status: 500 });
+    }
+
+    await db.auditLog.create({
+      id: newId(),
+      actorId: auth.userId,
+      actorRole: auth.role,
+      action: "UPDATE_ADMIN",
+      entity: "User",
+      entityId: updated.id,
+      meta: { previousRole: admin.role, newRole: updated.role, changes: Object.keys(updateData) },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: auth.userId,
-        actorRole: auth.role,
-        action: "UPDATE_ADMIN",
-        entity: "User",
-        entityId: updated.id,
-        meta: { 
-          previousRole: admin.role,
-          newRole: updated.role,
-          changes: Object.keys(updateData)
-        }
-      }
+    return NextResponse.json({
+      id: updated.id,
+      name: updated.name,
+      email: updated.email,
+      username: updated.username,
+      role: updated.role,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
     });
-
-    return NextResponse.json(updated);
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
@@ -104,48 +93,30 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-// Eliminar administrador
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const auth = requireAuth(request, [Role.MASTER]);
-    
-    const admin = await prisma.user.findUnique({
-      where: { id: params.id }
-    });
-
+    const auth = requireAuth(request, ["MASTER"] as Role[]);
+    const admin = await db.users.findById(params.id);
     if (!admin) {
       return NextResponse.json({ error: "Administrador no encontrado" }, { status: 404 });
     }
-
-    // Verificar que sea un administrador
-    const adminRoles: Role[] = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER];
-    if (!adminRoles.includes(admin.role)) {
+    if (!ADMIN_ROLES.includes(admin.role)) {
       return NextResponse.json({ error: "El usuario no es un administrador" }, { status: 400 });
     }
-
-    // Permitir eliminar MASTER (solo otros MASTER pueden eliminar MASTER)
-    // No permitir auto-eliminación
     if (admin.id === auth.userId) {
       return NextResponse.json({ error: "No puedes eliminar tu propia cuenta" }, { status: 400 });
     }
 
-    await prisma.user.delete({
-      where: { id: params.id }
-    });
+    await db.users.deleteById(params.id);
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: auth.userId,
-        actorRole: auth.role,
-        action: "DELETE_ADMIN",
-        entity: "User",
-        entityId: params.id,
-        meta: { 
-          deletedEmail: admin.email,
-          deletedName: admin.name,
-          deletedRole: admin.role
-        }
-      }
+    await db.auditLog.create({
+      id: newId(),
+      actorId: auth.userId,
+      actorRole: auth.role,
+      action: "DELETE_ADMIN",
+      entity: "User",
+      entityId: params.id,
+      meta: { deletedEmail: admin.email, deletedName: admin.name, deletedRole: admin.role },
     });
 
     return NextResponse.json({ success: true });

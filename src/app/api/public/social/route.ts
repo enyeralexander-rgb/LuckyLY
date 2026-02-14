@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { socialMedia } from "../../../../lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const social = await prisma.socialMedia.findFirst();
+    const social = await socialMedia.findFirst();
     if (!social) {
       return NextResponse.json({});
     }

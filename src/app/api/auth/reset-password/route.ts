@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { users, passwordResetToken } from "../../../../lib/db";
 import { logger } from "../../../../lib/logger";
 import bcrypt from "bcryptjs";
 
@@ -15,11 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres" }, { status: 400 });
     }
 
-    // Buscar token válido
-    const resetToken = await prisma.passwordResetToken.findUnique({
-      where: { token },
-      include: { user: true },
-    });
+    const resetToken = await passwordResetToken.findUnique({ token });
 
     if (!resetToken) {
       return NextResponse.json({ error: "Token inválido o expirado" }, { status: 400 });
@@ -33,20 +29,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Token expirado" }, { status: 400 });
     }
 
-    // Hash de nueva contraseña
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Actualizar contraseña y marcar token como usado
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: resetToken.userId },
-        data: { passwordHash },
-      }),
-      prisma.passwordResetToken.update({
-        where: { id: resetToken.id },
-        data: { used: true },
-      }),
-    ]);
+    await users.update(resetToken.userId, { passwordHash });
+    await passwordResetToken.update({ token }, { used: true });
 
     return NextResponse.json({
       success: true,

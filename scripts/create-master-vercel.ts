@@ -1,31 +1,26 @@
 #!/usr/bin/env tsx
-
 /**
- * Script para crear/actualizar el usuario MASTER en la base de datos de Vercel
+ * Crea o actualiza el usuario MASTER en Neon (capa db, sin Prisma).
  * Ejecutar: npx tsx scripts/create-master-vercel.ts
+ * Requiere: DATABASE_URL, MASTER_INITIAL_EMAIL, MASTER_INITIAL_PASSWORD en .env o .env.local
  */
-
-import "dotenv/config";
-import { PrismaClient, Role } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import path from "path";
+import { fileURLToPath } from "url";
+import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 
-// Verificar que DATABASE_URL esté disponible
-if (!process.env.DATABASE_URL) {
-  console.error('❌ DATABASE_URL no está definida en las variables de entorno');
-  console.log('\nEjecuta el script con:');
-  console.log('DATABASE_URL="tu_url_aqui" npx tsx scripts/create-master-vercel.ts');
-  process.exit(1);
-}
-
-// Prisma Postgres requiere adapter
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.join(__dirname, "..");
+dotenv.config({ path: path.join(root, ".env") });
+dotenv.config({ path: path.join(root, ".env.local") });
 
 async function main() {
-  console.log("👤 Verificando/creando administrador MASTER (desde variables de entorno)...\n");
+  if (!process.env.DATABASE_URL) {
+    console.error("❌ DATABASE_URL no está definida en las variables de entorno");
+    console.log("\nEjecuta el script con .env.local o:");
+    console.log('DATABASE_URL="tu_url" MASTER_INITIAL_EMAIL="admin@ejemplo.com" MASTER_INITIAL_PASSWORD="tu_password" npx tsx scripts/create-master-vercel.ts');
+    process.exit(1);
+  }
 
   const email = process.env.MASTER_INITIAL_EMAIL?.trim();
   const password = process.env.MASTER_INITIAL_PASSWORD;
@@ -42,42 +37,37 @@ async function main() {
     process.exit(1);
   }
 
-  try {
-    const existingMaster = await prisma.user.findUnique({
-      where: { email }
-    });
+  const { users } = await import("../src/lib/db/index.js");
+  const { newId } = await import("../src/lib/id.js");
 
+  console.log("👤 Verificando/creando administrador MASTER (Neon, capa db)...\n");
+
+  try {
+    const existingMaster = await users.findByEmail(email);
     const passwordHash = await bcrypt.hash(password, 10);
 
     if (existingMaster) {
-      await prisma.user.update({
-        where: { email },
-        data: {
-          passwordHash,
-          role: Role.MASTER,
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          suspended: false,
-          documentId: existingMaster.documentId || documentId,
-          nationalId: existingMaster.nationalId || nationalId,
-          nationalIdType: existingMaster.nationalIdType || nationalIdType
-        }
+      await users.update(existingMaster.id, {
+        passwordHash,
+        role: "MASTER",
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+        suspended: false,
+        documentId: existingMaster.documentId || documentId,
+        name: name || existingMaster.name,
       });
       console.log("✅ Administrador MASTER actualizado");
     } else {
-      await prisma.user.create({
-        data: {
-          email,
-          passwordHash,
-          name,
-          username: "master",
-          role: Role.MASTER,
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          documentId,
-          nationalId,
-          nationalIdType
-        }
+      await users.create({
+        id: newId(),
+        email,
+        passwordHash,
+        name,
+        username: "master",
+        role: "MASTER",
+        documentId,
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
       });
       console.log("✅ Administrador MASTER creado");
     }
@@ -89,16 +79,8 @@ async function main() {
     console.log("=".repeat(60));
   } catch (error) {
     console.error("❌ Error al crear/actualizar usuario MASTER:", error);
-    throw error;
+    process.exit(1);
   }
 }
 
-main()
-  .catch((e) => {
-    console.error("❌ Error:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-    await pool.end();
-  });
+main();

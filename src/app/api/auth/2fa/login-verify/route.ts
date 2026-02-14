@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { prisma } from "../../../../../lib/prisma";
+import { users, twoFactorAuth, auditLog } from "../../../../../lib/db";
 import { logger } from "../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../lib/db-types";
 import { verify } from "../../../../../lib/totp";
+import { newId } from "../../../../../lib/id";
 
-const JWT_SECRET = process.env.JWT_SECRET || "insecure-secret";
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("CRITICAL: JWT_SECRET is not defined (2FA login-verify)");
+  }
+  return secret;
+}
+
+const ADMIN_ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
 export async function POST(request: Request) {
   try {
@@ -16,11 +25,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Token y código son requeridos" }, { status: 400 });
     }
 
-    // Verificar el token temporal de 2FA
-    let decoded: any;
+    const JWT_SECRET = getJwtSecret();
+    let decoded: { type?: string; sub?: string };
     try {
-      decoded = jwt.verify(twoFactorToken, JWT_SECRET);
-    } catch (jwtError) {
+      decoded = jwt.verify(twoFactorToken, JWT_SECRET) as { type?: string; sub?: string };
+    } catch {
       return NextResponse.json({ error: "Token expirado o inválido. Por favor, inicia sesión de nuevo." }, { status: 401 });
     }
 
@@ -29,72 +38,57 @@ export async function POST(request: Request) {
     }
 
     const userId = decoded.sub;
+    if (!userId) {
+      return NextResponse.json({ error: "Token inválido" }, { status: 401 });
+    }
 
-    // Obtener usuario y su 2FA
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { twoFactorAuth: true },
-    });
+    const user = await users.findById(userId);
+    const tfa = user ? await twoFactorAuth.findUnique({ userId }) : null;
 
-    if (!user || !user.twoFactorAuth) {
+    if (!user || !tfa) {
       return NextResponse.json({ error: "Usuario no encontrado o 2FA no configurado" }, { status: 404 });
     }
 
-    // Verificar código 2FA
-    const isValid = verify({
-      token: code,
-      secret: user.twoFactorAuth.secret,
-    });
-
+    const isValid = verify({ token: code, secret: tfa.secret });
     if (!isValid) {
       return NextResponse.json({ error: "Código de verificación inválido" }, { status: 400 });
     }
 
-    // Código válido, generar token de sesión completo
     const token = jwt.sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: "12h" });
 
-    // Registrar log de inicio de sesión con 2FA
-    const adminRoles: Role[] = [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER];
-    const isAdmin = adminRoles.includes(user.role);
-    if (isAdmin) {
+    if (ADMIN_ROLES.includes(user.role)) {
       try {
         const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
-        await prisma.auditLog.create({
-          data: {
-            actorId: user.id,
-            actorRole: user.role,
-            action: "LOGIN_2FA",
-            entity: "User",
-            entityId: user.id,
-            ip,
-            meta: {
-              email: user.email,
-              status: "ACTIVE",
-              method: "2FA"
-            }
-          }
+        await auditLog.create({
+          id: newId(),
+          actorId: user.id,
+          actorRole: user.role,
+          action: "LOGIN_2FA",
+          entity: "User",
+          entityId: user.id,
+          ip,
+          meta: { email: user.email, status: "ACTIVE", method: "2FA" },
         });
       } catch (logError) {
         logger.error("Error al registrar log de login 2FA", { error: logError instanceof Error ? logError.message : String(logError) });
       }
     }
 
-    const res = NextResponse.json({
-      success: true,
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role
-      }
-    }, { status: 200 });
+    const res = NextResponse.json(
+      {
+        success: true,
+        token,
+        user: { id: user.id, email: user.email, role: user.role },
+      },
+      { status: 200 }
+    );
 
     res.cookies.set("auth_token", token, {
       httpOnly: true,
       path: "/",
       maxAge: 60 * 60 * 12,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production"
+      secure: process.env.NODE_ENV === "production",
     });
 
     return res;

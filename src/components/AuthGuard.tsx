@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { getStoredAuth, clearStoredAuth } from "../lib/clientAuth";
+import { getStoredAuth, setStoredAuth, clearStoredAuth } from "../lib/clientAuth";
 import { initSessionTimeout } from "../lib/sessionTimeout";
 
 type AuthGuardProps = {
@@ -10,12 +10,32 @@ type AuthGuardProps = {
   redirectTo?: string;
 };
 
+const LOADING_MARKUP = (
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      minHeight: "100vh",
+      color: "#94a3b8",
+    }}
+  >
+    Verificando autenticación...
+  </div>
+);
+
 export function AuthGuard({ children, requiredRole, redirectTo = "/auth/login" }: AuthGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     const checkAuth = async () => {
       const auth = getStoredAuth();
       
@@ -32,6 +52,7 @@ export function AuthGuard({ children, requiredRole, redirectTo = "/auth/login" }
           headers: {
             Authorization: `Bearer ${auth.token}`
           },
+          credentials: "same-origin",
           cache: "no-store"
         });
 
@@ -44,6 +65,20 @@ export function AuthGuard({ children, requiredRole, redirectTo = "/auth/login" }
 
         const data = await res.json();
         if (data && data.valid) {
+          // Sincronizar localStorage con datos del servidor (id, role) para que hijos tengan rol correcto
+          try {
+            const current = getStoredAuth();
+            if (current?.token && data.user) {
+              setStoredAuth({
+                token: current.token,
+                user: {
+                  ...current.user,
+                  id: data.user.id ?? current.user.id,
+                  role: data.user.role ?? current.user.role,
+                },
+              });
+            }
+          } catch (_) {}
           // Verificar rol si es necesario
           if (requiredRole && !requiredRole.includes(data.user.role)) {
             // Si es administrador intentando acceder a página de admin sin permisos, redirigir a /admin
@@ -86,21 +121,11 @@ export function AuthGuard({ children, requiredRole, redirectTo = "/auth/login" }
     };
 
     checkAuth();
-  }, [router, pathname, requiredRole, redirectTo]);
+  }, [mounted, router, pathname, requiredRole, redirectTo]);
 
-  // Mostrar loading mientras se verifica
-  if (isAuthorized === null) {
-    return (
-      <div style={{ 
-        display: "flex", 
-        justifyContent: "center", 
-        alignItems: "center", 
-        minHeight: "100vh",
-        color: "#94a3b8"
-      }}>
-        Verificando autenticación...
-      </div>
-    );
+  // Mismo markup en servidor y primer paint en cliente para evitar hydration mismatch
+  if (!mounted || isAuthorized === null) {
+    return LOADING_MARKUP;
   }
 
   if (!isAuthorized) {

@@ -22,6 +22,7 @@ export default function PerfilPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [formData, setFormData] = useState({
     nationalId: "",
     bank: "",
@@ -78,9 +79,8 @@ export default function PerfilPage() {
       if (res.ok) {
         const updated = await res.json();
         setUserData(updated);
-        alert("Datos bancarios guardados exitosamente");
-        
-        // Verificar si hay una URL de retorno guardada
+        setMessage({ type: "success", text: "Datos bancarios guardados exitosamente" });
+        setTimeout(() => setMessage(null), 5000);
         const returnUrl = sessionStorage.getItem("returnUrl");
         if (returnUrl) {
           sessionStorage.removeItem("returnUrl");
@@ -88,11 +88,11 @@ export default function PerfilPage() {
         }
       } else {
         const error = await res.json();
-        alert(error.error || "Error al guardar datos");
+        setMessage({ type: "error", text: error.error || "Error al guardar datos" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al guardar datos");
+      setMessage({ type: "error", text: "Error al guardar datos" });
     } finally {
       setSaving(false);
     }
@@ -121,6 +121,11 @@ export default function PerfilPage() {
         </div>
 
         <div className="card" style={{ padding: "1.5rem", display: "grid", gap: "1.5rem" }}>
+          {message && (
+            <p role="alert" style={{ margin: 0, padding: "0.75rem", borderRadius: "8px", background: message.type === "success" ? "rgba(34, 197, 94, 0.15)" : "rgba(239, 68, 68, 0.15)", color: message.type === "success" ? "#15803d" : "#b91c1c", fontWeight: 500 }}>
+              {message.text}
+            </p>
+          )}
           <div>
             <p style={{ margin: "0 0 1rem", color: "#3E3E3C", fontSize: ".875rem", opacity: 0.8 }}>
               Estos datos se utilizarán para pagos de cupos y retiros de premios mediante Pago Móvil.

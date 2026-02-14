@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
-import { prisma } from "../../../../lib/prisma";
+export const dynamic = "force-dynamic";
+import { homePageConfig } from "../../../../lib/db";
 import { isDatabaseConnectionError } from "../../../../lib/dbErrors";
 import { logger } from "../../../../lib/logger";
 
@@ -26,66 +26,44 @@ const DEFAULT_PUBLIC_CONFIG = {
   headerConfig: null,
   contactConfig: null,
   footerConfig: null,
-  sectionOrder: ["hero", "raffles", "live", "footer"],
+  sectionOrder: ["hero", "raffles", "results", "live", "footer"],
   sectionVisibility: {
     hero: true,
     raffles: true,
+    results: true,
     live: true,
-    footer: true
-  }
+    contact: false,
+    footer: true,
+  },
 };
 
 export async function GET(request: Request) {
   try {
     logger.info("[Public Homepage API] Solicitando configuración pública");
-    const config = await prisma.homePageConfig.findFirst({
-      orderBy: { updatedAt: "desc" },
-      select: {
-        heroImages: true,
-        heroTitle: true,
-        heroSubtitle: true,
-        heroEffect: true,
-        heroEffectParams: true,
-        heroAutoSlide: true,
-        heroAutoSlideMode: true,
-        heroAutoSlideInterval: true,
-        heroPauseOnHover: true,
-        heroScrollFade: true,
-        heroOpacity: true,
-        heroBlur: true,
-        heroTextColor: true,
-        heroSubtitleColor: true,
-        heroOverlayColor: true,
-        heroOverlayOpacity: true,
-        heroImageSize: true,
-        instagramVideoUrl: true,
-        headerConfig: true,
-        contactConfig: true,
-        footerConfig: true,
-        sectionOrder: true,
-        sectionVisibility: true
-      }
-    });
+    const config = await homePageConfig.findFirst({ orderBy: { updatedAt: "desc" } });
 
     if (config) {
       logger.info("[Public Homepage API] Configuración encontrada", {
         heroOpacity: config.heroOpacity,
         heroBlur: config.heroBlur,
-        heroOverlayOpacity: config.heroOverlayOpacity
+        heroOverlayOpacity: config.heroOverlayOpacity,
       });
     }
 
-    // Configuración por defecto si no existe
     if (!config) {
-      return NextResponse.json(DEFAULT_PUBLIC_CONFIG);
+      return NextResponse.json(DEFAULT_PUBLIC_CONFIG, {
+        headers: { "Cache-Control": "public, max-age=60" },
+      });
     }
 
-    // Limitar imágenes a 5
-    if (config.heroImages && Array.isArray(config.heroImages)) {
-      config.heroImages = config.heroImages.slice(0, 5);
+    const out = { ...config };
+    if (out.heroImages && Array.isArray(out.heroImages)) {
+      out.heroImages = out.heroImages.slice(0, 5);
     }
 
-    return NextResponse.json(config);
+    return NextResponse.json(out, {
+      headers: { "Cache-Control": "public, max-age=60" },
+    });
   } catch (err) {
     if (isDatabaseConnectionError(err)) {
       logger.info("[Public Homepage API] DB no disponible, usando fallback");

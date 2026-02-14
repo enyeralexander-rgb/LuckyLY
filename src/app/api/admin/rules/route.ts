@@ -1,18 +1,19 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { rules } from "../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../lib/auth";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../lib/db-types";
+import { newId } from "../../../../lib/id";
+
+const MASTER: Role = "MASTER";
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.MASTER]);
-    let rules = await prisma.rules.findFirst();
-    if (!rules) {
-      rules = await prisma.rules.create({
-        data: { content: "" }
-      });
+    requireAuth(request, [MASTER]);
+    let rulesRow = await rules.findFirst();
+    if (!rulesRow) {
+      rulesRow = await rules.create({ id: newId(), content: "" });
     }
-    return NextResponse.json({ content: rules.content });
+    return NextResponse.json({ content: rulesRow.content });
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
@@ -23,20 +24,15 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.MASTER]);
+    const auth = requireAuth(request, [MASTER]);
     const { content } = await request.json();
-    let rules = await prisma.rules.findFirst();
-    if (!rules) {
-      rules = await prisma.rules.create({
-        data: { content, updatedById: auth.userId }
-      });
+    let rulesRow = await rules.findFirst();
+    if (!rulesRow) {
+      rulesRow = await rules.create({ id: newId(), content, updatedById: auth.userId });
     } else {
-      rules = await prisma.rules.update({
-        where: { id: rules.id },
-        data: { content, updatedById: auth.userId }
-      });
+      await rules.update(rulesRow.id, { content, updatedById: auth.userId });
     }
-    return NextResponse.json({ content: rules.content });
+    return NextResponse.json({ content });
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
@@ -44,4 +40,3 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Error al actualizar reglas" }, { status: 500 });
   }
 }
-

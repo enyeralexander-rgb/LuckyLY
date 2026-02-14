@@ -1,58 +1,31 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../lib/prisma";
-import { requireAuth } from "../../../../../lib/auth";
+import { ticketItems, prizeClaims, raffles } from "../../../../../lib/db";
+import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { logger } from "../../../../../lib/logger";
 import { withRetry } from "../../../../../lib/retry";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../lib/db-types";
+
+const ADMIN_ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
-    // Solo roles administrativos pueden ver estas estadísticas
-    const auth = requireAuth(request, [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER]);
+    const auth = requireAuth(request, ADMIN_ROLES);
 
     const [pendingSlots, pendingClaims, activeRaffles] = await withRetry(
       () =>
         Promise.all([
-          // 1. Cupos pendientes de confirmación (pago móvil)
-          prisma.ticketItem.count({
-            where: {
-              status: "PENDING"
-            }
-          }),
-
-          // 2. Reclamos de premios pendientes
-          prisma.prizeClaim.count({
-            where: {
-              status: "REQUESTED"
-            }
-          }),
-
-          // 3. Obtener sorteos activos para calcular cuáles están listos
-          prisma.raffle.findMany({
-            where: {
-              status: "ACTIVE"
-            },
-            include: {
-              ticketItems: {
-                where: {
-                  status: "CONFIRMED"
-                },
-                select: {
-                  id: true
-                }
-              }
-            }
-          })
+          ticketItems.count({ status: "PENDING" }),
+          prizeClaims.count({ status: "REQUESTED" }),
+          raffles.findMany({ where: { status: "ACTIVE" } })
         ]),
       { label: "notification stats" }
     );
 
-    // Calcular sorteos listos para ejecutar (todos los cupos confirmados)
-    const readyToExecute = activeRaffles.filter(
-      (raffle) => raffle.ticketItems.length === raffle.slots
-    ).length;
+    const raffleIds = activeRaffles.map((r) => r.id);
+    const confirmedByRaffle = raffleIds.length > 0 ? await ticketItems.countByRaffle(raffleIds, "CONFIRMED") : {};
+    const readyToExecute = activeRaffles.filter((raffle) => (confirmedByRaffle[raffle.id] ?? 0) === raffle.slots).length;
 
     return NextResponse.json({
       pendingSlots,
@@ -61,9 +34,15 @@ export async function GET(request: Request) {
       total: pendingSlots + pendingClaims + readyToExecute
     });
 
-  } catch (err: any) {
-    if (err.message && (err.message.includes("No authorized") || err.message.includes("Unauthorized"))) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (err: unknown) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    if (err && typeof err === "object" && "message" in err && typeof (err as { message: string }).message === "string") {
+      const msg = (err as { message: string }).message;
+      if (msg.includes("No autenticado") || msg.includes("Token inválido") || msg.includes("Sin permisos") || msg.includes("No authorized") || msg.includes("Unauthorized")) {
+        return NextResponse.json({ error: msg }, { status: (err as { status?: number }).status === 403 ? 403 : 401 });
+      }
     }
     logger.error("Error fetching notification stats", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

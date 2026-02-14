@@ -11,7 +11,7 @@ CREATE TYPE "DrawType" AS ENUM ('NUMBERS', 'ANIMALS', 'STATES', 'FLAGS', 'ZODIAC
 CREATE TYPE "PrizeStatus" AS ENUM ('REQUESTED', 'PROCESSING', 'PAID', 'REJECTED', 'INCORRECT_DATA');
 
 -- CreateEnum
-CREATE TYPE "Bank" AS ENUM ('BANESCO', 'VENEZUELA', 'MERCANTIL', 'BOD', 'PROVINCIAL', 'BICENTENARIO', 'OTRA');
+CREATE TYPE "Bank" AS ENUM ('BANESCO', 'VENEZUELA', 'MERCANTIL', 'BOD', 'PROVINCIAL', 'BICENTENARIO', 'OTRA', 'BANCO_100', 'BANCAMIGA', 'BANCARIBE', 'BANCO_ACTIVO', 'BANCO_AGRICOLA', 'BANCO_CARONI', 'BANFANB', 'BANCO_TESORO', 'BANCO_EXTERIOR', 'BFC', 'BANCO_INTERNACIONAL_DESARROLLO', 'BNC', 'BANCO_PLAZA', 'BANCO_SOFITASA', 'BANCRECER', 'BANGENTE', 'BANPLUS', 'DELSUR', 'MI_BANCO', 'N58_BANCO_DIGITAL');
 
 -- CreateEnum
 CREATE TYPE "PaymentMethod" AS ENUM ('BANESCO', 'BINANCE', 'MOBILE');
@@ -164,7 +164,7 @@ CREATE TABLE "Rules" (
 -- CreateTable
 CREATE TABLE "PaymentMobile" (
     "id" TEXT NOT NULL,
-    "imageUrl" TEXT NOT NULL,
+    "imageUrl" TEXT,
     "cedula" TEXT,
     "telefono" TEXT,
     "destino" TEXT,
@@ -367,6 +367,15 @@ CREATE TABLE "LiveConfig" (
 );
 
 -- CreateTable
+CREATE TABLE "PrizeEmailTemplate" (
+    "id" TEXT NOT NULL,
+    "body" TEXT,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PrizeEmailTemplate_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_TemplateRaffles" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL,
@@ -419,6 +428,9 @@ CREATE INDEX "Ticket_userId_purchasedAt_idx" ON "Ticket"("userId", "purchasedAt"
 -- CreateIndex
 CREATE INDEX "Ticket_status_idx" ON "Ticket"("status");
 
+-- CreateIndex (listados y reportes por fecha y estado)
+CREATE INDEX "Ticket_status_purchasedAt_idx" ON "Ticket"("status", "purchasedAt");
+
 -- CreateIndex
 CREATE INDEX "Ticket_paymentMobileBank_paymentMobileRef_purchasedAt_idx" ON "Ticket"("paymentMobileBank", "paymentMobileRef", "purchasedAt");
 
@@ -427,6 +439,9 @@ CREATE UNIQUE INDEX "PrizeClaim_ticketId_key" ON "PrizeClaim"("ticketId");
 
 -- CreateIndex
 CREATE INDEX "PrizeClaim_userId_createdAt_idx" ON "PrizeClaim"("userId", "createdAt");
+
+-- CreateIndex (egresos y reportes por estado y fecha de pago)
+CREATE INDEX "PrizeClaim_status_processedAt_idx" ON "PrizeClaim"("status", "processedAt");
 
 -- CreateIndex
 CREATE INDEX "TicketItem_ticketId_idx" ON "TicketItem"("ticketId");
@@ -524,29 +539,30 @@ CREATE INDEX "LiveConfig_updatedById_idx" ON "LiveConfig"("updatedById");
 -- CreateIndex
 CREATE INDEX "_TemplateRaffles_B_index" ON "_TemplateRaffles"("B");
 
+-- AddForeignKey (política: hijos con CASCADE; referencias opcionales updatedById/actorId/createdById con SET NULL; ReferralLink/AutomationRule RESTRICT para no borrar User con datos asociados)
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Raffle" ADD CONSTRAINT "Raffle_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
--- AddForeignKey
-ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_raffleId_fkey" FOREIGN KEY ("raffleId") REFERENCES "Raffle"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (CASCADE para borrado en cascada)
+ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_raffleId_fkey" FOREIGN KEY ("raffleId") REFERENCES "Raffle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PrizeClaim" ADD CONSTRAINT "PrizeClaim_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "Ticket"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PrizeClaim" ADD CONSTRAINT "PrizeClaim_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "Ticket"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PrizeClaim" ADD CONSTRAINT "PrizeClaim_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PrizeClaim" ADD CONSTRAINT "PrizeClaim_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TicketItem" ADD CONSTRAINT "TicketItem_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "Ticket"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "TicketItem" ADD CONSTRAINT "TicketItem_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "Ticket"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TicketItem" ADD CONSTRAINT "TicketItem_raffleId_fkey" FOREIGN KEY ("raffleId") REFERENCES "Raffle"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "TicketItem" ADD CONSTRAINT "TicketItem_raffleId_fkey" FOREIGN KEY ("raffleId") REFERENCES "Raffle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -595,6 +611,9 @@ ALTER TABLE "AutomationRule" ADD CONSTRAINT "AutomationRule_createdById_fkey" FO
 
 -- AddForeignKey
 ALTER TABLE "LiveConfig" ADD CONSTRAINT "LiveConfig_updatedById_fkey" FOREIGN KEY ("updatedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "HomePageConfig" ADD CONSTRAINT "HomePageConfig_updatedById_fkey" FOREIGN KEY ("updatedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_TemplateRaffles" ADD CONSTRAINT "_TemplateRaffles_A_fkey" FOREIGN KEY ("A") REFERENCES "Raffle"("id") ON DELETE CASCADE ON UPDATE CASCADE;

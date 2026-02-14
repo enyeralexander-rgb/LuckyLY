@@ -72,8 +72,7 @@ export function NavBar() {
     } finally {
       clearStoredAuth();
       setAuth(null);
-      // Forzar recarga para limpiar cualquier estado en caché
-      window.location.href = "/auth/login";
+      window.location.href = "/";
     }
   }
 
@@ -148,6 +147,7 @@ export function NavBar() {
                     {/* Mobile Nav Links inside Dropdown */}
                     <div className="md:hidden border-b border-gray-100 dark:border-gray-700">
                       <Link href="/" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Inicio</Link>
+                      <Link href="/raffles" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Sorteos</Link>
                       <Link href="/live" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">En Vivo</Link>
                       <Link href="/results" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Resultados</Link>
                     </div>

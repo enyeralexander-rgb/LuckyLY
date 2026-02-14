@@ -15,6 +15,8 @@ function PagoMovilPageContent() {
   const [saving, setSaving] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [availableImages, setAvailableImages] = useState<{ url: string; pathname: string }[]>([]);
+  const [selectingImage, setSelectingImage] = useState(false);
 
   useEffect(() => {
     const storedAuth = getStoredAuth();
@@ -24,7 +26,7 @@ function PagoMovilPageContent() {
   useEffect(() => {
     if (auth?.token) {
       setLoading(true);
-      fetch("/api/admin/payment-mobile", { headers: { Authorization: `Bearer ${auth.token}` } })
+      fetch("/api/admin/payment-mobile", { headers: { Authorization: `Bearer ${auth.token}` }, cache: "no-store" })
         .then((r) => r.json())
         .then((data) => {
           if (data.error) {
@@ -43,6 +45,16 @@ function PagoMovilPageContent() {
         .catch(() => setLoading(false));
     }
   }, [auth]);
+
+  useEffect(() => {
+    if (!auth?.token) return;
+    fetch("/api/admin/payment-mobile/images", { headers: { Authorization: `Bearer ${auth.token}` }, cache: "no-store" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.images && Array.isArray(data.images)) setAvailableImages(data.images);
+      })
+      .catch(() => {});
+  }, [auth?.token]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = e.target.files?.[0];
@@ -109,6 +121,29 @@ function PagoMovilPageContent() {
       alert("Error al subir imagen");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleSelectExistingImage(url: string) {
+    if (!auth?.token) return;
+    setSelectingImage(true);
+    try {
+      const res = await fetch("/api/admin/payment-mobile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
+        body: JSON.stringify({ imageUrl: url, cedula, telefono, destino }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setImageUrl(data.imageUrl);
+        alert("Imagen actualizada correctamente");
+      } else {
+        alert(data.error || "Error al asignar imagen");
+      }
+    } catch {
+      alert("Error al asignar imagen");
+    } finally {
+      setSelectingImage(false);
     }
   }
 
@@ -247,6 +282,40 @@ function PagoMovilPageContent() {
               </button>
             </div>
           </div>
+
+          {availableImages.length > 0 && (
+            <div>
+              <h3 style={{ margin: "0 0 1rem", color: "var(--text-primary)" }}>Seleccionar imagen ya subida</h3>
+              <p style={{ margin: "0 0 0.75rem", color: "var(--text-secondary)", fontSize: ".875rem" }}>
+                Elige una imagen que ya esté en el servidor para usarla como imagen de Pago Móvil.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "0.75rem" }}>
+                {availableImages.map((img) => (
+                  <button
+                    key={img.url}
+                    type="button"
+                    onClick={() => handleSelectExistingImage(img.url)}
+                    disabled={selectingImage}
+                    style={{
+                      padding: 0,
+                      border: imageUrl === img.url ? "3px solid #85BB65" : "2px solid var(--border-color)",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      cursor: selectingImage ? "not-allowed" : "pointer",
+                      background: "transparent",
+                      opacity: selectingImage ? 0.7 : 1,
+                    }}
+                  >
+                    <img
+                      src={img.url}
+                      alt=""
+                      style={{ width: "100%", height: "100px", objectFit: "cover", display: "block" }}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="card" style={{ padding: "1.5rem", display: "grid", gap: "1.5rem" }}>

@@ -3,30 +3,19 @@ node_modules/
 .pnp
 .pnp.js
 
-# Testing
-coverage/
-
-# Next.js
+# Build & output
 .next/
 out/
 build/
 dist/
 
-# Production
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 
-# Misc
-.DS_Store
-*.pem
-._*
-.AppleDouble
-
-# Archivos de respaldo/conflictos del editor
-.!*
-
-# Variables de entorno (Vercel usa las suyas)
+# Environment (Vercel usa variables en el dashboard)
 .env
 .env.local
 .env.development
@@ -39,7 +28,7 @@ yarn-error.log*
 .env.vercel
 .env*.local
 
-# Mantener .env.example como referencia para otros desarrolladores
+# Mantener solo .env.example como plantilla
 !.env.example
 
 # Vercel
@@ -49,26 +38,31 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Contenido generado en runtime (comprobantes de pago, etc.)
+# IDE / OS
+.DS_Store
+*.pem
+._*
+.AppleDouble
+.cursor/
+
+# Uploads y contenido generado en runtime
 public/uploads/
 
-# Archivos grandes y compilados
-LUCKYLYV01/
-LUCKYLYV01.tar.gz
+# Archivos grandes (opcional)
 *.tar.gz
 *.mp4
 *.mov
-docs/PLAN_REMEDIACION_AUDITORIA.md
-.gitignore
-docs/PLAN_NOTIFICACIONES.md
-docs/AUDITORIA_FINAL_ESTADO_SISTEMA.md
-docs/CHECKLIST_CALCULOS_Y_VERIFICACION.md
-.gitignore
-.gitignore
-docs/PLAN_REESTRUCTURACION_CONTABLE.md
-docs/PLAN_LIMPIAR_DATOS_DESDE_CERO.md
-docs/PLAN_AUDITORIA_COMPLETA.md
-.gitignore
-docs/INFORME_AUDITORIA.md
-docs/PLAN_ANALISIS_SISTEMA_CONTABLE.md
-docs/CHECKLIST_PRE_LANZAMIENTO.md
+
+# Auditoría / planes internos (opcional: descomentar si no quieres subirlos)
+# docs/PLAN_*.md
+# docs/AUDITORIA_*.md
+# docs/INFORME_*.md
+# docs/CHECKLIST_*.md
+docs/CHECKLIST_DESPLIEGUE_VERCEL_NEON.md
+docs/ESTADOS_TRANSICIONES.md
+docs/INFORME_FINAL_AUDITORIA_100_PLANTILLA.md
+docs/LISTADO_APIS.md
+docs/MATRIZ_PERMISOS_API.md
+docs/MATRIZ_RUTAS_Y_ROLES_FRONT.md
+docs/PLAN_AUDITORIA_100_PROYECTO.md
+docs/PLAN_REMEDIACION_PRODUCCION_100.md

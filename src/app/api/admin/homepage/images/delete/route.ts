@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { del } from "@vercel/blob";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
 import { logger } from "../../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../../lib/db-types";
 import { unlink } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 
+const ROLES: Role[] = ["AGENT", "SUPERADMIN", "MASTER"];
 const PROTECTED_NAMES = [
   "FLYER-001.png",
   "FLYER-002.png",
@@ -19,7 +20,7 @@ const PROTECTED_NAMES = [
 
 export async function DELETE(request: Request) {
   try {
-    requireAuth(request, [Role.AGENT, Role.SUPERADMIN, Role.MASTER]);
+    requireAuth(request, ROLES);
 
     const body = await request.json();
     const { imageUrl } = body;

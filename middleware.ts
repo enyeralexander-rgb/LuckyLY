@@ -2,39 +2,40 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 const ADMIN_ROUTES = ["/admin"];
-const USER_PROTECTED_ROUTES = ["/dashboard", "/perfil", "/payment"];
+const USER_PROTECTED_ROUTES = ["/cuenta", "/dashboard", "/perfil", "/payment"];
 const AUTH_ROUTES = ["/auth/login", "/auth/register"];
 
-// Rutas específicas que requieren roles específicos
-const SUPERADMIN_MASTER_ROUTES = [
-  "/admin/usuarios",
-  "/admin/historial",
-  "/admin/referidos"
-];
-
+// Rutas solo MASTER (configuración sensible, roles, logs)
 const MASTER_ONLY_ROUTES = [
   "/admin/logs-super",
   "/admin/logs-admins",
   "/admin/roles/superadmins",
   "/admin/roles/admins",
-  "/admin/roles/admins/[id]/modificar",
   "/admin/terminos",
   "/admin/reglas",
   "/admin/pago-movil",
   "/admin/redes-sociales",
-  "/admin/estadisticas/user"
+  "/admin/estadisticas/user",
 ];
 
+// Rutas CONTABLE o MASTER (estadísticas, pagar premios)
 const CONTABLE_MASTER_ROUTES = [
-  "/admin/estadisticas"
+  "/admin/estadisticas",
+  "/admin/pagos",
 ];
 
-const SUPERADMIN_MASTER_ROUTES_EXTENDED = [
-  ...SUPERADMIN_MASTER_ROUTES
+// Rutas SUPERADMIN o MASTER (usuarios, historial, referidos, en vivo)
+const SUPERADMIN_MASTER_ROUTES = [
+  "/admin/usuarios",
+  "/admin/historial",
+  "/admin/referidos",
+  "/admin/en-vivo",
 ];
 
+// Rutas AGENT, SUPERADMIN o MASTER (CMS, templates; sorteos sin CONTABLE en crear/ejecutar/modificar, cupos sí con AuthGuard)
 const AGENT_SUPERADMIN_MASTER_ROUTES = [
-  "/admin/pagina-principal"
+  "/admin/pagina-principal",
+  "/admin/templates",
 ];
 
 async function verifyToken(token: string, key: Uint8Array) {
@@ -82,13 +83,11 @@ export async function middleware(req: NextRequest) {
   const isAdminRoute = ADMIN_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
   if (isAdminRoute) {
     if (!token) {
-      return NextResponse.redirect(new URL("/auth/login", req.url));
+      return NextResponse.next();
     }
-
     if (!payload?.sub || !payload.role) {
       return NextResponse.redirect(new URL("/auth/login", req.url));
     }
-
     const userRole = String(payload.role);
     const isAdmin = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"].includes(userRole);
     
@@ -106,7 +105,7 @@ export async function middleware(req: NextRequest) {
     }
 
     // Verificar rutas que requieren SUPERADMIN o MASTER
-    const requiresSuperMaster = SUPERADMIN_MASTER_ROUTES_EXTENDED.some((route) => 
+    const requiresSuperMaster = SUPERADMIN_MASTER_ROUTES.some((route) =>
       pathname === route || pathname.startsWith(`${route}/`)
     );
     if (requiresSuperMaster && !["SUPERADMIN", "MASTER"].includes(userRole)) {
@@ -122,12 +121,9 @@ export async function middleware(req: NextRequest) {
     }
 
     // Verificar rutas que requieren solo MASTER
-    const requiresMaster = MASTER_ONLY_ROUTES.some((route) => {
-      // Reemplazar [id] con patrón de coincidencia para rutas dinámicas
-      const routePattern = route.replace(/\[id\]/g, "[^/]+");
-      const regex = new RegExp(`^${routePattern.replace(/\//g, "\\/")}(/.*)?$`);
-      return pathname === route || pathname.startsWith(`${route}/`) || regex.test(pathname);
-    });
+    const requiresMaster = MASTER_ONLY_ROUTES.some((route) =>
+      pathname === route || pathname.startsWith(`${route}/`)
+    );
     if (requiresMaster && userRole !== "MASTER") {
       return NextResponse.redirect(new URL("/admin", req.url));
     }
@@ -207,6 +203,7 @@ export const config = {
     "/payment",
     "/payment/:path*",
     "/raffles/:path*",
+    "/cuenta",
     "/cuenta/:path*",
     "/auth/login",
     "/auth/register"

@@ -1,33 +1,32 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../../lib/prisma";
-import { requireAuth, AuthError } from "../../../../../../lib/auth";
-import { Role } from "@prisma/client";
+import { tickets, ticketItems } from "@/lib/db";
+import { requireAuth, AuthError } from "@/lib/auth";
+import type { Role } from "@/lib/db-types";
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const auth = requireAuth(request, [Role.USER]);
+    const auth = requireAuth(request, ["USER"] as Role[]);
     const raffleId = params.id;
 
-    // Obtener todos los tickets del usuario en este sorteo (solo confirmados y pendientes)
-    const userTickets = await prisma.ticket.findMany({
-      where: { 
-        raffleId, 
+    const userTickets = await tickets.findMany({
+      where: {
+        raffleId,
         userId: auth.userId,
-        status: { in: ["CONFIRMED", "PENDING"] }
+        statusIn: ["CONFIRMED", "PENDING"],
       },
-      include: { 
-        ticketItems: {
-          where: {
-            status: { in: ["CONFIRMED", "PENDING"] }
-          }
-        }
-      }
     });
 
-    // Contar el total de cupos comprados (confirmados o pendientes)
-    const totalSlots = userTickets.reduce((sum, ticket) => {
-      return sum + ticket.ticketItems.length;
-    }, 0);
+    const ticketIds = userTickets.map((t) => t.id);
+    if (ticketIds.length === 0) {
+      return NextResponse.json({ count: 0 });
+    }
+
+    const allItems = await ticketItems.findMany({ raffleId });
+    const validStatuses = new Set(["CONFIRMED", "PENDING"]);
+    const ticketIdSet = new Set(ticketIds);
+    const totalSlots = allItems.filter(
+      (i) => ticketIdSet.has(i.ticketId) && validStatuses.has(i.status)
+    ).length;
 
     return NextResponse.json({ count: totalSlots });
   } catch (err) {
@@ -37,4 +36,3 @@ export async function GET(request: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: "Error al obtener cupos del usuario" }, { status: 500 });
   }
 }
-

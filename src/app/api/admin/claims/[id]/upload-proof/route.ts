@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
-import { prisma } from "../../../../../../lib/prisma";
+import { prizeClaims } from "../../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
 import { logger } from "../../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../../lib/db-types";
 
 const PREFIX = "payment-proofs/";
+const ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER]);
+    requireAuth(request, ROLES);
 
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) {
@@ -26,41 +27,27 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ error: "Archivo requerido" }, { status: 400 });
     }
 
-    // Validar que sea una imagen
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json({ error: "Solo se permiten archivos de imagen (JPG, PNG, GIF, WEBP)" }, { status: 400 });
     }
-
-    // Validar tamaño (máximo 5MB)
     if (file.size > 5 * 1024 * 1024) {
       return NextResponse.json({ error: "El archivo no puede ser mayor a 5MB" }, { status: 400 });
     }
 
-    const claim = await prisma.prizeClaim.findUnique({
-      where: { id: params.id },
-    });
-
+    const claim = await prizeClaims.findById(params.id);
     if (!claim) {
       return NextResponse.json({ error: "Reclamo no encontrado" }, { status: 404 });
     }
 
-    // Subir a Vercel Blob Storage (funciona en serverless sin filesystem local)
     const timestamp = Date.now();
     const extension = file.name.split(".").pop() || "png";
     const safeName = `${params.id}-${timestamp}.${extension}`;
     const pathname = `${PREFIX}${safeName}`;
 
-    const blob = await put(pathname, file, {
-      access: "public",
-      token
-    });
+    const blob = await put(pathname, file, { access: "public", token });
 
-    // Guardar URL del blob en la base de datos
-    await prisma.prizeClaim.update({
-      where: { id: params.id },
-      data: { paymentProof: blob.url },
-    });
+    await prizeClaims.update(params.id, { paymentProof: blob.url });
 
     return NextResponse.json({ success: true, proofUrl: blob.url });
   } catch (err) {

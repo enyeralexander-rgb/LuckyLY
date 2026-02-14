@@ -1,28 +1,30 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { socialMedia } from "../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../lib/auth";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../lib/db-types";
+import { newId } from "../../../../lib/id";
+
+const MASTER: Role = "MASTER";
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.MASTER]);
-    let social = await prisma.socialMedia.findFirst();
+    requireAuth(request, [MASTER]);
+    let social = await socialMedia.findFirst();
     if (!social) {
-      social = await prisma.socialMedia.create({
-        data: {
-          facebook: null,
-          instagram: null,
-          twitter: null,
-          youtube: null,
-          tiktok: null,
-          whatsapp: null,
-          facebookEnabled: true,
-          instagramEnabled: true,
-          twitterEnabled: true,
-          youtubeEnabled: true,
-          tiktokEnabled: true,
-          whatsappEnabled: true
-        }
+      social = await socialMedia.create({
+        id: newId(),
+        facebook: null,
+        instagram: null,
+        twitter: null,
+        youtube: null,
+        tiktok: null,
+        whatsapp: null,
+        facebookEnabled: true,
+        instagramEnabled: true,
+        twitterEnabled: true,
+        youtubeEnabled: true,
+        tiktokEnabled: true,
+        whatsappEnabled: true,
       });
     }
     return NextResponse.json(social);
@@ -36,7 +38,7 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.MASTER]);
+    const auth = requireAuth(request, [MASTER]);
     const body = await request.json();
     const {
       facebook,
@@ -50,60 +52,49 @@ export async function PUT(request: Request) {
       twitterEnabled,
       youtubeEnabled,
       tiktokEnabled,
-      whatsappEnabled
+      whatsappEnabled,
     } = body;
 
-    let social = await prisma.socialMedia.findFirst();
-    const urlData = {
+    const urlData: Record<string, string | null | undefined> = {
       facebook: typeof facebook === "string" ? facebook.trim() || null : undefined,
       instagram: typeof instagram === "string" ? instagram.trim() || null : undefined,
       twitter: typeof twitter === "string" ? twitter.trim() || null : undefined,
       youtube: typeof youtube === "string" ? youtube.trim() || null : undefined,
       tiktok: typeof tiktok === "string" ? tiktok.trim() || null : undefined,
-      whatsapp: typeof whatsapp === "string" ? whatsapp.trim() || null : undefined
+      whatsapp: typeof whatsapp === "string" ? whatsapp.trim() || null : undefined,
     };
-    const enabledData = {
-      ...(typeof facebookEnabled === "boolean" && { facebookEnabled }),
-      ...(typeof instagramEnabled === "boolean" && { instagramEnabled }),
-      ...(typeof twitterEnabled === "boolean" && { twitterEnabled }),
-      ...(typeof youtubeEnabled === "boolean" && { youtubeEnabled }),
-      ...(typeof tiktokEnabled === "boolean" && { tiktokEnabled }),
-      ...(typeof whatsappEnabled === "boolean" && { whatsappEnabled })
-    };
+    const enabledData: Record<string, boolean> = {};
+    if (typeof facebookEnabled === "boolean") enabledData.facebookEnabled = facebookEnabled;
+    if (typeof instagramEnabled === "boolean") enabledData.instagramEnabled = instagramEnabled;
+    if (typeof twitterEnabled === "boolean") enabledData.twitterEnabled = twitterEnabled;
+    if (typeof youtubeEnabled === "boolean") enabledData.youtubeEnabled = youtubeEnabled;
+    if (typeof tiktokEnabled === "boolean") enabledData.tiktokEnabled = tiktokEnabled;
+    if (typeof whatsappEnabled === "boolean") enabledData.whatsappEnabled = whatsappEnabled;
+
+    let social = await socialMedia.findFirst();
+    const updatePayload = { ...urlData, ...enabledData, updatedById: auth.userId };
+    const hasUpdates = Object.keys(updatePayload).some((k) => updatePayload[k as keyof typeof updatePayload] !== undefined);
 
     if (!social) {
-      social = await prisma.socialMedia.create({
-        data: {
-          facebook: urlData.facebook ?? null,
-          instagram: urlData.instagram ?? null,
-          twitter: urlData.twitter ?? null,
-          youtube: urlData.youtube ?? null,
-          tiktok: urlData.tiktok ?? null,
-          whatsapp: urlData.whatsapp ?? null,
-          facebookEnabled: true,
-          instagramEnabled: true,
-          twitterEnabled: true,
-          youtubeEnabled: true,
-          tiktokEnabled: true,
-          whatsappEnabled: true,
-          ...enabledData,
-          updatedById: auth.userId
-        }
+      social = await socialMedia.create({
+        id: newId(),
+        facebook: urlData.facebook ?? null,
+        instagram: urlData.instagram ?? null,
+        twitter: urlData.twitter ?? null,
+        youtube: urlData.youtube ?? null,
+        tiktok: urlData.tiktok ?? null,
+        whatsapp: urlData.whatsapp ?? null,
+        facebookEnabled: true,
+        instagramEnabled: true,
+        twitterEnabled: true,
+        youtubeEnabled: true,
+        tiktokEnabled: true,
+        whatsappEnabled: true,
+        ...enabledData,
+        updatedById: auth.userId,
       });
-    } else {
-      social = await prisma.socialMedia.update({
-        where: { id: social.id },
-        data: {
-          ...(urlData.facebook !== undefined && { facebook: urlData.facebook }),
-          ...(urlData.instagram !== undefined && { instagram: urlData.instagram }),
-          ...(urlData.twitter !== undefined && { twitter: urlData.twitter }),
-          ...(urlData.youtube !== undefined && { youtube: urlData.youtube }),
-          ...(urlData.tiktok !== undefined && { tiktok: urlData.tiktok }),
-          ...(urlData.whatsapp !== undefined && { whatsapp: urlData.whatsapp }),
-          ...enabledData,
-          updatedById: auth.userId
-        }
-      });
+    } else if (hasUpdates) {
+      social = await socialMedia.update(social.id, updatePayload);
     }
     return NextResponse.json(social);
   } catch (err) {
@@ -113,4 +104,3 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Error al actualizar redes sociales" }, { status: 500 });
   }
 }
-

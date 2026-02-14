@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { prizeClaims, users, tickets, raffles } from "../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../lib/auth";
 import { getRevenueByRaffle } from "../../../../lib/accounting";
 import { parsePrizeValue } from "../../../../lib/validators";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../lib/db-types";
 import { isDatabaseConnectionError } from "../../../../lib/dbErrors";
 import { logger } from "../../../../lib/logger";
 
-/** Obtiene el monto del premio según CREAR SORTEOS (raffle.prizes): 1º = prizes[0], 2º = prizes[1], 3º = prizes[2]. */
+const ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
+
 function getPrizeAmountFromRaffle(
   winningItem: string | null,
   prizes: unknown,
@@ -28,63 +29,71 @@ function getPrizeAmountFromRaffle(
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.AGENT, Role.CONTABLE, Role.SUPERADMIN, Role.MASTER]);
-    const claims = await prisma.prizeClaim.findMany({
-      where: { status: { in: ["REQUESTED", "PROCESSING"] } },
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
-            nationalId: true,
-            phoneNumber: true,
-            bank: true,
-            bankPhone: true
-          }
-        },
-        ticket: {
-          select: {
-            id: true,
-            totalPaid: true,
-            items: true,
-            raffleId: true,
-            paymentMethod: true,
-            paymentMobileRef: true,
-            raffle: {
-              select: {
-                id: true,
-                title: true,
-                winningItem: true,
-                winnersCount: true,
-                prizes: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: { createdAt: "desc" }
+    const auth = requireAuth(request, ROLES);
+
+    const claims = await prizeClaims.findMany({
+      where: { status: ["REQUESTED", "PROCESSING"] },
+      take: 500,
     });
 
-    const raffleIds = [...new Set(claims.map((c) => c.ticket.raffleId).filter(Boolean))] as string[];
+    if (claims.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    const userIds = [...new Set(claims.map((c) => c.userId))];
+    const ticketIds = [...new Set(claims.map((c) => c.ticketId))];
+    const userMap = new Map<string, Awaited<ReturnType<typeof users.findById>>>();
+    const ticketMap = new Map<string, Awaited<ReturnType<typeof tickets.findById>>>();
+    const raffleMap = new Map<string, Awaited<ReturnType<typeof raffles.findById>>>();
+    await Promise.all(userIds.map(async (id) => userMap.set(id, (await users.findById(id)) ?? null)));
+    await Promise.all(ticketIds.map(async (id) => ticketMap.set(id, (await tickets.findById(id)) ?? null)));
+    const raffleIds = [...new Set([...ticketMap.values()].filter(Boolean).map((t) => t!.raffleId))];
+    await Promise.all(raffleIds.map(async (id) => raffleMap.set(id, (await raffles.findById(id)) ?? null)));
+
     const revenueByRaffle = await getRevenueByRaffle(raffleIds);
 
     const claimsWithSuggested = claims.map((claim) => {
-      const raffle = claim.ticket.raffle;
+      const user = userMap.get(claim.userId);
+      const ticket = ticketMap.get(claim.ticketId);
+      const raffle = ticket ? raffleMap.get(ticket.raffleId) : null;
+      const userSelect = user
+        ? { name: user.name, email: user.email, nationalId: user.nationalId, phoneNumber: user.phoneNumber, bank: user.bank, bankPhone: user.bankPhone }
+        : null;
+      const ticketSelect = ticket
+        ? {
+            id: ticket.id,
+            totalPaid: ticket.totalPaid,
+            items: ticket.items,
+            raffleId: ticket.raffleId,
+            paymentMethod: ticket.paymentMethod,
+            paymentMobileRef: ticket.paymentMobileRef,
+            raffle: raffle
+              ? { id: raffle.id, title: raffle.title, winningItem: raffle.winningItem, winnersCount: raffle.winnersCount, prizes: raffle.prizes }
+              : null,
+          }
+        : null;
       const fromRafflePrizes = getPrizeAmountFromRaffle(
         raffle?.winningItem ?? null,
         raffle?.prizes ?? null,
-        claim.ticket.items ?? []
+        ticket?.items ?? []
       );
+      let suggestedPrize: number;
       if (fromRafflePrizes != null && fromRafflePrizes > 0) {
-        return { ...claim, suggestedPrize: Math.round(fromRafflePrizes * 100) / 100 };
+        suggestedPrize = Math.round(fromRafflePrizes * 100) / 100;
+      } else {
+        const revenue = ticket?.raffleId ? revenueByRaffle[ticket.raffleId] ?? 0 : 0;
+        const winnersCount = raffle?.winnersCount ?? 1;
+        suggestedPrize =
+          revenue > 0
+            ? Math.round((revenue * 0.7 / winnersCount) * 100) / 100
+            : Number(ticket?.totalPaid ?? 0);
       }
-      const revenue = claim.ticket.raffleId ? revenueByRaffle[claim.ticket.raffleId] ?? 0 : 0;
-      const winnersCount = raffle?.winnersCount ?? 1;
-      const suggestedPrize =
-        revenue > 0
-          ? Math.round((revenue * 0.7 / winnersCount) * 100) / 100
-          : Number(claim.ticket.totalPaid);
-      return { ...claim, suggestedPrize };
+      return {
+        ...claim,
+        user: userSelect,
+        ticket: ticketSelect,
+        suggestedPrize,
+      };
     });
 
     return NextResponse.json(claimsWithSuggested);
@@ -99,4 +108,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Error al obtener reclamos" }, { status: 500 });
   }
 }
-

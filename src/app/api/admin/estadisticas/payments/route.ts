@@ -1,146 +1,118 @@
 import { NextResponse } from "next/server";
-export const dynamic = 'force-dynamic';
-import { prisma } from "../../../../../lib/prisma";
+export const dynamic = "force-dynamic";
+import * as db from "../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
 import { logger } from "../../../../../lib/logger";
-import { Role } from "@prisma/client";
+import type { Role } from "../../../../../lib/db-types";
+
+const ROLES: Role[] = ["CONTABLE", "MASTER"];
 
 export async function GET(request: Request) {
   try {
-    const auth = requireAuth(request, [Role.CONTABLE, Role.MASTER]);
+    requireAuth(request, ROLES);
     const { searchParams } = new URL(request.url);
-    
-    // Filtros
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const userId = searchParams.get("userId");
     const paymentMethod = searchParams.get("paymentMethod");
     const raffleId = searchParams.get("raffleId");
-    const status = searchParams.get("status") || "CONFIRMED"; // CONFIRMED, PENDING, or all
+    const status = searchParams.get("status") || "CONFIRMED";
     const refSearch = searchParams.get("refSearch");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "50", 10);
     const skip = (page - 1) * limit;
 
-    // Construir filtros
-    const where: any = {};
-    // Status filter: default CONFIRMED for backward compat
-    if (status && status !== "all") {
-      where.status = status;
-    } else if (status === "all") {
-      where.status = { in: ["CONFIRMED", "PENDING"] };
+    let purchasedAtGte: Date | undefined;
+    let purchasedAtLte: Date | undefined;
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      purchasedAtGte = start;
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      purchasedAtLte = end;
+    }
+
+    const statusFilter = status === "all" ? undefined : status;
+    let ticketList: Awaited<ReturnType<typeof db.tickets.findMany>>;
+    if (statusFilter && purchasedAtGte != null && purchasedAtLte != null) {
+      ticketList = await db.tickets.findMany({
+        where: { status: statusFilter, purchasedAtGte, purchasedAtLte, userId: userId ?? undefined, raffleId: raffleId ?? undefined },
+        take: 10000,
+      });
+    } else if (statusFilter) {
+      ticketList = await db.tickets.findMany({
+        where: { status: statusFilter, userId: userId ?? undefined, raffleId: raffleId ?? undefined },
+        take: 10000,
+      });
     } else {
-      where.status = "CONFIRMED";
+      ticketList = await db.tickets.findMany({
+        where: { statusIn: ["CONFIRMED", "PENDING"], purchasedAtGte, purchasedAtLte, userId: userId ?? undefined, raffleId: raffleId ?? undefined },
+        take: 10000,
+      });
     }
 
-    // Filtro por fecha (mismo criterio que estadísticas: inicio/fin de día para alinear con purchasedAt)
-    if (startDate || endDate) {
-      where.purchasedAt = {};
-      if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        where.purchasedAt.gte = start;
-      }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        where.purchasedAt.lte = end;
-      }
-    }
-
-    // Filtro por usuario
-    if (userId) {
-      where.userId = userId;
-    }
-
-    // Filtro por método de pago
+    let filtered = ticketList;
+    if (userId) filtered = filtered.filter((t) => t.userId === userId);
+    if (raffleId) filtered = filtered.filter((t) => t.raffleId === raffleId);
     if (paymentMethod) {
-      where.paymentMethod = paymentMethod;
+      filtered = filtered.filter((t) => (t.paymentMethod ?? "") === paymentMethod);
     }
-
-    // Filtro por sorteo (nombre de dinámica)
-    if (raffleId) {
-      where.raffleId = raffleId;
-    }
-
-    // Filtro por referencia de pago
     if (refSearch) {
-      where.paymentMobileRef = { contains: refSearch, mode: "insensitive" };
+      const term = refSearch.toLowerCase();
+      filtered = filtered.filter((t) => (t.paymentMobileRef ?? "").toLowerCase().includes(term));
     }
 
-    // Obtener tickets con información del usuario y sorteo + total acumulado
-    const [tickets, total, totalSumAgg] = await Promise.all([
-      prisma.ticket.findMany({
-        where,
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          raffle: {
-            select: {
-              id: true,
-              title: true,
-              type: true
-            }
-          }
-        },
-        orderBy: {
-          purchasedAt: "desc"
-        },
-        skip,
-        take: limit
-      }),
-      prisma.ticket.count({ where }),
-      prisma.ticket.aggregate({
-        where,
-        _sum: { totalPaid: true }
-      })
-    ]);
+    const total = filtered.length;
+    const totalSum = filtered.reduce((s, t) => s + Number(t.totalPaid), 0);
+    const paginated = filtered.slice(skip, skip + limit);
 
-    // Helper para obtener label del tipo de sorteo
+    const userIds = [...new Set(paginated.map((t) => t.userId))];
+    const raffleIds = [...new Set(paginated.map((t) => t.raffleId))];
+    const [users, raffles] = await Promise.all([
+      db.users.findManyByIds(userIds),
+      Promise.all(raffleIds.map((id) => db.raffles.findById(id))),
+    ]);
+    const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+    const raffleMap = Object.fromEntries(raffles.filter(Boolean).map((r) => [r!.id, r!]));
+
     const getTypeLabel = (type: string): string => {
       const labels: Record<string, string> = {
         NUMBERS: "Números",
         ANIMALS: "Animales",
         STATES: "Estados",
         FLAGS: "Banderas",
-        ZODIAC: "Signos Zodiacales"
+        ZODIAC: "Signos Zodiacales",
       };
       return labels[type] || type;
     };
 
-    // Formatear datos con información ampliada
-    const payments = tickets.map(ticket => {
+    const payments = paginated.map((ticket) => {
       const items = Array.isArray(ticket.items) ? ticket.items : [];
+      const user = userMap[ticket.userId];
+      const raffle = raffleMap[ticket.raffleId];
       return {
         id: ticket.id,
         fecha: ticket.purchasedAt.toISOString(),
-        nombreUsuario: ticket.user.name,
-        emailUsuario: ticket.user.email,
+        nombreUsuario: user?.name ?? "-",
+        emailUsuario: user?.email ?? "-",
         metodoPago: ticket.paymentMethod || "N/A",
         monto: Number(ticket.totalPaid),
         referenciaPago: ticket.paymentMobileRef || null,
         status: ticket.status,
         cuposComprados: items.join(", "),
         cantidadCupos: items.length,
-        tituloSorteo: ticket.raffle.title,
-        tipoSorteo: getTypeLabel(ticket.raffle.type)
+        tituloSorteo: raffle?.title ?? "-",
+        tipoSorteo: raffle ? getTypeLabel(raffle.type) : "-",
       };
     });
 
     return NextResponse.json({
       payments,
-      totalSum: Number(totalSumAgg._sum.totalPaid ?? 0),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+      totalSum: Number(totalSum.toFixed(2)),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (err) {
     if (err instanceof AuthError) {
