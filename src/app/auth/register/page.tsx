@@ -4,8 +4,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import { setStoredAuth } from "../../../lib/clientAuth";
 import { Footer } from "../../../components/Footer";
+import { VENEZUELAN_BANKS } from "../../../lib/banks";
+import { useTutorial } from "../../../contexts/TutorialContext";
+import { setTutorialDone } from "../../../lib/tutorialCookie";
 
 function RegisterPageContent() {
+  const tutorial = useTutorial();
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [documentIdType, setDocumentIdType] = useState<"V" | "E">("V");
@@ -22,6 +26,9 @@ function RegisterPageContent() {
   const [termsContent, setTermsContent] = useState("");
   const [loadingTerms, setLoadingTerms] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [step, setStep] = useState<1 | 2>(1);
+  const [bank, setBank] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   
   // Estados para validación en tiempo real
   const [usernameError, setUsernameError] = useState<string | null>(null);
@@ -53,6 +60,13 @@ function RegisterPageContent() {
       }
     }
   }, [searchParams]);
+
+  // Avanzar tutorial al paso 5 cuando el formulario pasa al paso 2 (después del render para que exista data-tutorial-step2-form)
+  useEffect(() => {
+    if (step === 2 && tutorial?.active && tutorial?.step === 4) {
+      tutorial.nextStep();
+    }
+  }, [step, tutorial?.active, tutorial?.step]);
 
   useEffect(() => {
     if (showTermsModal && !termsContent) {
@@ -142,8 +156,8 @@ function RegisterPageContent() {
   // Construir documentId completo
   const documentId = documentIdNumber ? `${documentIdType}-${documentIdNumber}` : "";
 
-  // Validar si el formulario puede enviarse
-  const canSubmit = 
+  // Validar si el paso 1 puede continuar (sin términos; los términos van en paso 2)
+  const canSubmitStep1 =
     name.length >= 3 &&
     username.length >= 5 &&
     /^[a-zA-Z0-9]+$/.test(username) &&
@@ -153,7 +167,6 @@ function RegisterPageContent() {
     /\d/.test(password) &&
     /[@$!%*?&.]/.test(password) &&
     passwordsMatch &&
-    acceptTerms &&
     !usernameError &&
     !emailError &&
     !documentIdError &&
@@ -162,19 +175,36 @@ function RegisterPageContent() {
     !checkingEmail &&
     !checkingDocumentId;
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const phoneDigits = phoneNumber.replace(/\D/g, "");
+  const canSubmitStep2 =
+    bank.trim() !== "" &&
+    phoneDigits.length >= 11 &&
+    acceptTerms;
+
+  function handleStep1Submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
+    if (!canSubmitStep1) return;
+    if (!passwordsMatch) {
+      setMessage("Las contraseñas no coinciden");
+      return;
+    }
+    setStep(2);
+  }
 
-    // Validar aceptación de términos
+  async function handleStep2Submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage(null);
     if (!acceptTerms) {
       setMessage("Debes aceptar los términos y condiciones para registrarte");
       return;
     }
-
-    // Validar que las contraseñas coincidan
-    if (!passwordsMatch) {
-      setMessage("Las contraseñas no coinciden");
+    if (!canSubmitStep2) {
+      if (phoneDigits.length > 0 && phoneDigits.length < 11) {
+        setMessage("El teléfono debe tener al menos 11 dígitos.");
+      } else if (!bank.trim()) {
+        setMessage("Selecciona un banco.");
+      }
       return;
     }
 
@@ -183,17 +213,17 @@ function RegisterPageContent() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          name, 
-          username, 
-          documentId, // Ya incluye el formato "V-12345678"
-          email, 
-          password, 
-          acceptTerms, 
-          referralCode: referralCode || undefined 
+        body: JSON.stringify({
+          name,
+          username,
+          documentId,
+          email,
+          password,
+          acceptTerms: true,
+          referralCode: referralCode || undefined
         })
       });
-      
+
       let data;
       try {
         data = await res.json();
@@ -203,22 +233,21 @@ function RegisterPageContent() {
         setLoading(false);
         return;
       }
-      
+
       if (!res.ok) {
         const errorMessage = typeof data.error === "string" ? data.error : (data.error?.message || "Error al registrarse");
         setMessage(errorMessage);
         setLoading(false);
         return;
       }
-      
-      // Autologin para obtener token y redirigir
+
       try {
         const loginRes = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password })
         });
-        
+
         let loginData;
         try {
           loginData = await loginRes.json();
@@ -229,27 +258,38 @@ function RegisterPageContent() {
           setTimeout(() => router.push("/auth/login"), 2000);
           return;
         }
-        
+
         if (loginRes.ok && loginData.token && loginData.user) {
-          // Guardar autenticación
           setStoredAuth({ token: loginData.token, user: loginData.user });
-          
-          // Limpiar código de referido
-          if (referralCode) {
-            localStorage.removeItem("referralCode");
+
+          const role = String(loginData.user?.role ?? "USER").toUpperCase();
+          const isAdmin = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"].includes(role);
+          if (typeof document !== "undefined" && !isAdmin) {
+            document.cookie = "just_registred=1; path=/; max-age=120; SameSite=Lax";
           }
-          
-          // Mostrar mensaje de éxito
+
+          const profileRes = await fetch("/api/user/profile", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${loginData.token}`
+            },
+            credentials: "same-origin",
+            body: JSON.stringify({ bank: bank.trim(), phoneNumber: phoneDigits })
+          });
+
+          if (!profileRes.ok) {
+            const profileErr = await profileRes.json().catch(() => ({}));
+            console.error("Error al guardar datos bancarios:", profileErr);
+            setMessage(profileErr?.error || "Cuenta creada. Completa tus datos bancarios en Mi Cuenta.");
+          }
+
+          if (referralCode) localStorage.removeItem("referralCode");
           setMessage("✅ Registro exitoso. Redirigiendo...");
-          
-          // Redirigir según el rol
-          const role = loginData.user.role;
-          const redirectUrl = (role === "AGENT" || role === "CONTABLE" || role === "SUPERADMIN" || role === "MASTER") 
-            ? "/admin" 
-            : "/";
-          
-          // Usar window.location.href para asegurar la redirección completa
+
+          const redirectUrl = isAdmin ? "/admin" : "/cuenta/configuracion";
           setTimeout(() => {
+            setTutorialDone();
             window.location.href = redirectUrl;
           }, 1000);
         } else {
@@ -276,8 +316,13 @@ function RegisterPageContent() {
     <>
       <main className="container" style={{ paddingTop: "3rem", paddingBottom: "3rem", maxWidth: "520px", minHeight: "calc(100vh - 200px)" }}>
         <div className="card" style={{ display: "grid", gap: "1rem" }}>
-          <h1 style={{ margin: 0 }}>Crear cuenta</h1>
-          <form style={{ display: "grid", gap: ".75rem" }} onSubmit={handleSubmit}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+            <h1 style={{ margin: 0 }}>Crear cuenta</h1>
+            <span style={{ fontSize: "0.875rem", color: "#6b7280", fontWeight: 600 }}>Paso {step} de 2</span>
+          </div>
+
+          {step === 1 && (
+          <form style={{ display: "grid", gap: ".75rem" }} onSubmit={handleStep1Submit}>
             <div style={{ display: "grid", gap: ".75rem" }} data-tutorial-form>
             <label style={{ display: "grid", gap: ".35rem" }}>
               <span>Nombre completo</span>
@@ -589,6 +634,128 @@ function RegisterPageContent() {
             </label>
             </div>
 
+            <button
+              type="submit"
+              disabled={!canSubmitStep1}
+              data-tutorial-submit
+              className={tutorial?.step === 4 ? "tutorial-highlight-submit" : undefined}
+              style={{
+                padding: ".75rem",
+                background: !canSubmitStep1 ? "#6b7280" : "#85BB65",
+                color: "#3E3E3C",
+                border: "none",
+                borderRadius: "10px",
+                fontWeight: 700,
+                cursor: !canSubmitStep1 ? "not-allowed" : "pointer"
+              }}
+            >
+              Siguiente
+            </button>
+          </form>
+          )}
+
+          {step === 2 && (
+          <form style={{ display: "grid", gap: "1rem" }} onSubmit={handleStep2Submit}>
+            <div data-tutorial-step2-form style={{ display: "grid", gap: "1rem" }}>
+            <p style={{ margin: 0, fontSize: "0.9375rem", color: "var(--text-secondary, #6b7280)", lineHeight: 1.4 }}>
+              Indica los datos de tu Pago Móvil donde serán transferidos los premios de las ruletas.
+            </p>
+            <div>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
+                Documento de Identidad *
+              </label>
+              <input
+                type="text"
+                value={documentId}
+                readOnly
+                disabled
+                style={{
+                  width: "100%",
+                  padding: ".75rem",
+                  borderRadius: "8px",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-disabled-bg, #e5e5e5)",
+                  color: "var(--text-secondary, #6b7280)",
+                  fontSize: "1rem",
+                  cursor: "not-allowed"
+                }}
+              />
+              <small style={{ color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>
+                Este dato no se puede modificar. Fue ingresado en el paso anterior.
+              </small>
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
+                Banco *
+              </label>
+              <select
+                value={bank}
+                onChange={(e) => setBank(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: ".75rem",
+                  borderRadius: "8px",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg, #F5F5E6)",
+                  color: "var(--text-primary)",
+                  fontSize: "1rem"
+                }}
+              >
+                <option value="">Selecciona un banco</option>
+                {VENEZUELAN_BANKS.map((b) => (
+                  <option key={b.code} value={b.enumValue}>
+                    ({b.code}) {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="phone-register" style={{ display: "block", marginBottom: ".5rem", color: "var(--text-primary)", fontWeight: 600 }}>
+                Teléfono (Pago Móvil) *
+              </label>
+              <input
+                id="phone-register"
+                type="tel"
+                inputMode="numeric"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                placeholder="Ej: 04121234567 (mín. 11 dígitos)"
+                style={{
+                  width: "100%",
+                  padding: ".75rem",
+                  borderRadius: "8px",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg, #F5F5E6)",
+                  color: "var(--text-primary)",
+                  fontSize: "1rem"
+                }}
+              />
+              <small style={{ color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "0.25rem", display: "block" }}>
+                Solo números (sin guiones ni espacios)
+              </small>
+            </div>
+
+            <div style={{ padding: "1rem", background: "rgba(239, 68, 68, 0.1)", border: "2px solid #ef4444", borderRadius: "8px" }}>
+              <div style={{ color: "#ef4444", fontWeight: 700, fontSize: "0.875rem", textTransform: "uppercase", marginBottom: "0.5rem" }}>
+                ⚠️ IMPORTANTE
+              </div>
+              <div style={{ color: "#ef4444", fontWeight: 700, fontSize: "0.875rem", textTransform: "uppercase" }}>
+                LOS MISMOS DATOS BANCARIOS INGRESADOS SE UTILIZARÁN PARA REALIZAR EL PAGO EN CASO DE SER GANADORES DE ALGUNO DE LOS SORTEOS.
+              </div>
+            </div>
+
+            <div style={{ padding: "1rem", background: "rgba(245, 158, 11, 0.1)", border: "2px solid #f59e0b", borderRadius: "8px" }}>
+              <div style={{ color: "#d97706", fontWeight: 700, fontSize: "0.875rem", marginBottom: "0.5rem" }}>
+                📅 RESTRICCIÓN DE MODIFICACIÓN
+              </div>
+              <div style={{ color: "#d97706", fontSize: "0.875rem" }}>
+                Una vez que guardes tus datos bancarios, solo podrás modificarlos <strong>1 vez por semana</strong>.
+                Asegúrate de ingresar la información correcta antes de continuar.
+              </div>
+            </div>
+
             <label style={{ display: "flex", gap: ".5rem", alignItems: "start", cursor: "pointer" }} data-tutorial-terms>
               <input
                 type="checkbox"
@@ -618,26 +785,51 @@ function RegisterPageContent() {
                 </button>
               </span>
             </label>
-            <button 
-              type="submit" 
-              disabled={!canSubmit || loading} 
-              data-tutorial-submit
-              style={{ 
-                padding: ".75rem", 
-                background: !canSubmit || loading ? "#6b7280" : "#85BB65", 
-                color: "#3E3E3C", 
-                border: "none", 
-                borderRadius: "10px", 
-                fontWeight: 700, 
-                cursor: !canSubmit || loading ? "not-allowed" : "pointer"
-              }}
-            >
-              {loading ? "Registrando..." : "Registrarme"}
-            </button>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                style={{
+                  width: "100%",
+                  padding: ".75rem 1.25rem",
+                  background: "transparent",
+                  color: "#85BB65",
+                  border: "2px solid #85BB65",
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  cursor: "pointer"
+                }}
+              >
+                ← Ir atrás
+              </button>
+              <button
+                type="submit"
+                disabled={!canSubmitStep2 || loading}
+                data-tutorial-register-btn
+                className={tutorial?.step === 7 ? "tutorial-highlight-submit" : undefined}
+                style={{
+                  width: "100%",
+                  padding: ".75rem 1.25rem",
+                  background: !canSubmitStep2 || loading ? "#6b7280" : "#85BB65",
+                  color: "#3E3E3C",
+                  border: "none",
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  cursor: !canSubmitStep2 || loading ? "not-allowed" : "pointer"
+                }}
+              >
+                {loading ? "Registrando..." : "Registrarme"}
+              </button>
+            </div>
           </form>
+          )}
           {message && <p style={{ color: "#f97316", margin: 0 }}>{message}</p>}
-          <Link href="/auth/login" style={{ color: "#85BB65" }}>¿Ya tienes cuenta? Inicia sesión</Link>
         </div>
+        <p style={{ marginTop: "1rem", marginBottom: 0, textAlign: "center" }}>
+          <Link href="/auth/login" style={{ color: "#85BB65" }}>¿Ya tienes cuenta? Inicia sesión</Link>
+        </p>
       </main>
 
       {/* Modal de Términos y Condiciones */}

@@ -3147,9 +3147,29 @@ video {
 
 .tutorial-actions-spotlight {
   margin-top: 0.5rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
 }
 
-.tutorial-actions-spotlight .tutorial-btn-inline {
+.tutorial-actions-spotlight .tutorial-btn-skip-xs {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  order: -1;
+  align-self: center;
+  width: auto;
+}
+
+.tutorial-actions-spotlight .tutorial-actions-main {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 1.25rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.tutorial-actions-spotlight .tutorial-actions-main .tutorial-btn {
   width: auto;
 }
 
@@ -3161,6 +3181,17 @@ video {
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
+}
+
+.tutorial-btn-back {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color, #d4d4c4);
+}
+
+.tutorial-btn-back:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .tutorial-btn-skip {
@@ -3215,6 +3246,12 @@ video {
 
 .tutorial-highlight-register {
   outline-color: var(--color-primary-dark);
+}
+
+.tutorial-highlight-submit {
+  outline: 3px solid var(--color-primary, #85BB65);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(133, 187, 101, 0.4);
 }
 
 @media (max-width: 768px) {
