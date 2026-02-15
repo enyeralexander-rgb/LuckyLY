@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     requireAuth(request, ROLES);
     const raffles = await db.raffles.findMany({ take: 10000 });
     const buffer = await exportRaffles(raffles);
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="sorteos_${new Date().toISOString().split("T")[0]}.xlsx"`,
