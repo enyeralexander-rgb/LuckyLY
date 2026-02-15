@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = referidoCreateSchema.safeParse(body);
     if (!parsed.success) {
-      const message = parsed.error.errors.map((e) => e.path.join(".") + ": " + e.message).join("; ");
+      const message = parsed.error.issues.map((e) => e.path.join(".") + ": " + e.message).join("; ");
       return NextResponse.json({ error: message || "Datos inválidos" }, { status: 400 });
     }
     const { name } = parsed.data;
