@@ -139,3 +139,32 @@ export async function update(id: string, data: { approved?: boolean; approvedAt?
   if (!updated) throw new Error("Raffle update failed");
   return updated;
 }
+
+/** Campos editables desde admin/sorteos/modificar (sin cupos confirmados) */
+export async function updateEditable(
+  id: string,
+  data: {
+    title?: string;
+    description?: string | null;
+    type?: DrawType;
+    pricePerSlot?: number | string;
+    winnersCount?: number;
+    mirrorMode?: boolean;
+    prizes?: unknown;
+    startsAt?: Date | null;
+  }
+): Promise<Raffle> {
+  const sql = getSql();
+  const now = new Date();
+  if (data.title !== undefined) await sql`UPDATE "Raffle" SET title = ${data.title}, "updatedAt" = ${now} WHERE id = ${id}`;
+  if (data.description !== undefined) await sql`UPDATE "Raffle" SET description = ${data.description}, "updatedAt" = ${now} WHERE id = ${id}`;
+  if (data.type !== undefined) await sql`UPDATE "Raffle" SET type = ${data.type}, "updatedAt" = ${now} WHERE id = ${id}`;
+  if (data.pricePerSlot !== undefined) await sql`UPDATE "Raffle" SET "pricePerSlot" = ${data.pricePerSlot}, "updatedAt" = ${now} WHERE id = ${id}`;
+  if (data.winnersCount !== undefined) await sql`UPDATE "Raffle" SET "winnersCount" = ${data.winnersCount}, "updatedAt" = ${now} WHERE id = ${id}`;
+  if (data.mirrorMode !== undefined) await sql`UPDATE "Raffle" SET "mirrorMode" = ${data.mirrorMode}, "updatedAt" = ${now} WHERE id = ${id}`;
+  if (data.prizes !== undefined) await sql`UPDATE "Raffle" SET prizes = ${JSON.stringify(data.prizes)}, "updatedAt" = ${now} WHERE id = ${id}`;
+  if (data.startsAt !== undefined) await sql`UPDATE "Raffle" SET "startsAt" = ${data.startsAt}, "updatedAt" = ${now} WHERE id = ${id}`;
+  const updated = await findById(id);
+  if (!updated) throw new Error("Raffle update failed");
+  return updated;
+}

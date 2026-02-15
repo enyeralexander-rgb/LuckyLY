@@ -1,13 +1,15 @@
 "use client";
 import { AdminNavBar } from "../../../../components/AdminNavBar";
 import { AuthGuard } from "../../../../components/AuthGuard";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
 import Link from "next/link";
 import { formatBankDisplay } from "../../../../lib/banks";
 
 type Claim = {
   id: string;
+  userId?: string;
+  raffleId?: string | null;
   status: string;
   createdAt: string;
   paymentRef: string | null;
@@ -18,7 +20,8 @@ type Claim = {
     totalPaid: number;
     paymentMethod: string | null;
     paymentMobileRef: string | null;
-    raffle: { title: string; winningItem: string | null };
+    raffleId?: string;
+    raffle: { id?: string; title: string; winningItem: string | null; prizes?: unknown };
   };
   user: {
     name: string;
@@ -40,7 +43,8 @@ function PagosPageContent() {
   const [claims, setClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
-  const [payModalClaim, setPayModalClaim] = useState<Claim | null>(null);
+  /** Grupo de claims a pagar en un solo pago (mismo usuario + mismo sorteo) */
+  const [payModalGroup, setPayModalGroup] = useState<Claim[] | null>(null);
   const [payRef, setPayRef] = useState("");
   const [payFile, setPayFile] = useState<File | null>(null);
   const [emailTemplateModal, setEmailTemplateModal] = useState(false);
@@ -59,15 +63,15 @@ function PagosPageContent() {
     }
   }, [auth]);
 
-  async function handleOpenPayModal(claim: Claim) {
-    setPayModalClaim(claim);
+  function handleOpenPayModal(groupClaims: Claim[]) {
+    setPayModalGroup(groupClaims);
     setPayRef("");
     setPayFile(null);
   }
 
   async function handleSubmitPay() {
-    if (!auth?.token || !payModalClaim) return;
-    const amount = payModalClaim.suggestedPrize != null ? payModalClaim.suggestedPrize : Number(payModalClaim.ticket.totalPaid);
+    if (!auth?.token || !payModalGroup || payModalGroup.length === 0) return;
+    const totalAmount = payModalGroup.reduce((sum, c) => sum + (c.suggestedPrize ?? Number(c.ticket?.totalPaid ?? 0)), 0);
     if (!payRef.trim()) {
       alert("Ingresa la referencia de pago");
       return;
@@ -76,22 +80,24 @@ function PagosPageContent() {
       alert("Selecciona el comprobante de pago (imagen) para enviarlo por correo al ganador");
       return;
     }
-    setProcessing(payModalClaim.id);
+    const groupKey = payModalGroup.map((c) => c.id).join(",");
+    setProcessing(groupKey);
     try {
       const formData = new FormData();
+      formData.append("claimIds", JSON.stringify(payModalGroup.map((c) => c.id)));
       formData.append("paymentRef", payRef.trim());
-      formData.append("paidAmount", String(amount));
+      formData.append("paidAmount", String(totalAmount));
       formData.append("file", payFile);
 
-      const res = await fetch(`/api/admin/claims/${payModalClaim.id}/pay`, {
+      const res = await fetch("/api/admin/claims/pay-group", {
         method: "POST",
         headers: { Authorization: `Bearer ${auth.token}` },
         body: formData,
       });
       const data = await res.json();
       if (res.ok) {
-        alert("Reclamo marcado como pagado. El cliente recibirá un email con el comprobante.");
-        setPayModalClaim(null);
+        alert(`Pago registrado (${payModalGroup.length} premio(s)). El cliente recibirá un email con el comprobante.`);
+        setPayModalGroup(null);
         window.location.reload();
       } else {
         alert(data.error || "No se pudo procesar el pago");
@@ -158,6 +164,19 @@ function PagosPageContent() {
 
   const pending = claims.filter((c) => c.status === "REQUESTED" || c.status === "PROCESSING");
 
+  /** Agrupa por usuario + sorteo para mostrar una tarjeta por ganador con TODOS los premios y su suma */
+  const groupedPending = useMemo(() => {
+    const map = new Map<string, Claim[]>();
+    for (const c of pending) {
+      const uid = c.userId ?? c.user?.email ?? c.id;
+      const rid = c.raffleId ?? c.ticket?.raffleId ?? c.ticket?.raffle?.id ?? "";
+      const key = `${String(uid)}__${String(rid)}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(c);
+    }
+    return Array.from(map.entries()).map(([, claims]) => claims);
+  }, [pending]);
+
   const modalOverlayStyle: React.CSSProperties = {
     position: "fixed",
     inset: 0,
@@ -213,90 +232,112 @@ function PagosPageContent() {
           </div>
         ) : (
           <div style={{ display: "grid", gap: "1rem" }}>
-            {pending.map((claim) => (
-              <div key={claim.id} className="card" style={{ display: "grid", gap: "1rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                  <div>
-                    <h3 style={{ margin: 0 }}>{claim.user.name}</h3>
-                    <p style={{ margin: ".25rem 0", color: "var(--text-secondary)" }}>
-                      {claim.user.email} | Sorteo: {claim.ticket.raffle.title}
-                    </p>
-                    <p style={{ margin: ".25rem 0", color: "var(--text-secondary)" }}>
-                      Ganador: {claim.ticket.raffle.winningItem || "N/A"} | Premio: {(claim.suggestedPrize != null ? claim.suggestedPrize : Number(claim.ticket.totalPaid)).toFixed(2)} Bs.
-                    </p>
-                  </div>
-                  <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
-                    <button
-                      onClick={() => handleOpenPayModal(claim)}
-                      disabled={processing === claim.id}
-                      style={{
-                        padding: ".5rem 1rem",
-                        background: "#85BB65",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: processing === claim.id ? "not-allowed" : "pointer",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {processing === claim.id ? "Procesando..." : "Marcar Pagado"}
-                    </button>
-                    <button
-                      onClick={() => handleIncorrectData(claim.id)}
-                      disabled={processing === claim.id}
-                      style={{
-                        padding: ".5rem 1rem",
-                        background: "#f59e0b",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: processing === claim.id ? "not-allowed" : "pointer",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Datos Incorrectos
-                    </button>
-                  </div>
-                </div>
-                <div className="card" style={{ background: "#1f2937", padding: "1rem", display: "grid", gap: "1rem" }}>
-                  <div>
-                    <h4 style={{ margin: "0 0 .5rem", fontSize: ".875rem" }}>Datos Bancarios:</h4>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: ".5rem", fontSize: ".875rem" }}>
-                      <div>
-                        <strong>Banco:</strong> {claim.user.bank ? formatBankDisplay(claim.user.bank) : "No especificado"}
-                      </div>
-                      <div>
-                        <strong>Cédula:</strong> {claim.user.nationalId || "No especificada"}
-                      </div>
-                      <div>
-                        <strong>Teléfono:</strong> {claim.user.phoneNumber || "No especificado"}
-                      </div>
-                      <div>
-                        <strong>Teléfono Banco:</strong> {claim.user.bankPhone || "No especificado"}
+            {groupedPending.map((groupClaims) => {
+              const first = groupClaims[0];
+              const totalAmount = groupClaims.reduce((sum, c) => sum + (c.suggestedPrize ?? Number(c.ticket?.totalPaid ?? 0)), 0);
+              const groupKey = `${first.userId ?? first.user?.email ?? first.id}__${first.raffleId ?? first.ticket?.raffle?.id ?? first.ticket?.raffleId ?? ""}`;
+              return (
+                <div key={groupKey} className="card" style={{ display: "grid", gap: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", flexWrap: "wrap", gap: "1rem" }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>{first.user.name}</h3>
+                      <p style={{ margin: ".25rem 0", color: "var(--text-secondary)" }}>
+                        {first.user.email} | Sorteo: {first.ticket.raffle.title}
+                      </p>
+                      <div style={{ marginTop: ".5rem" }}>
+                        <h4 style={{ margin: "0 0 .35rem", fontSize: ".875rem" }}>Premios ganados:</h4>
+                        <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "var(--text-secondary)", fontSize: ".875rem" }}>
+                          {groupClaims.map((c, i) => (
+                            <li key={c.id}>
+                              Premio {i + 1}: {(c.suggestedPrize != null ? c.suggestedPrize : Number(c.ticket?.totalPaid ?? 0)).toFixed(2)} Bs.
+                            </li>
+                          ))}
+                        </ul>
+                        <p style={{ margin: ".35rem 0 0", fontWeight: 700, color: "var(--text-primary)" }}>
+                          Total: {totalAmount.toFixed(2)} Bs. ({groupClaims.length} premio{groupClaims.length !== 1 ? "s" : ""})
+                        </p>
                       </div>
                     </div>
+                    <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", alignItems: "center" }}>
+                      <button
+                        onClick={() => handleOpenPayModal(groupClaims)}
+                        disabled={!!processing}
+                        style={{
+                          padding: ".5rem 1rem",
+                          background: "#85BB65",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          cursor: processing ? "not-allowed" : "pointer",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {processing ? "Procesando..." : `Marcar Pagado (Total: ${totalAmount.toFixed(2)} Bs.)`}
+                      </button>
+                      <button
+                        onClick={() => handleIncorrectData(groupClaims[0].id)}
+                        disabled={!!processing}
+                        style={{
+                          padding: ".5rem 1rem",
+                          background: "#f59e0b",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          cursor: processing ? "not-allowed" : "pointer",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Datos Incorrectos
+                      </button>
+                    </div>
                   </div>
-                  {claim.ticket.paymentMethod === "MOBILE" && claim.ticket.paymentMobileRef && (
-                    <div style={{ padding: ".75rem", background: "rgba(245, 158, 11, 0.1)", borderRadius: "8px", border: "1px solid #f59e0b" }}>
-                      <h4 style={{ margin: "0 0 .5rem", fontSize: ".875rem", color: "#f59e0b" }}>Referencia de Pago Móvil (Compra):</h4>
-                      <div style={{ fontSize: ".875rem", color: "#e2e8f0", fontWeight: 600 }}>
-                        {claim.ticket.paymentMobileRef}
+                  <div className="card" style={{ background: "#1f2937", padding: "1rem", display: "grid", gap: "1rem" }}>
+                    <div>
+                      <h4 style={{ margin: "0 0 .5rem", fontSize: ".875rem" }}>Datos Bancarios:</h4>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: ".5rem", fontSize: ".875rem" }}>
+                        <div>
+                          <strong>Banco:</strong> {first.user.bank ? formatBankDisplay(first.user.bank) : "No especificado"}
+                        </div>
+                        <div>
+                          <strong>Cédula:</strong> {first.user.nationalId || "No especificada"}
+                        </div>
+                        <div>
+                          <strong>Teléfono:</strong> {first.user.phoneNumber || first.user.bankPhone || "No especificado"}
+                        </div>
                       </div>
                     </div>
-                  )}
+                    {first.ticket.paymentMethod === "MOBILE" && first.ticket.paymentMobileRef && (
+                      <div style={{ padding: ".75rem", background: "rgba(245, 158, 11, 0.1)", borderRadius: "8px", border: "1px solid #f59e0b" }}>
+                        <h4 style={{ margin: "0 0 .5rem", fontSize: ".875rem", color: "#f59e0b" }}>Referencia de Pago Móvil (Compra):</h4>
+                        <div style={{ fontSize: ".875rem", color: "#e2e8f0", fontWeight: 600 }}>
+                          {first.ticket.paymentMobileRef}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
 
-      {payModalClaim && (
-        <div style={modalOverlayStyle} onClick={() => !processing && setPayModalClaim(null)}>
+      {payModalGroup && payModalGroup.length > 0 && (
+        <div style={modalOverlayStyle} onClick={() => !processing && setPayModalGroup(null)}>
           <div style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ margin: "0 0 1rem" }}>Marcar como pagado</h3>
-            <p style={{ margin: "0 0 .5rem", color: "var(--text-secondary)", fontSize: ".875rem" }}>
-              Sorteo: {payModalClaim.ticket.raffle.title} | Monto: {(payModalClaim.suggestedPrize != null ? payModalClaim.suggestedPrize : Number(payModalClaim.ticket.totalPaid)).toFixed(2)} Bs.
+            <h3 style={{ margin: "0 0 1rem" }}>Marcar como pagado (1 pago)</h3>
+            <p style={{ margin: "0 0 .35rem", color: "var(--text-secondary)", fontSize: ".875rem" }}>
+              Sorteo: {payModalGroup[0].ticket.raffle.title}
+            </p>
+            <ul style={{ margin: "0 0 .5rem", paddingLeft: "1.25rem", fontSize: ".875rem", color: "var(--text-secondary)" }}>
+              {payModalGroup.map((c, i) => (
+                <li key={c.id}>
+                  Premio {i + 1}: {(c.suggestedPrize ?? Number(c.ticket?.totalPaid ?? 0)).toFixed(2)} Bs.
+                </li>
+              ))}
+            </ul>
+            <p style={{ margin: "0 0 1rem", fontWeight: 700, color: "var(--text-primary)" }}>
+              Total a pagar: {payModalGroup.reduce((s, c) => s + (c.suggestedPrize ?? Number(c.ticket?.totalPaid ?? 0)), 0).toFixed(2)} Bs. ({payModalGroup.length} premio{payModalGroup.length !== 1 ? "s" : ""})
             </p>
             <div style={{ display: "grid", gap: "1rem", marginBottom: "1rem" }}>
               <div>
@@ -321,7 +362,7 @@ function PagosPageContent() {
               </div>
             </div>
             <div style={{ display: "flex", gap: ".5rem", justifyContent: "flex-end" }}>
-              <button type="button" onClick={() => setPayModalClaim(null)} disabled={!!processing} style={{ padding: ".5rem 1rem", background: "#6b7280", color: "#fff", border: "none", borderRadius: "8px", cursor: processing ? "not-allowed" : "pointer" }}>
+              <button type="button" onClick={() => setPayModalGroup(null)} disabled={!!processing} style={{ padding: ".5rem 1rem", background: "#6b7280", color: "#fff", border: "none", borderRadius: "8px", cursor: processing ? "not-allowed" : "pointer" }}>
                 Cancelar
               </button>
               <button type="button" onClick={handleSubmitPay} disabled={!!processing || !payRef.trim() || !payFile} style={{ padding: ".5rem 1rem", background: "#85BB65", color: "#fff", border: "none", borderRadius: "8px", cursor: !!processing || !payRef.trim() || !payFile ? "not-allowed" : "pointer", fontWeight: 600 }}>

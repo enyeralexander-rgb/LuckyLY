@@ -6,7 +6,6 @@ export * as ticketItems from "./ticketItems";
 export * as prizeClaims from "./prizeClaims";
 export * as auditLog from "./auditLog";
 export * as termsAndConditions from "./termsAndConditions";
-export * as rules from "./rules";
 export * as paymentMobile from "./paymentMobile";
 export * as socialMedia from "./socialMedia";
 export * as referralLink from "./referralLink";

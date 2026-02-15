@@ -138,11 +138,6 @@ function AdminHomePageContent() {
                   <p style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Edita el contenido de términos y condiciones que se muestra a los usuarios.</p>
                 </Link>
 
-                <Link href="/admin/reglas" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                  <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>Reglas</h3>
-                  <p style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Gestiona las reglas de los sorteos que se muestran en la interfaz de usuarios.</p>
-                </Link>
-
                 <Link href="/admin/pago-movil" className="card" style={{ padding: "2rem", textDecoration: "none", display: "flex", flexDirection: "column", gap: "1rem", transition: "transform 0.2s", cursor: "pointer" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
                   <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)" }}>Pago Móvil</h3>
                   <p style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem", lineHeight: "1.5", opacity: 0.8 }}>Configura la imagen y datos (Cédula, Teléfono, Destino) de pago móvil para mostrar a los usuarios.</p>

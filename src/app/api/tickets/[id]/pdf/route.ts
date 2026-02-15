@@ -27,11 +27,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Ticket no encontrado" }, { status: 404 });
     }
 
-    const [raffle, user, terms, rules] = await Promise.all([
+    const [raffle, user, terms] = await Promise.all([
       db.raffles.findById(ticket.raffleId),
       db.users.findById(ticket.userId),
       db.termsAndConditions.findFirst(),
-      db.rules.findFirst(),
     ]);
 
     if (!raffle || !user) {
@@ -232,10 +231,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                 </table>
               </div>
 
-              ${(terms?.content || rules?.content) ? `
+              ${terms?.content ? `
               <div class="terms-rules">
-                ${terms?.content ? `<p><strong>Términos:</strong> ${terms.content.substring(0, 300)}${terms.content.length > 300 ? '...' : ''}</p>` : ""}
-                ${rules?.content ? `<p><strong>Reglas:</strong> ${rules.content.substring(0, 300)}${rules.content.length > 300 ? '...' : ''}</p>` : ""}
+                <p><strong>Términos:</strong> ${terms.content.substring(0, 300)}${terms.content.length > 300 ? '...' : ''}</p>
               </div>
               ` : ""}
 

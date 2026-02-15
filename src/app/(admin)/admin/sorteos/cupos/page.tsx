@@ -4,6 +4,7 @@ import { AuthGuard } from "../../../../../components/AuthGuard";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../../lib/clientAuth";
 import { getItemWithEmoji } from "../../../../../lib/raffleEmojis";
+import { formatBankDisplay } from "../../../../../lib/banks";
 import Link from "next/link";
 
 type GroupedPending = {
@@ -17,7 +18,11 @@ type GroupedPending = {
     user: {
       name: string;
       email: string;
-    };
+      nationalId: string | null;
+      phoneNumber: string | null;
+      bank: string | null;
+      bankPhone: string | null;
+    } | null;
   };
   raffle: {
     id: string;
@@ -192,9 +197,9 @@ function ConfirmarCuposPageContent() {
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                       <span style={{ fontSize: "1.25rem" }}>👤</span>
                       <div>
-                        <strong style={{ color: "var(--text-primary)" }}>{group.ticket.user.name}</strong>
+                        <strong style={{ color: "var(--text-primary)" }}>{group.ticket.user?.name ?? "—"}</strong>
                         <span style={{ color: "var(--text-secondary)", fontSize: "0.875rem", marginLeft: "0.5rem" }}>
-                          ({group.ticket.user.email})
+                          ({group.ticket.user?.email ?? "—"})
                         </span>
                       </div>
                     </div>
@@ -202,6 +207,23 @@ function ConfirmarCuposPageContent() {
                       <strong>Fecha:</strong> {new Date(group.ticket.purchasedAt).toLocaleString()}
                     </div>
                   </div>
+
+                  {/* Datos bancarios del usuario */}
+                  {group.ticket.user && (
+                    <div style={{ 
+                      padding: "1rem", 
+                      background: "#1f2937", 
+                      borderRadius: "8px", 
+                      marginBottom: "1rem"
+                    }}>
+                      <h4 style={{ margin: "0 0 .5rem", fontSize: ".875rem", color: "var(--text-primary)" }}>Datos Bancarios</h4>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: ".5rem", fontSize: ".875rem", color: "var(--text-secondary)" }}>
+                        <div><strong>Banco:</strong> {group.ticket.user.bank ? formatBankDisplay(group.ticket.user.bank) : "No especificado"}</div>
+                        <div><strong>Cédula:</strong> {group.ticket.user.nationalId || "No especificada"}</div>
+                        <div><strong>Teléfono:</strong> {group.ticket.user.phoneNumber || group.ticket.user.bankPhone || "No especificado"}</div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Cupos comprados */}
                   <div style={{ 
@@ -272,7 +294,7 @@ function ConfirmarCuposPageContent() {
                   {/* Botones de acción */}
                   <div style={{ display: "flex", gap: ".75rem" }}>
                     <button
-                      onClick={() => handleConfirmAll(group.ticketId, itemIds, group.ticket.user.name, Number(group.ticket.totalPaid))}
+                      onClick={() => handleConfirmAll(group.ticketId, itemIds, group.ticket.user?.name ?? "Usuario", Number(group.ticket.totalPaid))}
                       disabled={isProcessing}
                       style={{
                         flex: 1,
@@ -289,7 +311,7 @@ function ConfirmarCuposPageContent() {
                       {isProcessing ? "Procesando..." : "✓ Confirmar Pago"}
                     </button>
                     <button
-                      onClick={() => handleRejectAll(group.ticketId, itemIds, group.ticket.user.name, Number(group.ticket.totalPaid))}
+                      onClick={() => handleRejectAll(group.ticketId, itemIds, group.ticket.user?.name ?? "Usuario", Number(group.ticket.totalPaid))}
                       disabled={isProcessing}
                       style={{
                         flex: 1,
