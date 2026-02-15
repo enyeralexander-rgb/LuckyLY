@@ -8,9 +8,11 @@ const MOBILE_BREAKPOINT = 768;
 const MESSAGE_HEIGHT_ESTIMATE = 220;
 
 const REGISTER_SELECTORS: Record<number, string> = {
-  3: "[data-tutorial-form]",
-  4: "[data-tutorial-terms]",
-  5: "[data-tutorial-submit]",
+  3: "[data-tutorial-form]",        // Paso 4: formulario paso 1 (llenar datos)
+  4: "[data-tutorial-submit]",      // Paso 5: botón Siguiente del 1er paso
+  5: "[data-tutorial-step2-form]",  // Paso 6: datos pago móvil
+  6: "[data-tutorial-terms]",       // Paso 7: aceptar términos y condiciones
+  7: "[data-tutorial-register-btn]", // Paso 8: botón Registrarme (finalizar)
 };
 
 export function TutorialOverlay() {
@@ -21,6 +23,7 @@ export function TutorialOverlay() {
   const [registerPageRect, setRegisterPageRect] = useState<DOMRect | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const registerPageCleanupRef = useRef<(() => void) | null>(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
     const check = () => setIsMobile(typeof window !== "undefined" && window.innerWidth <= MOBILE_BREAKPOINT);
@@ -29,7 +32,7 @@ export function TutorialOverlay() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const { step, active, skipTutorial, confirmWelcome, nextStep, menuButtonRef, registerLinkRef } =
+  const { step, active, skipTutorial, confirmWelcome, nextStep, prevStep, menuButtonRef, registerLinkRef } =
     tutorial ?? {};
 
   useEffect(() => {
@@ -71,9 +74,16 @@ export function TutorialOverlay() {
   }, [step, registerLinkRef]);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     const stepVal = step;
     const selector =
-      typeof stepVal === "number" && stepVal >= 3 && stepVal <= 5
+      typeof stepVal === "number" && stepVal >= 3 && stepVal <= 7
         ? REGISTER_SELECTORS[stepVal]
         : null;
     if (!selector || pathname !== "/auth/register") {
@@ -82,27 +92,39 @@ export function TutorialOverlay() {
     }
     let rafId = 0;
     rafId = requestAnimationFrame(() => {
+      if (!isMountedRef.current) return;
       const el = document.querySelector<HTMLElement>(selector);
       if (!el) {
-        setRegisterPageRect(null);
+        if (isMountedRef.current) setRegisterPageRect(null);
         return;
       }
-      const update = () => setRegisterPageRect(el.getBoundingClientRect());
+      const update = () => {
+        if (isMountedRef.current) setRegisterPageRect(el.getBoundingClientRect());
+      };
       update();
       const obs = new ResizeObserver(update);
       obs.observe(el);
       window.addEventListener("scroll", update, true);
       window.addEventListener("resize", update);
       registerPageCleanupRef.current = () => {
-        obs.disconnect();
-        window.removeEventListener("scroll", update, true);
-        window.removeEventListener("resize", update);
-        registerPageCleanupRef.current = null;
+        try {
+          obs.disconnect();
+          window.removeEventListener("scroll", update, true);
+          window.removeEventListener("resize", update);
+        } finally {
+          registerPageCleanupRef.current = null;
+        }
       };
     });
     return () => {
       cancelAnimationFrame(rafId);
-      registerPageCleanupRef.current?.();
+      const cleanup = registerPageCleanupRef.current;
+      if (typeof cleanup === "function") {
+        registerPageCleanupRef.current = null;
+        try {
+          cleanup();
+        } catch (_) {}
+      }
     };
   }, [step, pathname]);
 
@@ -124,10 +146,10 @@ export function TutorialOverlay() {
             ¿Deseas seguir un breve tutorial para registrarte en la página y poder comenzar a jugar las ruletas?
           </p>
           <div className="tutorial-actions">
-            <button type="button" className="tutorial-btn tutorial-btn-skip" onClick={skipTutorial}>
+            <button type="button" className="tutorial-btn tutorial-btn-skip" onClick={() => skipTutorial?.()}>
               Omitir
             </button>
-            <button type="button" className="tutorial-btn tutorial-btn-primary" onClick={confirmWelcome}>
+            <button type="button" className="tutorial-btn tutorial-btn-primary" onClick={() => confirmWelcome?.()}>
               Siguiente
             </button>
           </div>
@@ -137,7 +159,7 @@ export function TutorialOverlay() {
   }
 
   const spotlightRect =
-    step === 1 ? menuRect : step === 2 ? registerRect : step >= 3 && step <= 5 ? registerPageRect : null;
+    step === 1 ? menuRect : step === 2 ? registerRect : step >= 3 && step <= 7 ? registerPageRect : null;
   const message =
     step === 1
       ? "Presiona el menú desplegable"
@@ -146,10 +168,14 @@ export function TutorialOverlay() {
         : step === 3
           ? "Completa cada uno de los datos solicitados para crear tu cuenta."
           : step === 4
-            ? "Debes aceptar los términos y condiciones para continuar el registro."
+            ? "Presiona el botón Siguiente para continuar con el registro."
             : step === 5
-              ? "Presiona el botón Registrarme para finalizar tu registro."
-              : "";
+              ? "Proporciona los datos de Pago Móvil donde serán transferidos los premios de las ruletas."
+              : step === 6
+                ? "Debes aceptar los términos y condiciones para continuar el registro."
+                : step === 7
+                  ? "Haz clic en el botón Registrarme para finalizar tu registro."
+                  : "";
 
   const padding = 8;
   const extraBottom = step === 2 ? 14 : 0;
@@ -186,7 +212,7 @@ export function TutorialOverlay() {
     messageClass = useAbove ? "tutorial-message-mobile-above" : "tutorial-message-mobile-below";
   } else {
     messageStyle =
-      step >= 3
+      step >= 3 && step <= 7
         ? {
             top: spotlightRect.top - 24,
             left: spotlightRect.left + spotlightRect.width / 2,
@@ -220,27 +246,38 @@ export function TutorialOverlay() {
           <div className="tutorial-spotlight-blocker" style={{ top: hole.y + hole.h, left: 0, right: 0, bottom: 0 }} />
         </>
       )}
-      {(spotlightRect || (step >= 1 && step <= 5)) && (
+      {(spotlightRect || (step >= 1 && step <= 7)) && (
         <div className={`tutorial-spotlight-message ${messageClass}`.trim()} style={messageStyle}>
           <div className="tutorial-step-badge">
             Paso {currentStepLabel} de {TUTORIAL_TOTAL_STEPS}
           </div>
           <p className="tutorial-spotlight-text">{message}</p>
           <div className="tutorial-actions tutorial-actions-spotlight">
-            {step !== 5 && (
+            {step !== 7 && (
               <button
                 type="button"
-                className="tutorial-btn tutorial-btn-skip tutorial-btn-inline"
-                onClick={skipTutorial}
+                className="tutorial-btn tutorial-btn-skip tutorial-btn-skip-xs"
+                onClick={() => skipTutorial?.()}
               >
                 Omitir tutorial
               </button>
             )}
-            {step >= 3 && step <= 5 && (
-              <button type="button" className="tutorial-btn tutorial-btn-primary" onClick={nextStep}>
-                {step === 5 ? "Finalizar tutorial" : "Siguiente"}
-              </button>
-            )}
+            <div className="tutorial-actions-main">
+              {step !== 3 && step !== 5 && (
+                <button
+                  type="button"
+                  className="tutorial-btn tutorial-btn-back"
+                  onClick={() => prevStep?.()}
+                >
+                  Atrás
+                </button>
+              )}
+              {(step === 3 || (step >= 5 && step <= 6)) && (
+                <button type="button" className="tutorial-btn tutorial-btn-primary" onClick={() => nextStep?.()}>
+                  {step === 7 ? "Finalizar tutorial" : "Siguiente"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

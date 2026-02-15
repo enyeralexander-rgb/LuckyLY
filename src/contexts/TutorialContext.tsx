@@ -12,15 +12,17 @@ import {
 import { usePathname } from "next/navigation";
 import { getTutorialDone, setTutorialDone } from "../lib/tutorialCookie";
 
-export const TUTORIAL_TOTAL_STEPS = 6;
+export const TUTORIAL_TOTAL_STEPS = 8;
 
 export type TutorialStep =
   | 0   // Bienvenida: ¿Seguir tutorial? Omitir / Siguiente
   | 1   // Resaltar menú: "Presiona el menú desplegable"
   | 2   // Menú abierto: resaltar "Registrarse"
-  | 3   // Página registro: resaltar formulario (solo inputs)
-  | 4   // Página registro: resaltar términos y condiciones
-  | 5   // Página registro: resaltar botón Registrarme
+  | 3   // Paso 4: formulario paso 1 (llenar datos)
+  | 4   // Paso 5: botón Siguiente del 1er paso
+  | 5   // Paso 6: datos pago móvil
+  | 6   // Paso 7: aceptar términos y condiciones
+  | 7   // Paso 8: botón Registrarme (finalizar)
   | -1; // Cerrado (omitido o terminado)
 
 interface TutorialContextValue {
@@ -29,6 +31,7 @@ interface TutorialContextValue {
   skipTutorial: () => void;
   confirmWelcome: () => void;
   nextStep: () => void;
+  prevStep: () => void;
   goToStep: (s: TutorialStep) => void;
   goToStepNumber: (s: number) => void;
   onMenuOpenChange: (open: boolean) => void;
@@ -49,6 +52,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const menuButtonRef = useRef<HTMLElement | null>(null);
   const registerLinkRef = useRef<HTMLElement | null>(null);
+  const menuWasOpenRef = useRef(false);
 
   const skipTutorial = useCallback(() => {
     setTutorialDone();
@@ -73,6 +77,13 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const prevStep = useCallback(() => {
+    setStep((s) => {
+      if (s <= 0) return s;
+      return (s - 1) as TutorialStep;
+    });
+  }, []);
+
   const goToStep = useCallback((s: TutorialStep) => {
     setStep(s);
     if (s >= 0) setActive(true);
@@ -86,9 +97,11 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
 
   const onMenuOpenChange = useCallback((open: boolean) => {
     setStep((current) => {
-      if (current === 1 && open) return 2;
+      // Solo pasar al paso 2 cuando el menú pasa de cerrado a abierto (evita volver a 2 al hacer Atrás)
+      if (current === 1 && open && !menuWasOpenRef.current) return 2;
       return current;
     });
+    menuWasOpenRef.current = open;
   }, []);
 
   useEffect(() => {
@@ -120,6 +133,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     skipTutorial,
     confirmWelcome,
     nextStep,
+    prevStep,
     goToStep,
     goToStepNumber,
     onMenuOpenChange,

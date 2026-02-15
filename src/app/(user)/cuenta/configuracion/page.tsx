@@ -36,6 +36,19 @@ export default function ConfiguracionPage() {
   const [emailRestriction, setEmailRestriction] = useState<{ canChange: boolean; daysRemaining: number } | null>(null);
   const [usernameRestriction, setUsernameRestriction] = useState<{ canChange: boolean; daysRemaining: number } | null>(null);
   const [refreshingVerification, setRefreshingVerification] = useState(false);
+  const [showJustRegistredModal, setShowJustRegistredModal] = useState(false);
+  const [mountedForCookie, setMountedForCookie] = useState(false);
+
+  function getCookie(name: string): string | null {
+    if (typeof document === "undefined") return null;
+    const match = document.cookie.match(new RegExp("(^| )" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "=([^;]+)"));
+    return match ? match[2] : null;
+  }
+
+  function deleteJustRegistredCookie() {
+    if (typeof document === "undefined") return;
+    document.cookie = "just_registred=; path=/; max-age=0; SameSite=Lax";
+  }
 
   useEffect(() => {
     const storedAuth = getStoredAuth();
@@ -43,6 +56,23 @@ export default function ConfiguracionPage() {
       setAuth(storedAuth);
     }
   }, []);
+
+  useEffect(() => {
+    setMountedForCookie(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mountedForCookie) return;
+    const hasCookie = document.cookie.includes("just_registred=") && getCookie("just_registred");
+    if (hasCookie) {
+      setShowJustRegistredModal(true);
+    }
+  }, [mountedForCookie]);
+
+  function handleCloseJustRegistredModal() {
+    deleteJustRegistredCookie();
+    setShowJustRegistredModal(false);
+  }
 
   // Efecto para el contador regresivo de 5 minutos
   useEffect(() => {
@@ -309,9 +339,65 @@ export default function ConfiguracionPage() {
     }
   }
 
+  const justRegistredModalJsx = showJustRegistredModal && (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "rgba(0, 0, 0, 0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        padding: "1rem",
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="just-registred-modal-title"
+    >
+      <div
+        className="card"
+        style={{
+          maxWidth: "440px",
+          width: "100%",
+          padding: "2rem",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🎉</div>
+        <h2 id="just-registred-modal-title" style={{ margin: "0 0 1rem", color: "var(--text-primary)", fontSize: "1.5rem" }}>
+          ¡Bienvenido!
+        </h2>
+        <p style={{ margin: "0 0 1.5rem", color: "var(--text-secondary)", lineHeight: 1.6, fontSize: "1rem" }}>
+          Su registro ha sido exitoso. Para terminar el proceso de registro debe verificar el correo electrónico que ingresó.
+        </p>
+        <button
+          type="button"
+          onClick={handleCloseJustRegistredModal}
+          style={{
+            padding: "0.75rem 2rem",
+            background: "#85BB65",
+            color: "#3E3E3C",
+            border: "none",
+            borderRadius: "10px",
+            fontWeight: 700,
+            cursor: "pointer",
+            fontSize: "1rem",
+          }}
+        >
+          Continuar
+        </button>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <AuthGuard requiredRole={["USER"]}>
+        {justRegistredModalJsx}
         <main className="container" style={{ paddingTop: "2rem" }}>
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         </main>
@@ -321,6 +407,8 @@ export default function ConfiguracionPage() {
 
   return (
     <AuthGuard requiredRole={["USER"]}>
+      {justRegistredModalJsx}
+
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
           <h1 style={{ margin: 0, color: "var(--text-primary)" }}>CONFIGURACIÓN DE LA CUENTA</h1>
