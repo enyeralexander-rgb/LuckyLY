@@ -33,8 +33,8 @@ export async function POST(request: Request) {
     
     const parsed = loginSchema.safeParse(body);
     if (!parsed.success) {
-      const errorMessage = parsed.error.errors.length > 0 
-        ? parsed.error.errors.map(e => e.message).join(", ")
+      const errorMessage = parsed.error.issues.length > 0 
+        ? parsed.error.issues.map(e => e.message).join(", ")
         : "Datos inválidos";
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
