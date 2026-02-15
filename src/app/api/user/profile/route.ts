@@ -62,7 +62,7 @@ export async function PUT(request: Request) {
     }
     const parsed = profileUpdateSchema.safeParse(body);
     if (!parsed.success) {
-      const message = parsed.error.errors.map((e) => e.path.join(".") + ": " + e.message).join("; ");
+      const message = parsed.error.issues.map((e) => e.path.join(".") + ": " + e.message).join("; ");
       return NextResponse.json({ error: message || "Datos inválidos" }, { status: 400 });
     }
     const { bank, phoneNumber } = parsed.data;
