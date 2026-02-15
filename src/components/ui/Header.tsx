@@ -62,6 +62,13 @@ export function Header() {
     setUserMenuOpen(false);
   }, [pathname]);
 
+  // Al volver al paso 1 del tutorial (Atrás desde paso 2), cerrar el menú desplegable
+  useEffect(() => {
+    if (tutorial?.step === 1) {
+      setUserMenuOpen(false);
+    }
+  }, [tutorial?.step]);
+
   // Cerrar menú desplegable al hacer clic fuera (no cerrar en paso 2 del tutorial)
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
