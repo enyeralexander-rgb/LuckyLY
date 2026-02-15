@@ -47,6 +47,7 @@ export function useTutorial() {
 
 export function TutorialProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const safePathname = pathname ?? "";
   const [step, setStep] = useState<TutorialStep>(-1);
   const [active, setActive] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -109,9 +110,9 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!mounted || !pathname) return;
-    if (pathname.startsWith("/admin")) return;
-    if (getTutorialDone()) {
+    if (!mounted || !safePathname) return;
+    if (safePathname.startsWith("/admin")) return;
+    if (typeof document !== "undefined" && getTutorialDone()) {
       setStep(-1);
       setActive(false);
       return;
@@ -119,24 +120,24 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     if (!active && step === -1) {
       setStep(0);
     }
-  }, [mounted, pathname]);
+  }, [mounted, safePathname]);
 
   useEffect(() => {
-    if (pathname === "/auth/register" && active && step === 2) {
+    if (safePathname === "/auth/register" && active && step === 2) {
       setStep(3);
     }
-  }, [pathname, active, step]);
+  }, [safePathname, active, step]);
 
   const value: TutorialContextValue = {
     step,
     active,
-    skipTutorial,
-    confirmWelcome,
-    nextStep,
-    prevStep,
-    goToStep,
-    goToStepNumber,
-    onMenuOpenChange,
+    skipTutorial: skipTutorial ?? (() => {}),
+    confirmWelcome: confirmWelcome ?? (() => {}),
+    nextStep: nextStep ?? (() => {}),
+    prevStep: prevStep ?? (() => {}),
+    goToStep: goToStep ?? (() => {}),
+    goToStepNumber: goToStepNumber ?? (() => {}),
+    onMenuOpenChange: onMenuOpenChange ?? (() => {}),
     menuButtonRef,
     registerLinkRef,
   };
