@@ -9,6 +9,7 @@ import { formatBankDisplay } from "../../../../lib/banks";
 type Claim = {
   id: string;
   userId?: string;
+  raffleId?: string | null;
   status: string;
   createdAt: string;
   paymentRef: string | null;
@@ -70,7 +71,7 @@ function PagosPageContent() {
 
   async function handleSubmitPay() {
     if (!auth?.token || !payModalGroup || payModalGroup.length === 0) return;
-    const totalAmount = payModalGroup.reduce((sum, c) => sum + (c.suggestedPrize ?? Number(c.ticket.totalPaid)), 0);
+    const totalAmount = payModalGroup.reduce((sum, c) => sum + (c.suggestedPrize ?? Number(c.ticket?.totalPaid ?? 0)), 0);
     if (!payRef.trim()) {
       alert("Ingresa la referencia de pago");
       return;
@@ -163,13 +164,13 @@ function PagosPageContent() {
 
   const pending = claims.filter((c) => c.status === "REQUESTED" || c.status === "PROCESSING");
 
-  /** Agrupa por usuario + sorteo para mostrar una tarjeta por ganador con suma de premios */
+  /** Agrupa por usuario + sorteo para mostrar una tarjeta por ganador con TODOS los premios y su suma */
   const groupedPending = useMemo(() => {
     const map = new Map<string, Claim[]>();
     for (const c of pending) {
-      const uid = (c as Claim & { userId?: string }).userId ?? c.user?.email ?? c.id;
-      const rid = c.ticket?.raffleId ?? c.ticket?.raffle?.id ?? "";
-      const key = `${uid}-${rid}`;
+      const uid = c.userId ?? c.user?.email ?? c.id;
+      const rid = c.raffleId ?? c.ticket?.raffleId ?? c.ticket?.raffle?.id ?? "";
+      const key = `${String(uid)}__${String(rid)}`;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(c);
     }
@@ -233,9 +234,10 @@ function PagosPageContent() {
           <div style={{ display: "grid", gap: "1rem" }}>
             {groupedPending.map((groupClaims) => {
               const first = groupClaims[0];
-              const totalAmount = groupClaims.reduce((sum, c) => sum + (c.suggestedPrize ?? Number(c.ticket.totalPaid)), 0);
+              const totalAmount = groupClaims.reduce((sum, c) => sum + (c.suggestedPrize ?? Number(c.ticket?.totalPaid ?? 0)), 0);
+              const groupKey = `${first.userId ?? first.user?.email ?? first.id}__${first.raffleId ?? first.ticket?.raffle?.id ?? first.ticket?.raffleId ?? ""}`;
               return (
-                <div key={`${first.user?.email}-${first.ticket?.raffle?.id ?? first.ticket?.raffleId}`} className="card" style={{ display: "grid", gap: "1rem" }}>
+                <div key={groupKey} className="card" style={{ display: "grid", gap: "1rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", flexWrap: "wrap", gap: "1rem" }}>
                     <div>
                       <h3 style={{ margin: 0 }}>{first.user.name}</h3>
@@ -247,12 +249,12 @@ function PagosPageContent() {
                         <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "var(--text-secondary)", fontSize: ".875rem" }}>
                           {groupClaims.map((c, i) => (
                             <li key={c.id}>
-                              Premio {i + 1}: {(c.suggestedPrize != null ? c.suggestedPrize : Number(c.ticket.totalPaid)).toFixed(2)} Bs.
+                              Premio {i + 1}: {(c.suggestedPrize != null ? c.suggestedPrize : Number(c.ticket?.totalPaid ?? 0)).toFixed(2)} Bs.
                             </li>
                           ))}
                         </ul>
                         <p style={{ margin: ".35rem 0 0", fontWeight: 700, color: "var(--text-primary)" }}>
-                          Total: {totalAmount.toFixed(2)} Bs.
+                          Total: {totalAmount.toFixed(2)} Bs. ({groupClaims.length} premio{groupClaims.length !== 1 ? "s" : ""})
                         </p>
                       </div>
                     </div>
@@ -333,12 +335,12 @@ function PagosPageContent() {
             <ul style={{ margin: "0 0 .5rem", paddingLeft: "1.25rem", fontSize: ".875rem", color: "var(--text-secondary)" }}>
               {payModalGroup.map((c, i) => (
                 <li key={c.id}>
-                  Premio {i + 1}: {(c.suggestedPrize ?? Number(c.ticket.totalPaid)).toFixed(2)} Bs.
+                  Premio {i + 1}: {(c.suggestedPrize ?? Number(c.ticket?.totalPaid ?? 0)).toFixed(2)} Bs.
                 </li>
               ))}
             </ul>
             <p style={{ margin: "0 0 1rem", fontWeight: 700, color: "var(--text-primary)" }}>
-              Total a pagar: {payModalGroup.reduce((s, c) => s + (c.suggestedPrize ?? Number(c.ticket.totalPaid)), 0).toFixed(2)} Bs.
+              Total a pagar: {payModalGroup.reduce((s, c) => s + (c.suggestedPrize ?? Number(c.ticket?.totalPaid ?? 0)), 0).toFixed(2)} Bs. ({payModalGroup.length} premio{payModalGroup.length !== 1 ? "s" : ""})
             </p>
             <div style={{ display: "grid", gap: "1rem", marginBottom: "1rem" }}>
               <div>

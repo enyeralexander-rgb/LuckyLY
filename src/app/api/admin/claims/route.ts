@@ -90,6 +90,8 @@ export async function GET(request: Request) {
       }
       return {
         ...claim,
+        userId: claim.userId,
+        raffleId: ticket?.raffleId ?? null,
         user: userSelect,
         ticket: ticketSelect,
         suggestedPrize,
