@@ -274,24 +274,21 @@ function PagosPageContent() {
                       >
                         {processing ? "Procesando..." : `Marcar Pagado (Total: ${totalAmount.toFixed(2)} Bs.)`}
                       </button>
-                      {groupClaims.map((claim) => (
-                        <button
-                          key={claim.id}
-                          onClick={() => handleIncorrectData(claim.id)}
-                          disabled={!!processing}
-                          style={{
-                            padding: ".5rem 1rem",
-                            background: "#f59e0b",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "8px",
-                            cursor: processing ? "not-allowed" : "pointer",
-                            fontWeight: 600,
-                          }}
-                        >
-                          Datos Incorrectos
-                        </button>
-                      ))}
+                      <button
+                        onClick={() => handleIncorrectData(groupClaims[0].id)}
+                        disabled={!!processing}
+                        style={{
+                          padding: ".5rem 1rem",
+                          background: "#f59e0b",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          cursor: processing ? "not-allowed" : "pointer",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Datos Incorrectos
+                      </button>
                     </div>
                   </div>
                   <div className="card" style={{ background: "#1f2937", padding: "1rem", display: "grid", gap: "1rem" }}>
