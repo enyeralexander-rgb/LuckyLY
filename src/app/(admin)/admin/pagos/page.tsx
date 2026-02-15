@@ -1,13 +1,14 @@
 "use client";
 import { AdminNavBar } from "../../../../components/AdminNavBar";
 import { AuthGuard } from "../../../../components/AuthGuard";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
 import Link from "next/link";
 import { formatBankDisplay } from "../../../../lib/banks";
 
 type Claim = {
   id: string;
+  userId?: string;
   status: string;
   createdAt: string;
   paymentRef: string | null;
@@ -18,7 +19,8 @@ type Claim = {
     totalPaid: number;
     paymentMethod: string | null;
     paymentMobileRef: string | null;
-    raffle: { title: string; winningItem: string | null };
+    raffleId?: string;
+    raffle: { id?: string; title: string; winningItem: string | null; prizes?: unknown };
   };
   user: {
     name: string;
@@ -158,6 +160,19 @@ function PagosPageContent() {
 
   const pending = claims.filter((c) => c.status === "REQUESTED" || c.status === "PROCESSING");
 
+  /** Agrupa por usuario + sorteo para mostrar una tarjeta por ganador con suma de premios */
+  const groupedPending = useMemo(() => {
+    const map = new Map<string, Claim[]>();
+    for (const c of pending) {
+      const uid = (c as Claim & { userId?: string }).userId ?? c.user?.email ?? c.id;
+      const rid = c.ticket?.raffleId ?? c.ticket?.raffle?.id ?? "";
+      const key = `${uid}-${rid}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(c);
+    }
+    return Array.from(map.entries()).map(([, claims]) => claims);
+  }, [pending]);
+
   const modalOverlayStyle: React.CSSProperties = {
     position: "fixed",
     inset: 0,
@@ -213,80 +228,95 @@ function PagosPageContent() {
           </div>
         ) : (
           <div style={{ display: "grid", gap: "1rem" }}>
-            {pending.map((claim) => (
-              <div key={claim.id} className="card" style={{ display: "grid", gap: "1rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                  <div>
-                    <h3 style={{ margin: 0 }}>{claim.user.name}</h3>
-                    <p style={{ margin: ".25rem 0", color: "var(--text-secondary)" }}>
-                      {claim.user.email} | Sorteo: {claim.ticket.raffle.title}
-                    </p>
-                    <p style={{ margin: ".25rem 0", color: "var(--text-secondary)" }}>
-                      Ganador: {claim.ticket.raffle.winningItem || "N/A"} | Premio: {(claim.suggestedPrize != null ? claim.suggestedPrize : Number(claim.ticket.totalPaid)).toFixed(2)} Bs.
-                    </p>
-                  </div>
-                  <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
-                    <button
-                      onClick={() => handleOpenPayModal(claim)}
-                      disabled={processing === claim.id}
-                      style={{
-                        padding: ".5rem 1rem",
-                        background: "#85BB65",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: processing === claim.id ? "not-allowed" : "pointer",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {processing === claim.id ? "Procesando..." : "Marcar Pagado"}
-                    </button>
-                    <button
-                      onClick={() => handleIncorrectData(claim.id)}
-                      disabled={processing === claim.id}
-                      style={{
-                        padding: ".5rem 1rem",
-                        background: "#f59e0b",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: processing === claim.id ? "not-allowed" : "pointer",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Datos Incorrectos
-                    </button>
-                  </div>
-                </div>
-                <div className="card" style={{ background: "#1f2937", padding: "1rem", display: "grid", gap: "1rem" }}>
-                  <div>
-                    <h4 style={{ margin: "0 0 .5rem", fontSize: ".875rem" }}>Datos Bancarios:</h4>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: ".5rem", fontSize: ".875rem" }}>
-                      <div>
-                        <strong>Banco:</strong> {claim.user.bank ? formatBankDisplay(claim.user.bank) : "No especificado"}
-                      </div>
-                      <div>
-                        <strong>Cédula:</strong> {claim.user.nationalId || "No especificada"}
-                      </div>
-                      <div>
-                        <strong>Teléfono:</strong> {claim.user.phoneNumber || "No especificado"}
-                      </div>
-                      <div>
-                        <strong>Teléfono Banco:</strong> {claim.user.bankPhone || "No especificado"}
+            {groupedPending.map((groupClaims) => {
+              const first = groupClaims[0];
+              const totalAmount = groupClaims.reduce((sum, c) => sum + (c.suggestedPrize ?? Number(c.ticket.totalPaid)), 0);
+              return (
+                <div key={`${first.user?.email}-${first.ticket?.raffle?.id ?? first.ticket?.raffleId}`} className="card" style={{ display: "grid", gap: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", flexWrap: "wrap", gap: "1rem" }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>{first.user.name}</h3>
+                      <p style={{ margin: ".25rem 0", color: "var(--text-secondary)" }}>
+                        {first.user.email} | Sorteo: {first.ticket.raffle.title}
+                      </p>
+                      <div style={{ marginTop: ".5rem" }}>
+                        <h4 style={{ margin: "0 0 .35rem", fontSize: ".875rem" }}>Premios ganados:</h4>
+                        <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "var(--text-secondary)", fontSize: ".875rem" }}>
+                          {groupClaims.map((c, i) => (
+                            <li key={c.id}>
+                              Premio {i + 1}: {(c.suggestedPrize != null ? c.suggestedPrize : Number(c.ticket.totalPaid)).toFixed(2)} Bs.
+                            </li>
+                          ))}
+                        </ul>
+                        <p style={{ margin: ".35rem 0 0", fontWeight: 700, color: "var(--text-primary)" }}>
+                          Total: {totalAmount.toFixed(2)} Bs.
+                        </p>
                       </div>
                     </div>
+                    <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", alignItems: "center" }}>
+                      {groupClaims.map((claim) => (
+                        <span key={claim.id} style={{ display: "inline-flex", gap: ".35rem", flexWrap: "wrap" }}>
+                          <button
+                            onClick={() => handleOpenPayModal(claim)}
+                            disabled={processing === claim.id}
+                            style={{
+                              padding: ".5rem 1rem",
+                              background: "#85BB65",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "8px",
+                              cursor: processing === claim.id ? "not-allowed" : "pointer",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {processing === claim.id ? "Procesando..." : `Pagar ${(claim.suggestedPrize ?? Number(claim.ticket.totalPaid)).toFixed(2)} Bs.`}
+                          </button>
+                          <button
+                            onClick={() => handleIncorrectData(claim.id)}
+                            disabled={processing === claim.id}
+                            style={{
+                              padding: ".5rem 1rem",
+                              background: "#f59e0b",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "8px",
+                              cursor: processing === claim.id ? "not-allowed" : "pointer",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Datos Incorrectos
+                          </button>
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  {claim.ticket.paymentMethod === "MOBILE" && claim.ticket.paymentMobileRef && (
-                    <div style={{ padding: ".75rem", background: "rgba(245, 158, 11, 0.1)", borderRadius: "8px", border: "1px solid #f59e0b" }}>
-                      <h4 style={{ margin: "0 0 .5rem", fontSize: ".875rem", color: "#f59e0b" }}>Referencia de Pago Móvil (Compra):</h4>
-                      <div style={{ fontSize: ".875rem", color: "#e2e8f0", fontWeight: 600 }}>
-                        {claim.ticket.paymentMobileRef}
+                  <div className="card" style={{ background: "#1f2937", padding: "1rem", display: "grid", gap: "1rem" }}>
+                    <div>
+                      <h4 style={{ margin: "0 0 .5rem", fontSize: ".875rem" }}>Datos Bancarios:</h4>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: ".5rem", fontSize: ".875rem" }}>
+                        <div>
+                          <strong>Banco:</strong> {first.user.bank ? formatBankDisplay(first.user.bank) : "No especificado"}
+                        </div>
+                        <div>
+                          <strong>Cédula:</strong> {first.user.nationalId || "No especificada"}
+                        </div>
+                        <div>
+                          <strong>Teléfono:</strong> {first.user.phoneNumber || first.user.bankPhone || "No especificado"}
+                        </div>
                       </div>
                     </div>
-                  )}
+                    {first.ticket.paymentMethod === "MOBILE" && first.ticket.paymentMobileRef && (
+                      <div style={{ padding: ".75rem", background: "rgba(245, 158, 11, 0.1)", borderRadius: "8px", border: "1px solid #f59e0b" }}>
+                        <h4 style={{ margin: "0 0 .5rem", fontSize: ".875rem", color: "#f59e0b" }}>Referencia de Pago Móvil (Compra):</h4>
+                        <div style={{ fontSize: ".875rem", color: "#e2e8f0", fontWeight: 600 }}>
+                          {first.ticket.paymentMobileRef}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>

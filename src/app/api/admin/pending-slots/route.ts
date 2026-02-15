@@ -50,7 +50,16 @@ export async function GET(request: Request) {
         purchasedAt: ticket.purchasedAt,
         totalPaid: ticket.totalPaid,
         paymentMobileRef: ticket.paymentMobileRef,
-        user: user ? { name: user.name, email: user.email } : null,
+        user: user
+          ? {
+              name: user.name,
+              email: user.email,
+              nationalId: user.nationalId,
+              phoneNumber: user.phoneNumber,
+              bank: user.bank,
+              bankPhone: user.bankPhone,
+            }
+          : null,
       };
       const rafflePayload = raffle
         ? { id: raffle.id, title: raffle.title, type: raffle.type, pricePerSlot: raffle.pricePerSlot }
