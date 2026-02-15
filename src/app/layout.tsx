@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Fredoka, Oswald } from "next/font/google";
 import { ThemeProvider } from "../components/providers/ThemeProvider";
 import { TutorialProvider } from "../contexts/TutorialContext";
@@ -42,12 +43,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`${fredoka.variable} ${oswald.variable}`} suppressHydrationWarning>
       <body className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors" suppressHydrationWarning>
         <ThemeProvider>
-          <TutorialProvider>
-            <Header />
-            {children}
-            <SocialFloat />
-            <TutorialOverlay />
-          </TutorialProvider>
+          <Suspense fallback={null}>
+            <TutorialProvider>
+              <Header />
+              {children}
+              <SocialFloat />
+              <TutorialOverlay />
+            </TutorialProvider>
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>
