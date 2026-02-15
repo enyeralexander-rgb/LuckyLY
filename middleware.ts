@@ -12,7 +12,6 @@ const MASTER_ONLY_ROUTES = [
   "/admin/roles/superadmins",
   "/admin/roles/admins",
   "/admin/terminos",
-  "/admin/reglas",
   "/admin/pago-movil",
   "/admin/redes-sociales",
   "/admin/estadisticas/user",

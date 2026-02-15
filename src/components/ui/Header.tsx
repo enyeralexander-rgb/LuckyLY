@@ -161,7 +161,6 @@ export function Header() {
       menu.push({ label: "Logs Super Admins", href: "/admin/logs-super", icon: "📋" });
       menu.push({ label: "Logs Administradores", href: "/admin/logs-admins", icon: "📋" });
       menu.push({ label: "Términos y Condiciones", href: "/admin/terminos", icon: "📄" });
-      menu.push({ label: "Reglas", href: "/admin/reglas", icon: "📋" });
       menu.push({ label: "Pago Móvil", href: "/admin/pago-movil", icon: "💳" });
       menu.push({ label: "Redes Sociales", href: "/admin/redes-sociales", icon: "📱" });
     }

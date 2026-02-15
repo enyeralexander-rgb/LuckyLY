@@ -44,7 +44,6 @@ export function Footer() {
         <span className="footer-text">{copyright}</span>
         <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
           <Link href="/terms" className="footer-link">Términos y Condiciones</Link>
-          <Link href="/rules" className="footer-link">Reglas</Link>
           {showSocialLinks && (
             <Link href="/social" className="footer-link">Redes Sociales</Link>
           )}

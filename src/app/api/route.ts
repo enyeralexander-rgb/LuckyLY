@@ -34,7 +34,6 @@ export async function GET() {
       public: {
         homepage: "GET /api/public/homepage",
         terms: "GET /api/public/terms",
-        rules: "GET /api/public/rules",
         social: "GET /api/public/social"
       },
       admin: {
