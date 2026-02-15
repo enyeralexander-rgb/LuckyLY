@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = raffleCreateSchema.safeParse(body);
     if (!parsed.success) {
-      const issues = parsed.error.errors.map((e) => e.path.join(".") + ": " + e.message).join("; ");
+      const issues = parsed.error.issues.map((e) => e.path.join(".") + ": " + e.message).join("; ");
       return NextResponse.json({ error: issues || "Datos inválidos" }, { status: 400 });
     }
 

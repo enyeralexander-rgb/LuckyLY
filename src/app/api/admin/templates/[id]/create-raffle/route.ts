@@ -15,7 +15,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const body = await request.json();
     const parsed = createRaffleFromTemplateSchema.safeParse(body);
     if (!parsed.success) {
-      const message = parsed.error.errors.map((e) => e.path.join(".") + ": " + e.message).join("; ");
+      const message = parsed.error.issues.map((e) => e.path.join(".") + ": " + e.message).join("; ");
       return NextResponse.json({ error: message || "Datos inválidos" }, { status: 400 });
     }
     const { title, description, startsAt, closesAt, autoExecute } = parsed.data;

@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     requireAuth(request, ROLES);
     const users = await db.users.findMany({ where: { role: "USER" }, take: 50000, orderBy: { createdAt: "desc" } });
     const buffer = await exportUsers(users);
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="usuarios_${new Date().toISOString().split("T")[0]}.xlsx"`,
