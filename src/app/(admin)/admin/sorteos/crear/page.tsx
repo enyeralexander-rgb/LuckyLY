@@ -269,51 +269,63 @@ function CrearSorteosPageContent() {
     }
   }
 
+  async function handleSaveTemplate() {
+    if (!auth?.token) return;
+
+    // Basic validation
+    if (!formData.pricePerSlot || !formData.slots) {
+      alert("Complete al menos el precio y los cupos para guardar la plantilla.");
+      return;
+    }
+
+    const name = window.prompt("Nombre de la plantilla:");
+    if (!name) return;
+
+    setLoading(true);
+    try {
+      const payload = {
+        name,
+        description: formData.description,
+        type: formData.type,
+        pricePerSlot: formData.pricePerSlot,
+        slots: formData.slots,
+        winnersCount: formData.winnersCount,
+        mirrorMode: formData.mirrorMode,
+        prizes: formData.prizes.slice(0, formData.winnersCount)
+      };
+
+      const res = await fetch("/api/admin/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        alert("Plantilla guardada exitosamente");
+        // Reload templates
+        const templatesRes = await fetch("/api/admin/templates", {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        });
+        const data = await templatesRes.json();
+        if (Array.isArray(data)) setTemplates(data);
+      } else {
+        const err = await res.json();
+        alert(`Error: ${err.error || "No se pudo guardar la plantilla"}`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error al guardar plantilla");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <>
       <AdminNavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
         <h1 style={{ color: "var(--text-primary)" }}>Crear Sorteo</h1>
         
-        {/* Selector de Plantillas */}
-        {!loadingTemplates && templates.length > 0 && (
-          <div className="card" style={{ marginBottom: "1.5rem", padding: "1.5rem", background: "var(--bg-accent)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-              <label style={{ color: "var(--text-primary)", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                📋 Usar Plantilla:
-              </label>
-              <select
-                onChange={(e) => {
-                  if (e.target.value) {
-                    applyTemplate(e.target.value);
-                  }
-                }}
-                defaultValue=""
-                style={{ 
-                  flex: 1,
-                  minWidth: "200px",
-                  padding: ".75rem", 
-                  borderRadius: "8px", 
-                  border: "2px solid var(--color-primary)", 
-                  background: "var(--input-bg)", 
-                  color: "var(--text-primary)",
-                  fontWeight: 500
-                }}
-              >
-                <option value="">-- Selecciona una plantilla (opcional) --</option>
-                {templates.map(template => (
-                  <option key={template.id} value={template.id}>
-                    {template.name} ({template.type} - {template.slots} cupos - Bs. {Number(template.pricePerSlot).toFixed(2)})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <p style={{ margin: "0.5rem 0 0", fontSize: "0.875rem", color: "var(--text-secondary)" }}>
-              Selecciona una plantilla para cargar automáticamente la configuración del sorteo.
-            </p>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="card" style={{ display: "grid", gap: "1.5rem" }}>
           <div style={{ display: "grid", gap: ".5rem" }}>
             <label style={{ color: "var(--text-primary)" }}>Título del sorteo</label>
@@ -532,14 +544,71 @@ function CrearSorteosPageContent() {
             <span>Modo espejo (duplicar cupos)</span>
           </label>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{ padding: ".75rem 1.5rem", borderRadius: "8px", border: "none", background: "#85BB65", color: "var(--text-primary)", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}
-          >
-            {loading ? "Guardando..." : "Crear Sorteo"}
-          </button>
+          <div style={{ display: "flex", gap: "1rem", marginTop: "2rem" }}>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{ flex: 1, padding: ".75rem 1.5rem", borderRadius: "8px", border: "none", background: "#85BB65", color: "var(--text-primary)", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}
+            >
+              {loading ? "Guardando..." : "Crear Sorteo"}
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveTemplate}
+              disabled={loading}
+              style={{ flex: 1, padding: ".75rem 1.5rem", borderRadius: "8px", border: "1px solid var(--color-primary)", background: "transparent", color: "var(--text-primary)", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}
+            >
+              💾 Guardar como plantilla
+            </button>
+          </div>
         </form>
+
+        {/* Listado de Plantillas (Grid 2 columnas) */}
+        {!loadingTemplates && templates.length > 0 && (
+          <div style={{ marginTop: "3rem" }}>
+            <h2 style={{ color: "var(--text-primary)", marginBottom: "1.5rem" }}>Mis Plantillas</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1.5rem" }}>
+              {templates.map(template => (
+                <div 
+                  key={template.id} 
+                  className="card"
+                  onClick={() => applyTemplate(template.id)}
+                  style={{ 
+                    padding: "1.5rem", 
+                    cursor: "pointer", 
+                    transition: "transform 0.2s, border-color 0.2s",
+                    border: "1px solid var(--border-color)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.borderColor = "var(--color-primary)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.borderColor = "var(--border-color)";
+                  }}
+                >
+                  <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: "1.1rem" }}>{template.name}</h3>
+                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", fontSize: "0.875rem" }}>
+                    <span style={{ background: "var(--bg-accent)", padding: "2px 8px", borderRadius: "4px", color: "var(--text-secondary)" }}>
+                      {template.type}
+                    </span>
+                    <span style={{ background: "var(--bg-accent)", padding: "2px 8px", borderRadius: "4px", color: "var(--text-secondary)" }}>
+                      {template.slots} cupos
+                    </span>
+                  </div>
+                  <div style={{ marginTop: "auto", paddingTop: "0.5rem", borderTop: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ color: "#85BB65", fontWeight: "bold" }}>Bs. {Number(template.pricePerSlot).toFixed(2)} / cupo</span>
+                    <span style={{ fontSize: "1.2rem" }}>📋</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </>
   );

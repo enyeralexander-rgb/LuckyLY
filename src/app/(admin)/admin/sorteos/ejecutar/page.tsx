@@ -80,6 +80,7 @@ function EjecutarSorteosPageContent() {
   const [selectedRaffle, setSelectedRaffle] = useState<Raffle | null>(null);
   const [showCuposModal, setShowCuposModal] = useState(false);
   const [approving, setApproving] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     const storedAuth = getStoredAuth();
@@ -150,6 +151,33 @@ function EjecutarSorteosPageContent() {
     return raffle.approved && raffle.status === "ACTIVE" && allSlotsPurchased && noPendingSlots && hasValidDate;
   }
 
+  function canDelete(raffle: Raffle) {
+    const stats = getSlotStats(raffle);
+    return stats.confirmed === 0 && stats.pending === 0;
+  }
+
+  async function handleDelete(raffleId: string, title: string) {
+    if (!auth?.token || !confirm(`¿Estás seguro de ELIMINAR el sorteo "${title}"?\n\nEsta acción NO se puede deshacer.`)) return;
+    setDeleting(raffleId);
+    try {
+      const res = await fetch(`/api/admin/raffles/${raffleId}/delete`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      if (res.ok) {
+        alert("✅ Sorteo eliminado exitosamente");
+        loadRaffles();
+      } else {
+        const data = await res.json();
+        alert(`Error: ${data.error || "No se pudo eliminar"}`);
+      }
+    } catch {
+      alert("Error al eliminar el sorteo");
+    } finally {
+      setDeleting(null);
+    }
+  }
+
   async function handleApprove(raffleId: string) {
     if (!auth?.token || !confirm("¿Estás seguro de aprobar este sorteo? Una vez aprobado, será visible para todos los usuarios.")) return;
 
@@ -214,6 +242,7 @@ function EjecutarSorteosPageContent() {
             {raffles.map((raffle) => {
               const stats = getSlotStats(raffle);
               const canEditRaffle = canEdit(raffle);
+              const canDeleteRaffle = canDelete(raffle);
               const canExec = canExecute(raffle);
               
               return (
@@ -384,6 +413,27 @@ function EjecutarSorteosPageContent() {
                       <span style={{ padding: "0.5rem 1rem", background: "#fee2e2", color: "#991b1b", borderRadius: "6px", fontSize: "0.875rem" }}>
                         🔒 No editable (hay cupos comprados)
                       </span>
+                    )}
+
+                    {canDeleteRaffle && (
+                      <button
+                        onClick={() => handleDelete(raffle.id, raffle.title)}
+                        disabled={deleting === raffle.id}
+                        style={{ 
+                          padding: "0.5rem 1rem", 
+                          background: deleting === raffle.id ? "#6b7280" : "#ef4444", 
+                          color: "#fff", 
+                          border: "none", 
+                          borderRadius: "6px", 
+                          cursor: deleting === raffle.id ? "not-allowed" : "pointer",
+                          fontWeight: 600,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.5rem"
+                        }}
+                      >
+                        {deleting === raffle.id ? "Eliminando..." : "🗑️ Eliminar"}
+                      </button>
                     )}
                   </div>
                 </div>

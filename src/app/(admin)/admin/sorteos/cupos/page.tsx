@@ -37,6 +37,9 @@ function ConfirmarCuposPageContent() {
   const [pendingGroups, setPendingGroups] = useState<GroupedPending[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [emailTemplateModal, setEmailTemplateModal] = useState(false);
+  const [emailTemplateBody, setEmailTemplateBody] = useState("");
+  const [emailTemplateSaving, setEmailTemplateSaving] = useState(false);
 
   useEffect(() => {
     setAuth(getStoredAuth());
@@ -136,6 +139,43 @@ function ConfirmarCuposPageContent() {
     return labels[type] || type.toUpperCase();
   }
 
+  async function openEmailTemplateModal() {
+    if (!auth?.token) return;
+    setEmailTemplateModal(true);
+    try {
+      const res = await fetch("/api/admin/approval-email-template", {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEmailTemplateBody(data.body || "");
+      }
+    } catch {}
+  }
+
+  async function saveEmailTemplate() {
+    if (!auth?.token) return;
+    setEmailTemplateSaving(true);
+    try {
+      const res = await fetch("/api/admin/approval-email-template", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
+        body: JSON.stringify({ body: emailTemplateBody }),
+      });
+      if (res.ok) {
+        alert("Texto de email guardado");
+        setEmailTemplateModal(false);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Error al guardar");
+      }
+    } catch {
+      alert("Error al guardar");
+    } finally {
+      setEmailTemplateSaving(false);
+    }
+  }
+
   if (!auth) {
     return null;
   }
@@ -144,11 +184,19 @@ function ConfirmarCuposPageContent() {
     <>
       <AdminNavBar />
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "1000px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "0.75rem" }}>
           <h1 style={{ margin: 0, color: "var(--text-primary)" }}>Confirmar Pagos Móviles</h1>
-          <Link href="/admin" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: 600 }}>
-            ← Volver al Dashboard
-          </Link>
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+            <button
+              onClick={openEmailTemplateModal}
+              style={{ padding: "0.5rem 1rem", background: "#6366f1", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}
+            >
+              ✉️ Email de Aprobación
+            </button>
+            <Link href="/admin" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: 600 }}>
+              ← Volver al Dashboard
+            </Link>
+          </div>
         </div>
         
         {loading ? (
@@ -334,6 +382,46 @@ function ConfirmarCuposPageContent() {
           </div>
         )}
       </main>
+
+      {/* Modal Email Template */}
+      {emailTemplateModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
+          <div style={{ background: "var(--card-bg)", borderRadius: "12px", padding: "2rem", maxWidth: "600px", width: "100%", maxHeight: "85vh", overflow: "auto" }}>
+            <h2 style={{ margin: "0 0 1rem", color: "var(--text-primary)" }}>✉️ Texto de Email de Aprobación</h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem", marginBottom: "0.5rem" }}>
+              Este texto se enviará al usuario cuando se confirmen todos los cupos de su compra.
+            </p>
+            <div style={{ padding: "0.75rem", background: "rgba(99, 102, 241, 0.1)", borderRadius: "6px", marginBottom: "1rem", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              <strong>Placeholders disponibles:</strong><br />
+              <code>{"{{userName}}"}</code> — Nombre del usuario<br />
+              <code>{"{{raffleTitle}}"}</code> — Título del sorteo<br />
+              <code>{"{{items}}"}</code> — Lista de cupos confirmados
+            </div>
+            <textarea
+              value={emailTemplateBody}
+              onChange={(e) => setEmailTemplateBody(e.target.value)}
+              rows={10}
+              style={{ width: "100%", padding: "1rem", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)", fontSize: "0.9rem", resize: "vertical", fontFamily: "inherit" }}
+              placeholder={"Hola {{userName}},\n\nTu compra ha sido aprobada.\n\nSorteo: {{raffleTitle}}\nCupos: {{items}}\n\n¡Buena suerte!"}
+            />
+            <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+              <button
+                onClick={saveEmailTemplate}
+                disabled={emailTemplateSaving}
+                style={{ flex: 1, padding: "0.75rem", background: emailTemplateSaving ? "#6b7280" : "#10b981", color: "#fff", border: "none", borderRadius: "8px", fontWeight: 600, cursor: emailTemplateSaving ? "not-allowed" : "pointer" }}
+              >
+                {emailTemplateSaving ? "Guardando..." : "Guardar"}
+              </button>
+              <button
+                onClick={() => setEmailTemplateModal(false)}
+                style={{ flex: 1, padding: "0.75rem", background: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border-color)", borderRadius: "8px", fontWeight: 600, cursor: "pointer" }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

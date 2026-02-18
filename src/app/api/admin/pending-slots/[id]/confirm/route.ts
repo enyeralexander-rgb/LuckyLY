@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { ticketItems, tickets, users, auditLog, raffles } from "../../../../../../lib/db";
+import { ticketItems, tickets, users, auditLog, raffles, approvalEmailTemplate } from "../../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../../lib/auth";
 import type { Role } from "../../../../../../lib/db-types";
 import { newId } from "../../../../../../lib/id";
+import { sendTicketApprovalEmail } from "../../../../../../lib/email";
 
 const ROLES: Role[] = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"];
 
@@ -31,6 +32,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const allConfirmed = allItems.every((i) => i.status === "CONFIRMED");
     if (allConfirmed) {
       await tickets.update(item.ticketId, { status: "CONFIRMED" });
+
+      // Send approval email to user (fire-and-forget)
+      const ticketUser = await users.findById(ticket.userId);
+      if (ticketUser?.email) {
+        const templateBody = await approvalEmailTemplate.getBody();
+        sendTicketApprovalEmail(
+          ticketUser.email,
+          ticketUser.name,
+          raffle.title,
+          allItems.map((i) => ({ value: i.value })),
+          templateBody
+        ).catch(() => {}); // Don't block response on email failure
+      }
     }
 
     const user = await users.findById(ticket.userId);
