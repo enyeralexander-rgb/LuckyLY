@@ -27,6 +27,18 @@ export async function findUnique(where: { token: string }): Promise<(EmailVerifi
   return { ...row, user: user ?? undefined } as EmailVerificationToken & { user?: { id: string; email: string; emailVerified?: boolean } };
 }
 
+export async function markUsedAtomically(tokenValue: string): Promise<EmailVerificationToken | null> {
+  const sql = getSql();
+  // Atomic: only one concurrent request can succeed
+  const rows = await sql`
+    UPDATE "EmailVerificationToken" 
+    SET used = true 
+    WHERE token = ${tokenValue} AND used = false 
+    RETURNING *
+  `;
+  return (rows[0] as EmailVerificationToken) ?? null;
+}
+
 export async function update(where: { id: string }, data: { used: boolean }): Promise<void> {
   const sql = getSql();
   await sql`UPDATE "EmailVerificationToken" SET used = ${data.used} WHERE id = ${where.id}`;

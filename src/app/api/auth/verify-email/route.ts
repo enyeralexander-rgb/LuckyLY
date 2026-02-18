@@ -12,29 +12,33 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Token requerido" }, { status: 400 });
     }
 
-    const verificationToken = await emailVerificationToken.findUnique({ token });
+    // Atomic: mark token as used in a single UPDATE ... WHERE used = false RETURNING *
+    // Only one concurrent request can win this race.
+    const markedToken = await emailVerificationToken.markUsedAtomically(token);
 
-    if (!verificationToken) {
-      return NextResponse.json({ error: "Token inválido o expirado" }, { status: 400 });
-    }
-
-    if (verificationToken.used) {
-      if (verificationToken.user?.emailVerified) {
+    if (!markedToken) {
+      // Token didn't exist OR was already used.
+      // Check if the user's email is already verified (benign double-click).
+      const existingToken = await emailVerificationToken.findUnique({ token });
+      if (existingToken?.user?.emailVerified) {
         return NextResponse.json({
           success: true,
           message: "Email ya verificado previamente",
           alreadyVerified: true,
         }, { status: 200 });
       }
-      return NextResponse.json({ error: "Este enlace ya fue utilizado" }, { status: 400 });
+      return NextResponse.json({ error: "Token inválido o ya fue utilizado" }, { status: 400 });
     }
 
-    if (new Date() > verificationToken.expiresAt) {
+    // Token was successfully claimed. Now check expiration.
+    if (new Date() > markedToken.expiresAt) {
+      // Expired — revert the used flag so user can request a new token
+      await emailVerificationToken.update({ id: markedToken.id }, { used: false });
       return NextResponse.json({ error: "El enlace ha expirado. Solicita uno nuevo." }, { status: 400 });
     }
 
-    await users.update(verificationToken.userId, { emailVerified: true, emailVerifiedAt: new Date() });
-    await emailVerificationToken.update({ id: verificationToken.id }, { used: true });
+    // Verify the user's email
+    await users.update(markedToken.userId, { emailVerified: true, emailVerifiedAt: new Date() });
 
     return NextResponse.json({
       success: true,
