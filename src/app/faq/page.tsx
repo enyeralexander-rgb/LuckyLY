@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { NavBar } from "../../components/NavBar";
+
 import { Footer } from "../../components/Footer";
 
 type FaqItem = {
@@ -30,13 +30,12 @@ export default function FaqPage() {
 
   return (
     <>
-      <NavBar />
       <main style={{ minHeight: "80vh", padding: "2rem 1rem", maxWidth: "800px", margin: "0 auto" }}>
         <h1 style={{ textAlign: "center", color: "var(--text-primary)", marginBottom: "0.5rem", fontSize: "2rem" }}>
           Preguntas Frecuentes
         </h1>
         <p style={{ textAlign: "center", color: "var(--text-secondary)", marginBottom: "2rem" }}>
-          Encuentra respuestas a las preguntas más comunes sobre nuestros sorteos
+          Encuentra respuestas a las preguntas más comunes sobre nuestros sorteos.
           De igual forma, te invitamos a unirte a nuestra comunidad en Instagram, Facebook y WhatsApp
           para mantenerte al tanto de nuestros sorteos y responder a todas tus preguntas.
         </p>

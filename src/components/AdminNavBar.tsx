@@ -57,25 +57,7 @@ export function AdminNavBar() {
         </nav>
 
         <div className="admin-navbar-actions">
-          <Link 
-            href="/faq" 
-            target="_blank"
-            style={{ 
-              marginRight: "0.5rem", 
-              color: "var(--text-primary)", 
-              textDecoration: "none", 
-              fontSize: "0.875rem", 
-              fontWeight: 600,
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              padding: "0.5rem 1rem",
-              borderRadius: "8px",
-              background: "var(--bg-accent)"
-            }}
-          >
-            ❓ Preguntas Frecuentes
-          </Link>
+
           <button
             type="button"
             onClick={toggleTheme}
