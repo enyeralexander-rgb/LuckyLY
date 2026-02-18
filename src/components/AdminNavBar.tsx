@@ -57,6 +57,7 @@ export function AdminNavBar() {
         </nav>
 
         <div className="admin-navbar-actions">
+
           <button
             type="button"
             onClick={toggleTheme}

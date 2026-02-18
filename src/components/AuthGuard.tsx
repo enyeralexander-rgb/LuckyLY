@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { getStoredAuth, setStoredAuth, clearStoredAuth } from "../lib/clientAuth";
-import { initSessionTimeout } from "../lib/sessionTimeout";
+
 
 type AuthGuardProps = {
   children: React.ReactNode;
@@ -110,7 +110,7 @@ export function AuthGuard({ children, requiredRole, redirectTo = "/auth/login" }
 
           setIsAuthorized(true);
           // Inicializar timeout de sesión
-          initSessionTimeout();
+
         } else {
           router.replace(redirectTo);
         }

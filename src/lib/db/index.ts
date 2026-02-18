@@ -17,3 +17,5 @@ export * as raffleTemplate from "./raffleTemplate";
 export * as passwordResetToken from "./passwordResetToken";
 export * as emailVerificationToken from "./emailVerificationToken";
 export * as prizeEmailTemplate from "./prizeEmailTemplate";
+export * as approvalEmailTemplate from "./approvalEmailTemplate";
+export * as faqItem from "./faqItem";

@@ -296,3 +296,15 @@ export interface LiveConfig {
   updatedAt: Date;
   createdAt: Date;
 }
+
+export interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+  order: number;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  updatedById: string | null;
+}
+

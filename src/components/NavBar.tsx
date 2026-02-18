@@ -106,6 +106,7 @@ export function NavBar() {
             <Link href="/" className="text-brand-dark dark:text-brand-light font-medium uppercase hover:text-brand transition-colors">Inicio</Link>
             <Link href="/live" className="text-brand-dark dark:text-brand-light font-medium uppercase hover:text-brand transition-colors">En Vivo</Link>
             <Link href="/results" className="text-brand-dark dark:text-brand-light font-medium uppercase hover:text-brand transition-colors">Resultados</Link>
+            <Link href="/faq" className="text-brand-dark dark:text-brand-light font-medium uppercase hover:text-brand transition-colors">FAQ</Link>
           </nav>
 
           {/* User Actions Section */}
@@ -150,6 +151,7 @@ export function NavBar() {
                       <Link href="/raffles" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Sorteos</Link>
                       <Link href="/live" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">En Vivo</Link>
                       <Link href="/results" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Resultados</Link>
+                      <Link href="/faq" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Preguntas Frecuentes</Link>
                     </div>
 
                     <Link href="/cuenta" className="block px-4 py-3 text-brand-dark dark:text-brand-light hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700" onClick={() => setMenuOpen(false)}>

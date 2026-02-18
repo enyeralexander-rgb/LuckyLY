@@ -129,6 +129,7 @@ export function Header() {
     { label: "Configuración", href: "/cuenta/configuracion", icon: "⚙️" },
     { label: "Historial de Apuestas", href: "/cuenta/historial", icon: "🎲" },
     { label: "Datos Bancarios", href: "/cuenta/datos-bancarios", icon: "🏦", divider: true },
+    { label: "Preguntas Frecuentes", href: "/faq", icon: "❓" },
     { label: isDark ? "Modo Claro" : "Modo Oscuro", href: "#theme", icon: isDark ? "☀️" : "🌙" },
     { label: "Cerrar Sesión", href: "#", icon: "🚪" },
   ];
@@ -140,6 +141,7 @@ export function Header() {
       { label: "Inicio", href: "/", icon: "🏠" },
       { label: "En Vivo", href: "/live", icon: "📺" },
       { label: "Resultados", href: "/results", icon: "🏆" },
+      { label: "Preguntas Frecuentes", href: "/faq", icon: "❓" },
       { label: "DASHBOARD", href: "/admin", icon: "📊", divider: true }, // Badge manual en render
     ];
 
@@ -184,6 +186,7 @@ export function Header() {
     { label: "Sorteos", href: "/raffles", icon: "🎲" },
     { label: "En Vivo", href: "/live", icon: "📺" },
     { label: "Resultados", href: "/results", icon: "🏆" },
+    { label: "Preguntas Frecuentes", href: "/faq", icon: "❓" },
     { label: isDark ? "Modo Claro" : "Modo Oscuro", href: "#theme", icon: isDark ? "☀️" : "🌙", divider: true },
   ];
 

@@ -20,6 +20,7 @@
     "verify:types": "npx tsc --noEmit && echo '✓ Verificación de tipos completada sin errores'",
     "fix:webpack": "npm run stop && npm run clean:webpack && npm run clean:deep && echo '✅ Caché de webpack limpiada. Ejecuta: npm run dev'",
     "db:verify": "node scripts/verify-connection.js",
+    "db:migration-faq-approval": "node scripts/apply-migration-faq.js",
     "db:setup": "node scripts/apply-schema-neon.js",
     "db:push": "node scripts/db-push-neon.js",
     "db:seed": "npx tsx scripts/seed-neon.ts",

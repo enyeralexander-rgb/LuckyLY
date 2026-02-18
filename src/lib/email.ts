@@ -286,3 +286,45 @@ export async function sendIncorrectBankDataEmail(email: string, userName: string
 
   return sendEmail(email, "Actualización de Datos Bancarios Requerida - LuckyLY", html);
 }
+
+export async function sendTicketApprovalEmail(
+  email: string,
+  userName: string,
+  raffleTitle: string,
+  items: { value: string }[],
+  customBody: string | null
+) {
+  const itemsList = items.map((i) => i.value).join(", ");
+  const defaultBody = `Hola ${userName},\n\nTe informamos que tu compra ha sido aprobada exitosamente.\n\nSorteo: ${raffleTitle}\nCupos confirmados: ${itemsList}\n\n¡Buena suerte! 🍀`;
+
+  const bodyText = customBody
+    ? customBody
+        .replace(/\{\{userName\}\}/g, userName)
+        .replace(/\{\{raffleTitle\}\}/g, raffleTitle)
+        .replace(/\{\{items\}\}/g, itemsList)
+    : defaultBody;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .footer { margin-top: 30px; font-size: 12px; color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <pre style="white-space: pre-wrap; font-family: inherit;">${bodyText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} LuckyLY. Todos los derechos reservados.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail(email, "Compra Aprobada - LuckyLY", html);
+}

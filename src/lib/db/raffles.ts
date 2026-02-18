@@ -168,3 +168,13 @@ export async function updateEditable(
   if (!updated) throw new Error("Raffle update failed");
   return updated;
 }
+
+/** Eliminar sorteo y sus datos asociados (TicketItems, Tickets) */
+export async function deleteById(id: string): Promise<void> {
+  const sql = getSql();
+  // Delete in FK order: TicketItems → Tickets → Raffle
+  await sql`DELETE FROM "TicketItem" WHERE "raffleId" = ${id}`;
+  await sql`DELETE FROM "Ticket" WHERE "raffleId" = ${id}`;
+  await sql`DELETE FROM "Raffle" WHERE id = ${id}`;
+}
+
