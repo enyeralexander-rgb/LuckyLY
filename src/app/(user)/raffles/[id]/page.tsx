@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { SlotRoulette, type SlotItem } from "../../../../components/SlotRoulette";
+import { SlotRoulette, type SlotItem } from "@/components/SlotRoulette";
 
 type Props = {
   params: Promise<{ id: string }>;
