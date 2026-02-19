@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
-import { users, referralLink, referralVisit, emailVerificationToken } from "../../../../lib/db";
+import { users, referralLink, referralVisit } from "../../../../lib/db";
 import { registerSchema } from "../../../../lib/validators";
-import { sendEmailVerificationEmail } from "../../../../lib/email";
 import { newId } from "../../../../lib/id";
 import { getCountryFromIP } from "../../../../lib/geolocation";
 import { logger } from "../../../../lib/logger";
@@ -81,6 +79,8 @@ export async function POST(request: Request) {
       nationalId,
       nationalIdType,
       role: "USER",
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
     });
 
     if (referralLinkId) {
@@ -122,21 +122,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24);
-
-    await emailVerificationToken.create({
-      id: newId(),
-      userId: user.id,
-      token: verificationToken,
-      expiresAt,
-    });
-
-    await sendEmailVerificationEmail(user.email, verificationToken);
-
     return NextResponse.json(
-      { id: user.id, email: user.email, message: "Registro exitoso. Por favor verifica tu email." },
+      { id: user.id, email: user.email, message: "Registro exitoso." },
       { status: 201 }
     );
   } catch (error) {

@@ -12,7 +12,6 @@ export async function GET() {
         "check-availability": "GET /api/auth/check-availability",
         "forgot-password": "POST /api/auth/forgot-password",
         "reset-password": "POST /api/auth/reset-password",
-        "verify-email": "POST /api/auth/verify-email",
         "2fa": {
           setup: "POST /api/auth/2fa/setup",
           verify: "POST /api/auth/2fa/verify",

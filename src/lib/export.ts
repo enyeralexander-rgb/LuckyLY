@@ -96,7 +96,7 @@ export async function exportUsers(users: Array<any>): Promise<Buffer> {
     Cédula: user.nationalId || "-",
     Teléfono: user.phoneNumber || "-",
     Banco: user.bank || "-",
-    Email_Verificado: user.emailVerified ? "Sí" : "No",
+    Email_Verificado: "Sí",
     Suspendido: user.suspended ? "Sí" : "No",
     Fecha_Registro: new Date(user.createdAt).toLocaleDateString("es-ES"),
   }));

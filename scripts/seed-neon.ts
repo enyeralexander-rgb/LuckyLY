@@ -30,8 +30,6 @@ async function main() {
   // Orden respetando FK: hijos antes que padres (ReferralVisit antes ReferralLink; PrizeClaim/TicketItem antes Ticket; _TemplateRaffles antes Raffle/RaffleTemplate).
   await sql`DELETE FROM "PasswordResetToken"`;
   console.log("  ✓ PasswordResetToken");
-  await sql`DELETE FROM "EmailVerificationToken"`;
-  console.log("  ✓ EmailVerificationToken");
   await sql`DELETE FROM "TwoFactorAuth"`;
   console.log("  ✓ TwoFactorAuth");
   await sql`DELETE FROM "Notification"`;

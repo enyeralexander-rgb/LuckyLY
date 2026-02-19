@@ -213,15 +213,6 @@ export interface PasswordResetToken {
   createdAt: Date;
 }
 
-export interface EmailVerificationToken {
-  id: string;
-  userId: string;
-  token: string;
-  expiresAt: Date;
-  used: boolean;
-  createdAt: Date;
-}
-
 export interface TwoFactorAuth {
   id: string;
   userId: string;

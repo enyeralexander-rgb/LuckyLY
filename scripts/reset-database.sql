@@ -19,7 +19,6 @@ SET session_replication_role = replica;
 
 -- 1. Tokens y 2FA
 DELETE FROM "PasswordResetToken";
-DELETE FROM "EmailVerificationToken";
 DELETE FROM "TwoFactorAuth";
 
 -- 2. Notificaciones y favoritos
