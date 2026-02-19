@@ -18,7 +18,6 @@ SET session_replication_role = replica;
 -- 1. ELIMINAR TOKENS Y SESIONES
 -- ============================================
 DELETE FROM "PasswordResetToken";
-DELETE FROM "EmailVerificationToken";
 
 -- ============================================
 -- 2. ELIMINAR AUTENTICACIÓN 2FA DE USUARIOS REGULARES

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../../../lib/clientAuth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getItemWithEmoji } from "../../../../lib/raffleEmojis";
+import { SlotRoulette, type SlotItem } from "../../../../components/SlotRoulette";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -258,23 +258,6 @@ export default function RaffleDetailPage({ params }: Props) {
   function handleBuy() {
     if (!auth?.token || !raffle || selectedSlots.size === 0 || buying) return;
     
-    // Verificar si el usuario tiene correo verificado
-    if (!userProfile?.emailVerified) {
-      const confirmVerify = confirm(
-        "⚠️ Debes verificar tu correo electrónico antes de realizar una compra.\n\n¿Deseas ir a verificar tu correo ahora?"
-      );
-      if (confirmVerify) {
-        // Guardar la URL de retorno para después de verificar
-        sessionStorage.setItem("pendingPurchase", JSON.stringify({
-          raffleId: raffle.id,
-          items: Array.from(selectedSlots),
-          total: Number(raffle.pricePerSlot) * selectedSlots.size
-        }));
-        router.push("/cuenta/configuracion?action=verify-email");
-      }
-      return;
-    }
-    
     // Verificar si el usuario tiene datos bancarios completos (Documento, Banco y Teléfono)
     const hasBankData = userProfile?.bank && userProfile?.phoneNumber && userProfile.phoneNumber.length >= 11 && userProfile?.nationalId && userProfile?.nationalIdType;
     if (!hasBankData) {
@@ -407,50 +390,18 @@ export default function RaffleDetailPage({ params }: Props) {
             </div>
           ) : (
             <>
-              <div style={{ display: "grid", gap: ".75rem", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))" }}>
-                {allSlots.map((slot) => {
-                  const purchased = isSlotPurchased(slot);
-                  const pending = isSlotPending(slot);
-                  const selected = selectedSlots.has(slot);
-                  
-                  return (
-                    <button
-                      key={slot}
-                      onClick={() => toggleSlot(slot)}
-                      disabled={purchased || pending || buying}
-                      style={{
-                        padding: "0.75rem 0.5rem",
-                        borderRadius: "10px",
-                        textAlign: "center",
-                        border: selected ? "2px solid #85BB65" : pending ? "2px solid #f59e0b" : "1px solid #1f2937",
-                        background: purchased 
-                          ? "#3b0c0c" 
-                          : pending
-                          ? "rgba(245, 158, 11, 0.2)"
-                          : selected 
-                          ? "rgba(133, 187, 101, 0.2)" 
-                          : "#0b1221",
-                        color: purchased ? "#fca5a5" : pending ? "#f59e0b" : selected ? "#85BB65" : "#e2e8f0",
-                        fontWeight: selected || pending ? 700 : 600,
-                        cursor: purchased || pending || buying ? "not-allowed" : "pointer",
-                        opacity: purchased || pending ? 0.6 : 1,
-                        transition: "all 0.2s",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        fontSize: "0.85rem",
-                        minHeight: "48px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}
-                      title={getItemWithEmoji(slot, raffle?.type || "")}
-                    >
-                      {purchased ? "✕" : pending ? "⏳" : selected ? "✓" : ""} {getItemWithEmoji(slot, raffle?.type || "")}
-                    </button>
-                  );
+              <SlotRoulette
+                slots={allSlots.map((value): SlotItem => {
+                  if (isSlotPurchased(value)) return { value, status: "purchased" };
+                  if (isSlotPending(value)) return { value, status: "reserved" };
+                  if (selectedSlots.has(value)) return { value, status: "selected" };
+                  return { value, status: "available" };
                 })}
-              </div>
+                raffleType={raffle.type || ""}
+                selectedValues={selectedSlots}
+                onToggle={toggleSlot}
+                disabled={buying}
+              />
               
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid #1f2937" }}>
                 <div>

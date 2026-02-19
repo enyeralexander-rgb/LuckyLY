@@ -71,3 +71,10 @@ docs/PLAN_AUDITORIA_100_PROYECTO.md
 docs/PLAN_REMEDIACION_PRODUCCION_100.md
 scripts/apply-initial-master.js
 scripts/generate-initial-master-sql.js
+docs/PLAN_RULETA_SELECCION_CUPOS.md
+docs/PLAN_TEXTO_RULETA_COMPRA.md
+docs/PLAN_RULETA_REDISENO_COMPLETO.md
+scripts/check-duplicates.ts
+.gitignore
+scripts/test-email.ts
+docs/PLAN_MAESTRO_RULETA_Y_ELIMINAR_VERIFICACION.md

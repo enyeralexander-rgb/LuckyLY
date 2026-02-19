@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
-import { users, emailVerificationToken } from "../../../../../lib/db";
+import { users } from "../../../../../lib/db";
 import { requireAuth, AuthError } from "../../../../../lib/auth";
-import { sendEmailVerificationEmail } from "../../../../../lib/email";
 import { logger } from "../../../../../lib/logger";
 import type { Role } from "../../../../../lib/db-types";
-import { newId } from "../../../../../lib/id";
-import crypto from "crypto";
 
 const USER: Role = "USER";
 
@@ -44,26 +41,11 @@ export async function PUT(request: Request) {
     await users.update(auth.userId, {
       email,
       emailUpdatedAt: new Date(),
-      emailVerified: false,
-      emailVerifiedAt: null,
     });
-
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await emailVerificationToken.updateMany({ userId: auth.userId }, { used: true });
-    await emailVerificationToken.create({
-      id: newId(),
-      userId: auth.userId,
-      token: verificationToken,
-      expiresAt,
-    });
-
-    await sendEmailVerificationEmail(email, verificationToken);
 
     return NextResponse.json({
       success: true,
-      message: "Correo actualizado exitosamente. Te hemos enviado un correo de verificación a tu nueva dirección.",
+      message: "Correo actualizado exitosamente. Por favor inicia sesión nuevamente.",
     });
   } catch (err) {
     if (err instanceof AuthError) {

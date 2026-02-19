@@ -264,9 +264,6 @@ function RegisterPageContent() {
 
           const role = String(loginData.user?.role ?? "USER").toUpperCase();
           const isAdmin = ["AGENT", "CONTABLE", "SUPERADMIN", "MASTER"].includes(role);
-          if (typeof document !== "undefined" && !isAdmin) {
-            document.cookie = "just_registred=1; path=/; max-age=120; SameSite=Lax";
-          }
 
           const profileRes = await fetch("/api/user/profile", {
             method: "PUT",
