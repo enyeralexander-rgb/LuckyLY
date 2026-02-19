@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { AuthGuard } from "../../../../components/AuthGuard";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { getStoredAuth, clearStoredAuth, setStoredAuth } from "../../../../lib/clientAuth";
 import { useRouter } from "next/navigation";
 
@@ -10,7 +10,6 @@ type UserData = {
   name: string;
   email: string;
   username: string | null;
-  emailVerified: boolean;
   emailUpdatedAt: string | null;
   usernameUpdatedAt: string | null;
 };
@@ -21,10 +20,7 @@ export default function ConfiguracionPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"verification" | "email" | "username" | "password" | "delete">("verification");
-  const [sendingVerification, setSendingVerification] = useState(false);
-  const [verificationSent, setVerificationSent] = useState(false);
-  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [activeTab, setActiveTab] = useState<"email" | "username" | "password" | "delete">("email");
   const [formData, setFormData] = useState({
     email: "",
     username: "",
@@ -35,73 +31,10 @@ export default function ConfiguracionPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [emailRestriction, setEmailRestriction] = useState<{ canChange: boolean; daysRemaining: number } | null>(null);
   const [usernameRestriction, setUsernameRestriction] = useState<{ canChange: boolean; daysRemaining: number } | null>(null);
-  const [refreshingVerification, setRefreshingVerification] = useState(false);
-  const [showJustRegistredModal, setShowJustRegistredModal] = useState(false);
-  const [mountedForCookie, setMountedForCookie] = useState(false);
-
-  function getCookie(name: string): string | null {
-    if (typeof document === "undefined") return null;
-    const match = document.cookie.match(new RegExp("(^| )" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "=([^;]+)"));
-    return match ? match[2] : null;
-  }
-
-  function deleteJustRegistredCookie() {
-    if (typeof document === "undefined") return;
-    document.cookie = "just_registred=; path=/; max-age=0; SameSite=Lax";
-  }
-
   useEffect(() => {
     const storedAuth = getStoredAuth();
     if (storedAuth) {
       setAuth(storedAuth);
-    }
-  }, []);
-
-  useEffect(() => {
-    setMountedForCookie(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mountedForCookie) return;
-    const hasCookie = document.cookie.includes("just_registred=") && getCookie("just_registred");
-    if (hasCookie) {
-      setShowJustRegistredModal(true);
-    }
-  }, [mountedForCookie]);
-
-  function handleCloseJustRegistredModal() {
-    deleteJustRegistredCookie();
-    setShowJustRegistredModal(false);
-  }
-
-  // Efecto para el contador regresivo de 5 minutos
-  useEffect(() => {
-    if (cooldownSeconds > 0) {
-      const timer = setInterval(() => {
-        setCooldownSeconds((prev) => {
-          if (prev <= 1) {
-            setVerificationSent(false);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [cooldownSeconds]);
-
-  // Verificar si hay un cooldown guardado en localStorage al cargar
-  useEffect(() => {
-    const savedCooldownEnd = localStorage.getItem("emailVerificationCooldownEnd");
-    if (savedCooldownEnd) {
-      const endTime = parseInt(savedCooldownEnd);
-      const remaining = Math.floor((endTime - Date.now()) / 1000);
-      if (remaining > 0) {
-        setCooldownSeconds(remaining);
-        setVerificationSent(true);
-      } else {
-        localStorage.removeItem("emailVerificationCooldownEnd");
-      }
     }
   }, []);
 
@@ -152,36 +85,6 @@ export default function ConfiguracionPage() {
       fetchProfile(true);
     }
   }, [auth?.token]);
-
-  // Al volver a la pestaña, revalidar estado de verificación (p. ej. si verificó en otro dispositivo)
-  const fetchProfileRef = useRef(fetchProfile);
-  fetchProfileRef.current = fetchProfile;
-  useEffect(() => {
-    const onVisibility = () => {
-      if (document.visibilityState === "visible" && auth?.token) {
-        fetchProfileRef.current?.(false);
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [auth?.token]);
-
-  // Polling automático en pestaña Verificación mientras el correo no esté verificado (p. ej. usuario abrió el enlace en otro dispositivo)
-  const POLL_INTERVAL_MS = 4000;
-  useEffect(() => {
-    if (
-      activeTab !== "verification" ||
-      !auth?.token ||
-      !userData ||
-      userData.emailVerified
-    ) {
-      return;
-    }
-    const interval = setInterval(() => {
-      fetchProfileRef.current?.(false);
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [activeTab, auth?.token, userData?.id, userData?.emailVerified]);
 
   async function handleUpdateEmail() {
     if (!auth?.token || saving) return;
@@ -339,65 +242,9 @@ export default function ConfiguracionPage() {
     }
   }
 
-  const justRegistredModalJsx = showJustRegistredModal && (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: "rgba(0, 0, 0, 0.6)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        padding: "1rem",
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="just-registred-modal-title"
-    >
-      <div
-        className="card"
-        style={{
-          maxWidth: "440px",
-          width: "100%",
-          padding: "2rem",
-          textAlign: "center",
-        }}
-      >
-        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🎉</div>
-        <h2 id="just-registred-modal-title" style={{ margin: "0 0 1rem", color: "var(--text-primary)", fontSize: "1.5rem" }}>
-          ¡Bienvenido!
-        </h2>
-        <p style={{ margin: "0 0 1.5rem", color: "var(--text-secondary)", lineHeight: 1.6, fontSize: "1rem" }}>
-          Su registro ha sido exitoso. Para terminar el proceso de registro debe verificar el correo electrónico que ingresó.
-        </p>
-        <button
-          type="button"
-          onClick={handleCloseJustRegistredModal}
-          style={{
-            padding: "0.75rem 2rem",
-            background: "#85BB65",
-            color: "#3E3E3C",
-            border: "none",
-            borderRadius: "10px",
-            fontWeight: 700,
-            cursor: "pointer",
-            fontSize: "1rem",
-          }}
-        >
-          Continuar
-        </button>
-      </div>
-    </div>
-  );
-
   if (loading) {
     return (
       <AuthGuard requiredRole={["USER"]}>
-        {justRegistredModalJsx}
         <main className="container" style={{ paddingTop: "2rem" }}>
           <div className="card" style={{ padding: "2rem", textAlign: "center" }}>Cargando...</div>
         </main>
@@ -407,8 +254,6 @@ export default function ConfiguracionPage() {
 
   return (
     <AuthGuard requiredRole={["USER"]}>
-      {justRegistredModalJsx}
-
       <main className="container" style={{ paddingTop: "2rem", maxWidth: "800px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
           <h1 style={{ margin: 0, color: "var(--text-primary)" }}>CONFIGURACIÓN DE LA CUENTA</h1>
@@ -417,28 +262,6 @@ export default function ConfiguracionPage() {
 
         {/* Pestañas */}
         <div style={{ display: "flex", gap: ".5rem", borderBottom: "2px solid var(--border-color)", marginBottom: "2rem", flexWrap: "wrap" }}>
-          <button
-            onClick={() => setActiveTab("verification")}
-            style={{
-              padding: ".75rem 1.5rem",
-              background: activeTab === "verification" 
-                ? (userData?.emailVerified ? "#85BB65" : "#f59e0b") 
-                : "transparent",
-              color: activeTab === "verification" 
-                ? (userData?.emailVerified ? "#3E3E3C" : "#ffffff") 
-                : (userData?.emailVerified ? "#85BB65" : "#f59e0b"),
-              border: "none",
-              borderBottom: activeTab === "verification" 
-                ? `3px solid ${userData?.emailVerified ? "#85BB65" : "#f59e0b"}` 
-                : "3px solid transparent",
-              borderRadius: "8px 8px 0 0",
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.2s"
-            }}
-          >
-            {userData?.emailVerified ? "✓ Verificado" : "⚠️ Verificación"}
-          </button>
           <button
             onClick={() => setActiveTab("email")}
             style={{
@@ -507,131 +330,6 @@ export default function ConfiguracionPage() {
 
         {/* Contenido de pestañas */}
         <div className="card" style={{ padding: "2rem" }}>
-          {activeTab === "verification" && (
-            <div style={{ display: "grid", gap: "1.5rem" }}>
-              <div>
-                <h3 style={{ margin: "0 0 1rem", color: "var(--text-primary)" }}>Verificación de Correo Electrónico</h3>
-                <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setRefreshingVerification(true);
-                      await fetchProfile(false);
-                      setRefreshingVerification(false);
-                    }}
-                    disabled={refreshingVerification || !auth?.token}
-                    style={{
-                      padding: "0.5rem 1rem",
-                      fontSize: "0.875rem",
-                      background: "var(--bg-secondary)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "6px",
-                      color: "var(--text-primary)",
-                      cursor: refreshingVerification || !auth?.token ? "not-allowed" : "pointer",
-                      opacity: refreshingVerification || !auth?.token ? 0.7 : 1,
-                    }}
-                  >
-                    {refreshingVerification ? "Actualizando…" : "Actualizar estado"}
-                  </button>
-                  <span style={{ color: "var(--text-tertiary)", fontSize: "0.8125rem" }}>
-                    Si acabas de verificar desde otro dispositivo, pulsa aquí para refrescar.
-                  </span>
-                </div>
-                {userData?.emailVerified ? (
-                  <div style={{ padding: "1.5rem", background: "rgba(133, 187, 101, 0.1)", borderRadius: "8px", textAlign: "center" }}>
-                    <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>✅</div>
-                    <h4 style={{ margin: "0 0 0.5rem", color: "#85BB65" }}>¡Tu correo está verificado!</h4>
-                    <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-                      Tienes acceso completo a todas las funciones de la plataforma.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ padding: "1.5rem", background: "rgba(245, 158, 11, 0.1)", borderRadius: "8px", marginBottom: "1rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
-                        <span style={{ fontSize: "2rem" }}>⚠️</span>
-                        <div>
-                          <h4 style={{ margin: 0, color: "#f59e0b" }}>Correo no verificado</h4>
-                          <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-                            Debes verificar tu correo electrónico para poder realizar compras.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {verificationSent ? (
-                      <div style={{ padding: "1rem", background: "rgba(133, 187, 101, 0.1)", borderRadius: "8px", marginBottom: "1rem" }}>
-                        <p style={{ margin: 0, color: "#85BB65", fontWeight: 600 }}>
-                          ✓ Email de verificación enviado a {userData?.email}
-                        </p>
-                        <p style={{ margin: "0.5rem 0 0", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-                          Revisa tu bandeja de entrada y sigue las instrucciones del correo.
-                        </p>
-                        {cooldownSeconds > 0 && (
-                          <p style={{ margin: "0.5rem 0 0", color: "var(--text-tertiary)", fontSize: "0.875rem" }}>
-                            Podrás reenviar en: <strong>{Math.floor(cooldownSeconds / 60)}:{String(cooldownSeconds % 60).padStart(2, "0")}</strong>
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p style={{ margin: "0 0 1rem", color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-                        Haz clic en el botón para recibir un correo de verificación en: <strong>{userData?.email}</strong>
-                      </p>
-                    )}
-                    
-                    <button
-                      onClick={async () => {
-                        if (!auth?.token || sendingVerification || cooldownSeconds > 0) return;
-                        setSendingVerification(true);
-                        try {
-                          const res = await fetch("/api/auth/send-verification-email", {
-                            method: "POST",
-                            headers: {
-                              "Content-Type": "application/json",
-                              Authorization: `Bearer ${auth.token}`
-                            }
-                          });
-                          const data = await res.json();
-                          if (res.ok) {
-                            setVerificationSent(true);
-                            // Iniciar contador de 5 minutos (300 segundos)
-                            const cooldownTime = 300;
-                            setCooldownSeconds(cooldownTime);
-                            // Guardar en localStorage para persistir el cooldown
-                            localStorage.setItem("emailVerificationCooldownEnd", String(Date.now() + cooldownTime * 1000));
-                          } else {
-                            alert(data.error || "Error al enviar email de verificación");
-                          }
-                        } catch (error) {
-                          console.error("Error:", error);
-                          alert("Error al enviar email de verificación");
-                        } finally {
-                          setSendingVerification(false);
-                        }
-                      }}
-                      disabled={sendingVerification || cooldownSeconds > 0}
-                      style={{
-                        padding: ".75rem 1.5rem",
-                        background: sendingVerification || cooldownSeconds > 0 ? "#6b7280" : "#f59e0b",
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: "8px",
-                        fontWeight: 700,
-                        cursor: sendingVerification || cooldownSeconds > 0 ? "not-allowed" : "pointer"
-                      }}
-                    >
-                      {sendingVerification 
-                        ? "Enviando..." 
-                        : cooldownSeconds > 0 
-                        ? `Reenviar en ${Math.floor(cooldownSeconds / 60)}:${String(cooldownSeconds % 60).padStart(2, "0")}`
-                        : "📧 Enviar Email de Verificación"}
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
           {activeTab === "email" && (
             <div style={{ display: "grid", gap: "1.5rem" }}>
               <div>
