@@ -3588,3 +3588,65 @@ video {
     height: 3.25rem;
   }
 }
+
+/* SlotRoulette - responsive */
+.slot-roulette-container {
+  width: 100%;
+  box-sizing: border-box;
+}
+.slot-roulette-wrapper {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.slot-roulette-wrapper svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+@media (min-width: 769px) {
+  .slot-roulette-wrapper {
+    max-width: 600px;
+  }
+}
+@media (max-width: 768px) {
+  .slot-roulette-container {
+    padding: 0.5rem;
+  }
+  .slot-roulette-wrapper {
+    max-width: 90vw;
+  }
+}
+@media (max-width: 480px) {
+  .slot-roulette-container {
+    padding: 0.25rem;
+  }
+  .slot-roulette-wrapper {
+    max-width: 98vw;
+  }
+}
+@keyframes slot-roulette-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.97); }
+}
+.slot-roulette-segment-pulse {
+  animation: slot-roulette-pulse 0.15s ease-out;
+}
+
+/* SlotRoulette - accesibilidad */
+.slot-roulette-wrapper path[role="button"]:focus-visible {
+  outline: 2px solid #66BB5F;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .slot-roulette-segment-pulse {
+    animation: none;
+  }
+  .slot-roulette-wrapper .slot-roulette-segment,
+  .slot-roulette-wrapper .slot-roulette-segment path {
+    transition: none !important;
+  }
+  .slot-roulette-wrapper .slot-roulette-segment {
+    transform: none !important;
+  }
+}
