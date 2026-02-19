@@ -77,5 +77,4 @@ docs/PLAN_RULETA_REDISENO_COMPLETO.md
 scripts/check-duplicates.ts
 .gitignore
 scripts/test-email.ts
-src/components/SlotRoulette.tsx
 docs/PLAN_MAESTRO_RULETA_Y_ELIMINAR_VERIFICACION.md
