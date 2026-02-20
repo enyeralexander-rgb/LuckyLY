@@ -16,6 +16,8 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Correo electrónico inválido" }, { status: 400 });
     }
 
+    const emailLower = email.trim().toLowerCase();
+
     const currentUser = await users.findById(auth.userId);
     if (!currentUser) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
@@ -33,13 +35,13 @@ export async function PUT(request: Request) {
       }
     }
 
-    const existingUser = await users.findByEmail(email);
+    const existingUser = await users.findByEmailIgnoreCase(emailLower);
     if (existingUser && existingUser.id !== auth.userId) {
       return NextResponse.json({ error: "Este correo electrónico ya está en uso" }, { status: 400 });
     }
 
     await users.update(auth.userId, {
-      email,
+      email: emailLower,
       emailUpdatedAt: new Date(),
     });
 

@@ -13,6 +13,14 @@ export async function findByEmail(email: string): Promise<User | null> {
   return (rows[0] as User) ?? null;
 }
 
+/** Busca usuario por email ignorando mayúsculas/minúsculas (para login y comprobaciones). */
+export async function findByEmailIgnoreCase(email: string): Promise<User | null> {
+  const sql = getSql();
+  const lower = email.trim().toLowerCase();
+  const rows = await sql`SELECT * FROM "User" WHERE LOWER(email) = ${lower}`;
+  return (rows[0] as User) ?? null;
+}
+
 export async function findByUsername(username: string): Promise<User | null> {
   const sql = getSql();
   const rows = await sql`SELECT * FROM "User" WHERE username = ${username}`;

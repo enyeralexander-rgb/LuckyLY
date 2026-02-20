@@ -28,10 +28,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Debes aceptar los términos y condiciones" }, { status: 400 });
     }
 
+    const emailLower = email.trim().toLowerCase();
     const cleanUsername = username.trim().toLowerCase();
     const cleanDocumentId = documentId.trim();
 
-    const existingEmail = await users.findByEmail(email);
+    const existingEmail = await users.findByEmailIgnoreCase(emailLower);
     if (existingEmail) {
       return NextResponse.json({ error: "Email ya registrado" }, { status: 409 });
     }
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
 
     const user = await users.create({
       id: newId(),
-      email,
+      email: emailLower,
       passwordHash,
       name,
       username: cleanUsername,
