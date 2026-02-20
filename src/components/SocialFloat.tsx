@@ -49,6 +49,10 @@ const STYLES: Record<string, { className: string }> = {
 
 const ORDER = ["facebook", "instagram", "twitter", "youtube", "tiktok", "whatsapp"];
 
+/** WhatsApp e Instagram siempre visibles; el resto en el menú desplegable */
+const ALWAYS_VISIBLE_KEYS = ["whatsapp", "instagram"];
+const MENU_ORDER = ORDER.filter((k) => !ALWAYS_VISIBLE_KEYS.includes(k));
+
 export function SocialFloat() {
   const pathname = usePathname();
   const [links, setLinks] = useState<SocialLinks>({});
@@ -66,41 +70,68 @@ export function SocialFloat() {
   }, []);
 
   if (!mounted || pathname !== "/") return null;
-  const entries = ORDER.filter((k) => links[k]).map((key) => ({ key, url: links[key]! }));
-  if (entries.length === 0) return null;
+
+  const alwaysVisibleEntries = ALWAYS_VISIBLE_KEYS.filter((k) => links[k]).map((key) => ({ key, url: links[key]! }));
+  const menuEntries = MENU_ORDER.filter((k) => links[k]).map((key) => ({ key, url: links[key]! }));
+  const hasMenuEntries = menuEntries.length > 0;
+
+  if (alwaysVisibleEntries.length === 0 && menuEntries.length === 0) return null;
 
   return (
     <div className="social-float" aria-label="Redes sociales">
       <div className="social-float-inner">
-        <div
-          className={`social-float-submenu ${open ? "social-float-submenu-open" : ""}`}
-          role="menu"
-        >
-          {entries.map(({ key, url }) => (
-            <a
-              key={key}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={STYLES[key]?.className ?? "social-float-btn"}
-              aria-label={key}
-              role="menuitem"
+        {/* Botón y menú primero en DOM → con column-reverse quedan arriba; siempre visibles abajo */}
+        {hasMenuEntries && (
+          <>
+            <button
+              type="button"
+              className="social-float-toggle"
+              onClick={() => setOpen((v) => !v)}
+              aria-label={open ? "Cerrar redes sociales" : "Abrir redes sociales"}
+              aria-expanded={open}
             >
-              {ICONS[key]}
-            </a>
-          ))}
-        </div>
-        <button
-          type="button"
-          className="social-float-toggle"
-          onClick={() => setOpen((v) => !v)}
-          aria-label={open ? "Cerrar redes sociales" : "Abrir redes sociales"}
-          aria-expanded={open}
-        >
-          <svg className="social-float-toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
+              <svg className="social-float-toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            <div
+              className={`social-float-submenu ${open ? "social-float-submenu-open" : ""}`}
+              role="menu"
+            >
+              {menuEntries.map(({ key, url }) => (
+                <a
+                  key={key}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={STYLES[key]?.className ?? "social-float-btn"}
+                  aria-label={key}
+                  role="menuitem"
+                >
+                  {ICONS[key]}
+                </a>
+              ))}
+            </div>
+          </>
+        )}
+        {/* WhatsApp e Instagram siempre visibles (al final en DOM → abajo en pantalla) */}
+        {alwaysVisibleEntries.length > 0 && (
+          <div className="social-float-always-visible" role="list">
+            {alwaysVisibleEntries.map(({ key, url }) => (
+              <a
+                key={key}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={STYLES[key]?.className ?? "social-float-btn"}
+                aria-label={key}
+                role="listitem"
+              >
+                {ICONS[key]}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
