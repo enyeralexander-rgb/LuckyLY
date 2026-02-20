@@ -244,7 +244,7 @@ function PaymentContent() {
     );
   }
 
-  const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029Vb7dp9h5K3zcanCc8j3H";
+  const WHATSAPP_CHANNEL_URL = "https://wa.me/584141021818";
   const INSTAGRAM_URL = "https://www.instagram.com/luckyly.win/";
 
   return (
