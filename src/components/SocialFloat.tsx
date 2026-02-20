@@ -53,11 +53,12 @@ const ORDER = ["facebook", "instagram", "twitter", "youtube", "tiktok", "whatsap
 const ALWAYS_VISIBLE_KEYS = ["whatsapp", "instagram"];
 const MENU_ORDER = ORDER.filter((k) => !ALWAYS_VISIBLE_KEYS.includes(k));
 
+/** Por defecto expandido; el icono de arriba comprime/expande todo (incl. WA e Instagram). */
 export function SocialFloat() {
   const pathname = usePathname();
   const [links, setLinks] = useState<SocialLinks>({});
   const [mounted, setMounted] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -79,43 +80,45 @@ export function SocialFloat() {
 
   return (
     <div className="social-float" aria-label="Redes sociales">
-      <div className="social-float-inner">
-        {/* Botón y menú primero en DOM → con column-reverse quedan arriba; siempre visibles abajo */}
-        {hasMenuEntries && (
-          <>
-            <button
-              type="button"
-              className="social-float-toggle"
-              onClick={() => setOpen((v) => !v)}
-              aria-label={open ? "Cerrar redes sociales" : "Abrir redes sociales"}
-              aria-expanded={open}
-            >
-              <svg className="social-float-toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
-            <div
-              className={`social-float-submenu ${open ? "social-float-submenu-open" : ""}`}
-              role="menu"
-            >
-              {menuEntries.map(({ key, url }) => (
-                <a
-                  key={key}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={STYLES[key]?.className ?? "social-float-btn"}
-                  aria-label={key}
-                  role="menuitem"
-                >
-                  {ICONS[key]}
-                </a>
-              ))}
-            </div>
-          </>
+      <div className={`social-float-inner ${collapsed ? "social-float-collapsed" : ""}`}>
+        {/* Icono de arriba: comprimir / expandir todas las redes */}
+        <button
+          type="button"
+          className="social-float-toggle"
+          onClick={() => setCollapsed((v) => !v)}
+          aria-label={collapsed ? "Mostrar redes sociales" : "Ocultar redes sociales"}
+          aria-expanded={!collapsed}
+        >
+          {collapsed ? (
+            <svg className="social-float-toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          ) : (
+            <svg className="social-float-toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+            </svg>
+          )}
+        </button>
+        {/* Menú desplegable (resto de redes) — visible cuando no está comprimido */}
+        {hasMenuEntries && !collapsed && (
+          <div className="social-float-submenu social-float-submenu-open" role="menu">
+            {menuEntries.map(({ key, url }) => (
+              <a
+                key={key}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={STYLES[key]?.className ?? "social-float-btn"}
+                aria-label={key}
+                role="menuitem"
+              >
+                {ICONS[key]}
+              </a>
+            ))}
+          </div>
         )}
-        {/* WhatsApp e Instagram siempre visibles (al final en DOM → abajo en pantalla) */}
-        {alwaysVisibleEntries.length > 0 && (
+        {/* WhatsApp e Instagram — visibles cuando no está comprimido */}
+        {alwaysVisibleEntries.length > 0 && !collapsed && (
           <div className="social-float-always-visible" role="list">
             {alwaysVisibleEntries.map(({ key, url }) => (
               <a
