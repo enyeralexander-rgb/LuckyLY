@@ -86,6 +86,7 @@ export function SlotRoulette({
 }: SlotRouletteProps) {
   const [pulsingSlot, setPulsingSlot] = useState<string | null>(null);
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
+  const [focusedSlot, setFocusedSlot] = useState<string | null>(null);
 
   if (slots.length === 0) {
     return (
@@ -165,6 +166,8 @@ export function SlotRoulette({
           {slots.map((slot, i) => {
             const clickable = isClickable(slot.status);
             const isHovered = hoveredSlot === slot.value && clickable;
+            const isFocused = focusedSlot === slot.value && clickable;
+            const isHighlighted = isHovered || isFocused;
             const isPulsing = pulsingSlot === slot.value;
 
             return (
@@ -173,20 +176,22 @@ export function SlotRoulette({
                 className={`slot-roulette-segment${isPulsing ? " slot-roulette-segment-pulse" : ""}`}
                 style={{
                   transformOrigin: `${HALF}px ${HALF}px`,
-                  transform: isHovered ? "scale(1.07)" : "scale(1)",
+                  transform: isHighlighted ? "scale(1.07)" : "scale(1)",
                   transition: "transform 0.2s ease",
                 }}
               >
                 <path
                   d={getSegmentPath(i, slotAngle, RADIUS)}
                   fill={getSegmentFill(slot)}
-                  opacity={isHovered && clickable ? 1 : getSegmentOpacity(slot)}
+                  opacity={isHighlighted ? 1 : getSegmentOpacity(slot)}
                   stroke="white"
                   strokeWidth="1"
                   cursor={statusCursor[slot.status]}
                   onClick={() => handleClick(slot.value)}
                   onMouseEnter={() => clickable && setHoveredSlot(slot.value)}
                   onMouseLeave={() => setHoveredSlot(null)}
+                  onFocus={() => clickable && setFocusedSlot(slot.value)}
+                  onBlur={() => setFocusedSlot(null)}
                   style={{ transition: "opacity 0.2s" }}
                   aria-label={`Cupo ${getItemWithEmoji(slot.value, raffleType)}, ${getStatusLabel(slot.status)}`}
                   aria-pressed={clickable ? slot.status === "selected" : undefined}
@@ -299,6 +304,68 @@ export function SlotRoulette({
             <span>{item.label}</span>
           </div>
         ))}
+      </div>
+
+      {/* Cuadritos: misma selección que la ruleta */}
+      <div
+        role="group"
+        aria-label="Cupos en lista"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(108px, 1fr))",
+          gap: "0.7rem",
+          width: "100%",
+        }}
+      >
+        {slots.map((slot) => {
+          const clickable = isClickable(slot.status);
+          const isPulsing = pulsingSlot === slot.value;
+          const label = getItemWithEmoji(slot.value, raffleType);
+          const prefix = slot.status === "purchased" ? "✕ " : slot.status === "reserved" ? "⏳ " : slot.status === "selected" ? "✓ " : "";
+
+          return (
+            <button
+              key={slot.value}
+              type="button"
+              onClick={() => handleClick(slot.value)}
+              disabled={!clickable}
+              title={`${prefix}${label} - ${getStatusLabel(slot.status)}`}
+              aria-label={`Cupo ${label}, ${getStatusLabel(slot.status)}`}
+              aria-pressed={clickable ? slot.status === "selected" : undefined}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 78,
+                padding: "0.6rem 0.5rem",
+                background: getSegmentFill(slot),
+                opacity: getSegmentOpacity(slot),
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.7)",
+                borderRadius: 6,
+                fontSize: "0.9rem",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                cursor: statusCursor[slot.status],
+                transition: "transform 0.15s ease, opacity 0.2s ease",
+                transform: isPulsing ? "scale(0.92)" : "scale(1)",
+                outline: "none",
+                fontFamily: "system-ui, -apple-system, sans-serif",
+                lineHeight: 1.1,
+                textAlign: "center",
+                wordBreak: "break-word",
+              }}
+              onMouseEnter={(e) => clickable && (e.currentTarget.style.transform = "scale(1.05)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+              onFocus={(e) => clickable && (e.currentTarget.style.transform = "scale(1.05)")}
+              onBlur={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            >
+              <span style={{ fontSize: "0.85rem", opacity: 0.9 }}>{prefix}</span>
+              {label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
