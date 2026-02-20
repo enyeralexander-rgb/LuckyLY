@@ -18,6 +18,14 @@ Esta imagen se utiliza como fondo de la sección Hero (portada) de la página pr
 
 Por favor, agrega la imagen de la ruleta de la fortuna en esta ubicación con el nombre especificado.
 
+## Iconos para el correo de aprobación de cupos
+
+Los iconos de WhatsApp e Instagram se usan en el email que se envía al confirmar una compra (redes sociales al pie del correo).
+
+- **whatsapp-icon.svg** / **whatsapp-icon.png** — Icono de WhatsApp (blanco sobre fondo verde en el correo).
+- **instagram-icon.svg** / **instagram-icon.png** — Icono de Instagram (blanco sobre fondo rosa en el correo).
+
+El correo carga por defecto los **.svg**. Si en algunos clientes (p. ej. Gmail, Outlook) no se ven, exporta los SVG a PNG (56×56 px, icono blanco sobre transparente), guarda como `whatsapp-icon.png` e `instagram-icon.png` aquí, y en `src/lib/email.ts` cambia las rutas de `whatsapp-icon.svg` / `instagram-icon.svg` a `whatsapp-icon.png` / `instagram-icon.png`.
 
 
 
