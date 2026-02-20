@@ -40,7 +40,8 @@ export async function POST(request: Request) {
     }
 
     const { email, password } = parsed.data;
-    const user = await users.findByEmail(email);
+    const emailLower = email.trim().toLowerCase();
+    const user = await users.findByEmailIgnoreCase(emailLower);
     if (!user) {
       return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
     }
