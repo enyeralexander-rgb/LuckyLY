@@ -200,6 +200,12 @@ export async function sendTicketApprovalEmail(
         .replace(/\{\{items\}\}/g, itemsList)
     : defaultBody;
 
+  const whatsappUrl = "https://whatsapp.com/channel/0029Vb7dp9h5K3zcanCc8j3H";
+  const instagramUrl = "https://www.instagram.com/luckyly.win/";
+  const baseUrl = getAppUrl();
+  const whatsappIconUrl = `${baseUrl}/images/whatsapp-icon.svg`;
+  const instagramIconUrl = `${baseUrl}/images/instagram-icon.svg`;
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -208,12 +214,23 @@ export async function sendTicketApprovalEmail(
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .social-block { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+        .social-links { margin-top: 8px; }
+        .social-links a { display: inline-block; margin-right: 12px; padding: 10px; border-radius: 12px; text-decoration: none; vertical-align: middle; }
+        .social-links a img { display: block; width: 28px; height: 28px; border: 0; }
         .footer { margin-top: 30px; font-size: 12px; color: #666; }
       </style>
     </head>
     <body>
       <div class="container">
         <pre style="white-space: pre-wrap; font-family: inherit;">${bodyText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
+        <div class="social-block">
+          <p style="margin: 0 0 8px; font-weight: 600; color: #333;">Síguenos y mantente informado:</p>
+          <div class="social-links">
+            <a href="${whatsappUrl}" style="background: #25D366;" title="WhatsApp"><img src="${whatsappIconUrl}" alt="WhatsApp" width="28" height="28" style="display:block;width:28px;height:28px;border:0;" /></a>
+            <a href="${instagramUrl}" style="background: #E4405F;" title="Instagram"><img src="${instagramIconUrl}" alt="Instagram" width="28" height="28" style="display:block;width:28px;height:28px;border:0;" /></a>
+          </div>
+        </div>
         <div class="footer">
           <p>© ${new Date().getFullYear()} LuckyLY. Todos los derechos reservados.</p>
         </div>
