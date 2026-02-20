@@ -13,7 +13,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email inválido" }, { status: 400 });
     }
 
-    const user = await users.findByEmail(email);
+    const emailLower = email.trim().toLowerCase();
+    const user = await users.findByEmailIgnoreCase(emailLower);
 
     if (!user) {
       return NextResponse.json({
