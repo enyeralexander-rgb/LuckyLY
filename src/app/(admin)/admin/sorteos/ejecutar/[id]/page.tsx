@@ -51,9 +51,12 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
   const [rotation, setRotation] = useState(0);
   
   // Estados para animación
-  const [spinDuration, setSpinDuration] = useState(5); // Duración aleatoria entre 5-13 segundos
+  const [spinDuration, setSpinDuration] = useState(14); // Duración aleatoria entre 14-24 segundos
   const animationFrameRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Modal de confirmación antes del primer giro
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Función para reproducir sonido de victoria sobrio y corto
   const playVictorySound = () => {
@@ -223,14 +226,9 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
   const displaySlotAngle = 360 / (displayItems.length || 1);
   const radius = 280;
 
-  // Ejecutar Giro
+  // Ejecutar Giro (la confirmación del primer giro se hace con modal)
   async function handleExecuteSingleSpin() {
     if (!raffle || !auth?.token || executing || spinning) return;
-
-    // Confirmación explícita antes del primer giro (acción irreversible)
-    if (winners.length === 0) {
-      if (!confirm("¿Ejecutar el sorteo? Esta acción iniciará la ruleta y no se puede deshacer.")) return;
-    }
 
     setExecuting(true);
     setSpinning(true);
@@ -288,19 +286,19 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
     // Ejemplo: Si el ganador está en 90°, tenemos que girar 270° más para que llegue a 0°.
     let targetRotation = 360 - segmentCenterAngle;
 
-    // Tiempo de giro aleatorio entre 5-13 segundos
-    const minDuration = 5;
-    const maxDuration = 13;
+    // Tiempo de giro aleatorio (más largo para mayor expectativa; el ganador ya está elegido por el servidor)
+    const minDuration = 14;
+    const maxDuration = 24;
     const randomDuration = minDuration + Math.random() * (maxDuration - minDuration);
     const spinTime = randomDuration * 1000; // Convertir a milisegundos
     
-    // Delay aleatorio ±200ms
-    const randomDelay = (Math.random() - 0.5) * 400; // -200ms a +200ms
+    // Delay aleatorio ±300ms
+    const randomDelay = (Math.random() - 0.5) * 600; // -300ms a +300ms
     const finalDuration = spinTime + randomDelay;
     
-    // Vueltas aleatorias sin máximo (entre 8-20 vueltas para más emoción)
-    const minSpins = 8;
-    const maxSpins = 20;
+    // Vueltas aleatorias (más vueltas = más expectativa visual)
+    const minSpins = 14;
+    const maxSpins = 28;
     const randomSpins = minSpins + Math.floor(Math.random() * (maxSpins - minSpins + 1));
     const spins = 360 * randomSpins;
     
@@ -446,38 +444,59 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
             </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {/* Contenedor de la Ruleta */}
-            <div className="card" style={{ padding: "2rem", position: "relative", display: "flex", justifyContent: "center", alignItems: "flex-start", marginBottom: "2rem" }}>
-                
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+            {/* Contenedor de la Ruleta: responsive para que no se corte en móvil */}
+            <div 
+              className="card ejecutar-ruleta-card" 
+              style={{ 
+                padding: "clamp(1rem, 4vw, 2rem)", 
+                position: "relative", 
+                display: "flex", 
+                justifyContent: "center", 
+                alignItems: "flex-start", 
+                marginBottom: "2rem",
+                overflow: "visible",
+                width: "100%",
+                maxWidth: "min(600px, calc(100vw - 2rem))",
+                boxSizing: "border-box"
+              }}
+            >
+                {/* Wrapper cuadrado para la ruleta: escala con el ancho disponible */}
+                <div 
+                  className="ejecutar-ruleta-wrapper"
+                  style={{ 
+                    position: "relative",
+                    width: "100%",
+                    maxWidth: "600px",
+                    aspectRatio: "1 / 1"
+                  }}
+                >
                 {/* 1. PUNTERO (Z-INDEX ALTO) - MITAD DENTRO, MITAD FUERA */}
-                {/* Radio de la ruleta: 280px, centro en 300,300. Borde superior en y=20px del SVG */}
-                {/* Flecha: 65px altura (45px + 20px). Para mitad dentro/mitad fuera: top = 20 - 32.5 = -12.5px */}
                 <div style={{ 
                     position: "absolute", 
-                    top: "-12.5px", // Posicionado para que quede mitad dentro (32.5px) y mitad fuera (32.5px) del borde
+                    top: "-12.5px",
                     left: "50%", 
                     transform: "translateX(-50%)", 
                     zIndex: 20 
                 }}>
-                    <svg width="60" height="70" viewBox="0 0 60 70">
-                        {/* Sombra */}
+                    <svg width="60" height="70" viewBox="0 0 60 70" style={{ maxWidth: "clamp(36px, 10vw, 60px)", height: "auto" }}>
                         <path d="M 10 0 L 50 0 L 30 65 Z" fill="rgba(0,0,0,0.3)" transform="translate(0, 4)" />
-                        {/* Triángulo físico - 65px de altura, sin borde, color verde */}
                         <path d="M 10 0 L 50 0 L 30 65 Z" fill="#85BB65" />
                     </svg>
                 </div>
 
-                {/* 2. RULETA GIRATORIA */}
+                {/* 2. RULETA GIRATORIA - SVG responsive */}
                 <svg
-                    width="600"
-                    height="600"
+                    width="100%"
+                    height="100%"
                     viewBox="0 0 600 600"
+                    preserveAspectRatio="xMidYMid meet"
                     style={{
                         transform: `rotate(${rotation}deg)`,
                         transformOrigin: "center center",
                         transition: spinning ? `transform ${spinDuration}s cubic-bezier(0.17, 0.67, 0.12, 0.99)` : "none",
-                        filter: "drop-shadow(0 10px 30px rgba(0,0,0,0.3))"
+                        filter: "drop-shadow(0 10px 30px rgba(0,0,0,0.3))",
+                        display: "block"
                     }}
                 >
                     {displayItems.map((item, i) => {
@@ -524,17 +543,27 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
                         stroke="#dc2626"
                         strokeWidth="4"
                     />
-                    {/* Centro decorativo con círculo más grande */}
-                    <circle 
-                        cx="300" 
-                        cy="300" 
-                        r="40" 
-                        fill="white" 
-                        stroke="#dc2626" 
-                        strokeWidth="3"
-                        style={{
-                          filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.2))"
-                        }}
+                    {/* Centro: fondo verde + borde blanco + logo (igual que ruleta de comprar cupos) */}
+                    <circle
+                        cx="300"
+                        cy="300"
+                        r="40"
+                        fill="#66BB5F"
+                        stroke="#ffffff"
+                        strokeWidth="20"
+                        style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.2))" }}
+                    />
+                    <clipPath id="ejecutar-ruleta-center-clip">
+                        <circle cx="300" cy="300" r="40" />
+                    </clipPath>
+                    <image
+                        href="/images/LuckyLy-Logo-BLANCO-SIN-FONDO.png"
+                        x={300 - 40 * 0.49}
+                        y={300 - 40 * 0.49}
+                        width={40 * 0.98}
+                        height={40 * 0.98}
+                        clipPath="url(#ejecutar-ruleta-center-clip)"
+                        preserveAspectRatio="xMidYMid meet"
                     />
                 </svg>
 
@@ -546,6 +575,7 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
                         left: "50%",
                         transform: "translate(-50%, -50%)",
                         zIndex: 15,
+                        pointerEvents: "none",
                         padding: "1.5rem 2rem",
                         textAlign: "center",
                         background: "linear-gradient(135deg, rgba(133, 187, 101, 0.95) 0%, rgba(16, 185, 129, 0.95) 100%)",
@@ -578,12 +608,19 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
                         )}
                     </div>
                 )}
+                </div>
             </div>
 
             {/* Botón de Ejecutar */}
             <div style={{ display: "flex", justifyContent: "center", marginBottom: "1rem" }}>
                 <button
-                    onClick={handleExecuteSingleSpin}
+                    onClick={() => {
+                      if (winners.length === 0) {
+                        setShowConfirmModal(true);
+                      } else {
+                        handleExecuteSingleSpin();
+                      }
+                    }}
                     disabled={spinning || executing || !canExecute || winners.length >= raffle.winnersCount}
                     style={{
                         padding: ".75rem 2rem",
@@ -630,6 +667,77 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
             )}
         </div>
       </main>
+
+      {/* Modal de confirmación: ejecutar sorteo (primer giro) */}
+      {showConfirmModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "1rem",
+          }}
+          onClick={() => setShowConfirmModal(false)}
+        >
+          <div
+            style={{
+              background: "var(--card-bg)",
+              borderRadius: "12px",
+              padding: "2rem",
+              maxWidth: "420px",
+              width: "100%",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 1rem", color: "var(--text-primary)", fontSize: "1.25rem" }}>
+              ¿Ejecutar el sorteo?
+            </h3>
+            <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+              Esta acción iniciará la ruleta y no se puede deshacer.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                style={{
+                  padding: "0.75rem 1.25rem",
+                  borderRadius: "8px",
+                  border: "1px solid var(--card-border)",
+                  background: "transparent",
+                  color: "var(--text-primary)",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  handleExecuteSingleSpin();
+                }}
+                style={{
+                  padding: "0.75rem 1.25rem",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#85BB65",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Ejecutar sorteo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
