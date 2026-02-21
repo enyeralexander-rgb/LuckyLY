@@ -40,6 +40,8 @@ function DatosUsuariosPageContent() {
   const [searchTelefono, setSearchTelefono] = useState("");
   const [searchBanco, setSearchBanco] = useState("");
   const [searchFecha, setSearchFecha] = useState("");
+  const [searchRaffleId, setSearchRaffleId] = useState("");
+  const [activeRaffles, setActiveRaffles] = useState<{ id: string; title: string }[]>([]);
   
   // Modal de suspensión
   const [showSuspendModal, setShowSuspendModal] = useState(false);
@@ -57,6 +59,18 @@ function DatosUsuariosPageContent() {
     }
   }, [auth, pagination.page]);
 
+  useEffect(() => {
+    if (!auth?.token) return;
+    fetch("/api/raffles?status=ACTIVE", { headers: { Authorization: `Bearer ${auth.token}` } })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && !data.error) {
+          setActiveRaffles(data.map((r: { id: string; title: string }) => ({ id: r.id, title: r.title || "Sin título" })));
+        }
+      })
+      .catch(() => {});
+  }, [auth?.token]);
+
   function loadUsers() {
     if (!auth?.token) return;
     setLoading(true);
@@ -69,6 +83,7 @@ function DatosUsuariosPageContent() {
     if (searchTelefono) params.append("telefono", searchTelefono);
     if (searchBanco) params.append("banco", searchBanco);
     if (searchFecha) params.append("fecha", searchFecha);
+    if (searchRaffleId) params.append("raffleId", searchRaffleId);
 
     fetch(`/api/admin/users?${params.toString()}`, { headers: { Authorization: `Bearer ${auth.token}` } })
       .then((r) => r.json())
@@ -148,6 +163,7 @@ function DatosUsuariosPageContent() {
     setSearchTelefono("");
     setSearchBanco("");
     setSearchFecha("");
+    setSearchRaffleId("");
     setPagination({ ...pagination, page: 1 });
     setTimeout(() => loadUsers(), 100);
   }
@@ -370,6 +386,30 @@ function DatosUsuariosPageContent() {
                   color: "var(--text-primary)"
                 }}
               />
+            </div>
+            <div>
+              <label style={{ display: "block", marginBottom: ".5rem", fontSize: ".875rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                Participantes en sorteo:
+              </label>
+              <select
+                value={searchRaffleId}
+                onChange={(e) => setSearchRaffleId(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: ".5rem",
+                  borderRadius: "8px",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--input-bg)",
+                  color: "var(--text-primary)"
+                }}
+              >
+                <option value="">Todos los usuarios</option>
+                {activeRaffles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.title}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <div style={{ display: "flex", gap: ".5rem", marginTop: ".5rem" }}>
