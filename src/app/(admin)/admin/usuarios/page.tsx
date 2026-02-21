@@ -64,7 +64,7 @@ function DatosUsuariosPageContent() {
     fetch("/api/raffles?status=ACTIVE", { headers: { Authorization: `Bearer ${auth.token}` } })
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data) && !data.error) {
+        if (Array.isArray(data)) {
           setActiveRaffles(data.map((r: { id: string; title: string }) => ({ id: r.id, title: r.title || "Sin título" })));
         }
       })
