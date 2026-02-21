@@ -51,9 +51,12 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
   const [rotation, setRotation] = useState(0);
   
   // Estados para animación
-  const [spinDuration, setSpinDuration] = useState(5); // Duración aleatoria entre 5-13 segundos
+  const [spinDuration, setSpinDuration] = useState(14); // Duración aleatoria entre 14-24 segundos
   const animationFrameRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Modal de confirmación antes del primer giro
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Función para reproducir sonido de victoria sobrio y corto
   const playVictorySound = () => {
@@ -223,14 +226,9 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
   const displaySlotAngle = 360 / (displayItems.length || 1);
   const radius = 280;
 
-  // Ejecutar Giro
+  // Ejecutar Giro (la confirmación del primer giro se hace con modal)
   async function handleExecuteSingleSpin() {
     if (!raffle || !auth?.token || executing || spinning) return;
-
-    // Confirmación explícita antes del primer giro (acción irreversible)
-    if (winners.length === 0) {
-      if (!confirm("¿Ejecutar el sorteo? Esta acción iniciará la ruleta y no se puede deshacer.")) return;
-    }
 
     setExecuting(true);
     setSpinning(true);
@@ -288,19 +286,19 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
     // Ejemplo: Si el ganador está en 90°, tenemos que girar 270° más para que llegue a 0°.
     let targetRotation = 360 - segmentCenterAngle;
 
-    // Tiempo de giro aleatorio entre 5-13 segundos
-    const minDuration = 5;
-    const maxDuration = 13;
+    // Tiempo de giro aleatorio (más largo para mayor expectativa; el ganador ya está elegido por el servidor)
+    const minDuration = 14;
+    const maxDuration = 24;
     const randomDuration = minDuration + Math.random() * (maxDuration - minDuration);
     const spinTime = randomDuration * 1000; // Convertir a milisegundos
     
-    // Delay aleatorio ±200ms
-    const randomDelay = (Math.random() - 0.5) * 400; // -200ms a +200ms
+    // Delay aleatorio ±300ms
+    const randomDelay = (Math.random() - 0.5) * 600; // -300ms a +300ms
     const finalDuration = spinTime + randomDelay;
     
-    // Vueltas aleatorias sin máximo (entre 8-20 vueltas para más emoción)
-    const minSpins = 8;
-    const maxSpins = 20;
+    // Vueltas aleatorias (más vueltas = más expectativa visual)
+    const minSpins = 14;
+    const maxSpins = 28;
     const randomSpins = minSpins + Math.floor(Math.random() * (maxSpins - minSpins + 1));
     const spins = 360 * randomSpins;
     
@@ -616,7 +614,13 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
             {/* Botón de Ejecutar */}
             <div style={{ display: "flex", justifyContent: "center", marginBottom: "1rem" }}>
                 <button
-                    onClick={handleExecuteSingleSpin}
+                    onClick={() => {
+                      if (winners.length === 0) {
+                        setShowConfirmModal(true);
+                      } else {
+                        handleExecuteSingleSpin();
+                      }
+                    }}
                     disabled={spinning || executing || !canExecute || winners.length >= raffle.winnersCount}
                     style={{
                         padding: ".75rem 2rem",
@@ -663,6 +667,77 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
             )}
         </div>
       </main>
+
+      {/* Modal de confirmación: ejecutar sorteo (primer giro) */}
+      {showConfirmModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "1rem",
+          }}
+          onClick={() => setShowConfirmModal(false)}
+        >
+          <div
+            style={{
+              background: "var(--card-bg)",
+              borderRadius: "12px",
+              padding: "2rem",
+              maxWidth: "420px",
+              width: "100%",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 1rem", color: "var(--text-primary)", fontSize: "1.25rem" }}>
+              ¿Ejecutar el sorteo?
+            </h3>
+            <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+              Esta acción iniciará la ruleta y no se puede deshacer.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                style={{
+                  padding: "0.75rem 1.25rem",
+                  borderRadius: "8px",
+                  border: "1px solid var(--card-border)",
+                  background: "transparent",
+                  color: "var(--text-primary)",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  handleExecuteSingleSpin();
+                }}
+                style={{
+                  padding: "0.75rem 1.25rem",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#85BB65",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Ejecutar sorteo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
