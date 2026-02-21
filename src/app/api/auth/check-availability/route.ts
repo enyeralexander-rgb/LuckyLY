@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 
     switch (field) {
       case "email":
-        exists = !!(await users.findByEmail(cleanValue));
+        exists = !!(await users.findByEmailIgnoreCase(cleanValue.toLowerCase()));
         break;
       case "username":
         exists = !!(await users.findByUsername(cleanValue.toLowerCase()));
