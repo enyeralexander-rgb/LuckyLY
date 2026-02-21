@@ -147,3 +147,5 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     </TutorialContext.Provider>
   );
 }
+
+export default TutorialProvider;
