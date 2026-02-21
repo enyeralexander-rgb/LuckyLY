@@ -95,24 +95,27 @@ export async function findManyAdmin(params: {
   bank?: string;
   createdAtGte?: Date;
   createdAtLte?: Date;
+  userIdIn?: string[];
   skip: number;
   take: number;
 }): Promise<User[]> {
   const sql = getSql();
   const { skip, take } = params;
+  if (params.userIdIn && params.userIdIn.length === 0) return [];
+  const andUserIdIn = params.userIdIn?.length ? sql`AND id = ANY(${params.userIdIn})` : sql``;
   const search = params.search?.trim();
   const bankValues = ["BANESCO", "VENEZUELA", "MERCANTIL", "BOD", "PROVINCIAL", "BICENTENARIO", "OTRA", "BANCO_100", "BANCAMIGA", "BANCARIBE", "BANCO_ACTIVO", "BANCO_AGRICOLA", "BANCO_CARONI", "BANFANB", "BANCO_TESORO", "BANCO_EXTERIOR", "BFC", "BANCO_INTERNACIONAL_DESARROLLO", "BNC", "BANCO_PLAZA", "BANCO_SOFITASA", "BANCRECER", "BANGENTE", "BANPLUS", "DELSUR", "MI_BANCO", "N58_BANCO_DIGITAL"];
   if (search) {
     const pattern = "%" + search.replace(/%/g, "\\%") + "%";
     const matchBank = bankValues.find((b) => b.toLowerCase().includes(search.toLowerCase()));
     if (matchBank) {
-      const rows = await sql`SELECT * FROM "User" WHERE role = 'USER' AND (name ILIKE ${pattern} OR email ILIKE ${pattern} OR "nationalId" ILIKE ${pattern} OR "phoneNumber" ILIKE ${pattern} OR bank = ${matchBank}) ORDER BY "createdAt" DESC LIMIT ${take} OFFSET ${skip}`;
+      const rows = await sql`SELECT * FROM "User" WHERE role = 'USER' ${andUserIdIn} AND (name ILIKE ${pattern} OR email ILIKE ${pattern} OR "nationalId" ILIKE ${pattern} OR "phoneNumber" ILIKE ${pattern} OR bank = ${matchBank}) ORDER BY "createdAt" DESC LIMIT ${take} OFFSET ${skip}`;
       return rows as User[];
     }
-    const rows = await sql`SELECT * FROM "User" WHERE role = 'USER' AND (name ILIKE ${pattern} OR email ILIKE ${pattern} OR "nationalId" ILIKE ${pattern} OR "phoneNumber" ILIKE ${pattern}) ORDER BY "createdAt" DESC LIMIT ${take} OFFSET ${skip}`;
+    const rows = await sql`SELECT * FROM "User" WHERE role = 'USER' ${andUserIdIn} AND (name ILIKE ${pattern} OR email ILIKE ${pattern} OR "nationalId" ILIKE ${pattern} OR "phoneNumber" ILIKE ${pattern}) ORDER BY "createdAt" DESC LIMIT ${take} OFFSET ${skip}`;
     return rows as User[];
   }
-  if (params.name || params.email || params.nationalId || params.phoneNumber || params.bank || params.createdAtGte != null || params.createdAtLte != null) {
+  if (params.name || params.email || params.nationalId || params.phoneNumber || params.bank || params.createdAtGte != null || params.createdAtLte != null || andUserIdIn) {
     const andName = params.name ? sql`AND name ILIKE ${"%" + params.name + "%"}` : sql``;
     const andEmail = params.email ? sql`AND email ILIKE ${"%" + params.email + "%"}` : sql``;
     const andNationalId = params.nationalId ? sql`AND "nationalId" ILIKE ${"%" + params.nationalId + "%"}` : sql``;
@@ -121,10 +124,10 @@ export async function findManyAdmin(params: {
     const andBank = bankExact ? sql`AND bank = ${bankExact}` : sql``;
     const andCreatedGte = params.createdAtGte != null ? sql`AND "createdAt" >= ${params.createdAtGte}` : sql``;
     const andCreatedLte = params.createdAtLte != null ? sql`AND "createdAt" <= ${params.createdAtLte}` : sql``;
-    const rows = await sql`SELECT * FROM "User" WHERE role = 'USER' ${andName} ${andEmail} ${andNationalId} ${andPhone} ${andBank} ${andCreatedGte} ${andCreatedLte} ORDER BY "createdAt" DESC LIMIT ${take} OFFSET ${skip}`;
+    const rows = await sql`SELECT * FROM "User" WHERE role = 'USER' ${andUserIdIn} ${andName} ${andEmail} ${andNationalId} ${andPhone} ${andBank} ${andCreatedGte} ${andCreatedLte} ORDER BY "createdAt" DESC LIMIT ${take} OFFSET ${skip}`;
     return rows as User[];
   }
-  const rows = await sql`SELECT * FROM "User" WHERE role = 'USER' ORDER BY "createdAt" DESC LIMIT ${take} OFFSET ${skip}`;
+  const rows = await sql`SELECT * FROM "User" WHERE role = 'USER' ${andUserIdIn} ORDER BY "createdAt" DESC LIMIT ${take} OFFSET ${skip}`;
   return rows as User[];
 }
 
@@ -137,21 +140,24 @@ export async function countAdmin(params: {
   bank?: string;
   createdAtGte?: Date;
   createdAtLte?: Date;
+  userIdIn?: string[];
 }): Promise<number> {
   const sql = getSql();
+  if (params.userIdIn && params.userIdIn.length === 0) return 0;
+  const andUserIdIn = params.userIdIn?.length ? sql`AND id = ANY(${params.userIdIn})` : sql``;
   const search = params.search?.trim();
   const bankValues = ["BANESCO", "VENEZUELA", "MERCANTIL", "BOD", "PROVINCIAL", "BICENTENARIO", "OTRA", "BANCO_100", "BANCAMIGA", "BANCARIBE", "BANCO_ACTIVO", "BANCO_AGRICOLA", "BANCO_CARONI", "BANFANB", "BANCO_TESORO", "BANCO_EXTERIOR", "BFC", "BANCO_INTERNACIONAL_DESARROLLO", "BNC", "BANCO_PLAZA", "BANCO_SOFITASA", "BANCRECER", "BANGENTE", "BANPLUS", "DELSUR", "MI_BANCO", "N58_BANCO_DIGITAL"];
   if (search) {
     const pattern = "%" + search.replace(/%/g, "\\%") + "%";
     const matchBank = bankValues.find((b) => b.toLowerCase().includes(search.toLowerCase()));
     if (matchBank) {
-      const rows = await sql`SELECT COUNT(*)::int as c FROM "User" WHERE role = 'USER' AND (name ILIKE ${pattern} OR email ILIKE ${pattern} OR "nationalId" ILIKE ${pattern} OR "phoneNumber" ILIKE ${pattern} OR bank = ${matchBank})`;
+      const rows = await sql`SELECT COUNT(*)::int as c FROM "User" WHERE role = 'USER' ${andUserIdIn} AND (name ILIKE ${pattern} OR email ILIKE ${pattern} OR "nationalId" ILIKE ${pattern} OR "phoneNumber" ILIKE ${pattern} OR bank = ${matchBank})`;
       return Number((rows[0] as { c: number })?.c ?? 0);
     }
-    const rows = await sql`SELECT COUNT(*)::int as c FROM "User" WHERE role = 'USER' AND (name ILIKE ${pattern} OR email ILIKE ${pattern} OR "nationalId" ILIKE ${pattern} OR "phoneNumber" ILIKE ${pattern})`;
+    const rows = await sql`SELECT COUNT(*)::int as c FROM "User" WHERE role = 'USER' ${andUserIdIn} AND (name ILIKE ${pattern} OR email ILIKE ${pattern} OR "nationalId" ILIKE ${pattern} OR "phoneNumber" ILIKE ${pattern})`;
     return Number((rows[0] as { c: number })?.c ?? 0);
   }
-  if (params.name || params.email || params.nationalId || params.phoneNumber || params.bank || params.createdAtGte != null || params.createdAtLte != null) {
+  if (params.name || params.email || params.nationalId || params.phoneNumber || params.bank || params.createdAtGte != null || params.createdAtLte != null || andUserIdIn) {
     const andName = params.name ? sql`AND name ILIKE ${"%" + params.name + "%"}` : sql``;
     const andEmail = params.email ? sql`AND email ILIKE ${"%" + params.email + "%"}` : sql``;
     const andNationalId = params.nationalId ? sql`AND "nationalId" ILIKE ${"%" + params.nationalId + "%"}` : sql``;
@@ -160,10 +166,10 @@ export async function countAdmin(params: {
     const andBank = bankExact ? sql`AND bank = ${bankExact}` : sql``;
     const andCreatedGte = params.createdAtGte != null ? sql`AND "createdAt" >= ${params.createdAtGte}` : sql``;
     const andCreatedLte = params.createdAtLte != null ? sql`AND "createdAt" <= ${params.createdAtLte}` : sql``;
-    const rows = await sql`SELECT COUNT(*)::int as c FROM "User" WHERE role = 'USER' ${andName} ${andEmail} ${andNationalId} ${andPhone} ${andBank} ${andCreatedGte} ${andCreatedLte}`;
+    const rows = await sql`SELECT COUNT(*)::int as c FROM "User" WHERE role = 'USER' ${andUserIdIn} ${andName} ${andEmail} ${andNationalId} ${andPhone} ${andBank} ${andCreatedGte} ${andCreatedLte}`;
     return Number((rows[0] as { c: number })?.c ?? 0);
   }
-  const rows = await sql`SELECT COUNT(*)::int as c FROM "User" WHERE role = 'USER'`;
+  const rows = await sql`SELECT COUNT(*)::int as c FROM "User" WHERE role = 'USER' ${andUserIdIn}`;
   return Number((rows[0] as { c: number })?.c ?? 0);
 }
 
