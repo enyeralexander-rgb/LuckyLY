@@ -2,7 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Fredoka, Oswald } from "next/font/google";
 import { ThemeProvider } from "../components/providers/ThemeProvider";
-import { TutorialProvider } from "../contexts/TutorialContext";
+import TutorialProvider from "../contexts/TutorialContext";
 import { TutorialOverlay } from "../components/TutorialOverlay";
 import { Header } from "../components/ui/Header";
 import { SocialFloat } from "../components/SocialFloat";
