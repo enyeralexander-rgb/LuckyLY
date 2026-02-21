@@ -446,38 +446,59 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
             </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {/* Contenedor de la Ruleta */}
-            <div className="card" style={{ padding: "2rem", position: "relative", display: "flex", justifyContent: "center", alignItems: "flex-start", marginBottom: "2rem" }}>
-                
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+            {/* Contenedor de la Ruleta: responsive para que no se corte en móvil */}
+            <div 
+              className="card ejecutar-ruleta-card" 
+              style={{ 
+                padding: "clamp(1rem, 4vw, 2rem)", 
+                position: "relative", 
+                display: "flex", 
+                justifyContent: "center", 
+                alignItems: "flex-start", 
+                marginBottom: "2rem",
+                overflow: "visible",
+                width: "100%",
+                maxWidth: "min(600px, calc(100vw - 2rem))",
+                boxSizing: "border-box"
+              }}
+            >
+                {/* Wrapper cuadrado para la ruleta: escala con el ancho disponible */}
+                <div 
+                  className="ejecutar-ruleta-wrapper"
+                  style={{ 
+                    position: "relative",
+                    width: "100%",
+                    maxWidth: "600px",
+                    aspectRatio: "1 / 1"
+                  }}
+                >
                 {/* 1. PUNTERO (Z-INDEX ALTO) - MITAD DENTRO, MITAD FUERA */}
-                {/* Radio de la ruleta: 280px, centro en 300,300. Borde superior en y=20px del SVG */}
-                {/* Flecha: 65px altura (45px + 20px). Para mitad dentro/mitad fuera: top = 20 - 32.5 = -12.5px */}
                 <div style={{ 
                     position: "absolute", 
-                    top: "-12.5px", // Posicionado para que quede mitad dentro (32.5px) y mitad fuera (32.5px) del borde
+                    top: "-12.5px",
                     left: "50%", 
                     transform: "translateX(-50%)", 
                     zIndex: 20 
                 }}>
-                    <svg width="60" height="70" viewBox="0 0 60 70">
-                        {/* Sombra */}
+                    <svg width="60" height="70" viewBox="0 0 60 70" style={{ maxWidth: "clamp(36px, 10vw, 60px)", height: "auto" }}>
                         <path d="M 10 0 L 50 0 L 30 65 Z" fill="rgba(0,0,0,0.3)" transform="translate(0, 4)" />
-                        {/* Triángulo físico - 65px de altura, sin borde, color verde */}
                         <path d="M 10 0 L 50 0 L 30 65 Z" fill="#85BB65" />
                     </svg>
                 </div>
 
-                {/* 2. RULETA GIRATORIA */}
+                {/* 2. RULETA GIRATORIA - SVG responsive */}
                 <svg
-                    width="600"
-                    height="600"
+                    width="100%"
+                    height="100%"
                     viewBox="0 0 600 600"
+                    preserveAspectRatio="xMidYMid meet"
                     style={{
                         transform: `rotate(${rotation}deg)`,
                         transformOrigin: "center center",
                         transition: spinning ? `transform ${spinDuration}s cubic-bezier(0.17, 0.67, 0.12, 0.99)` : "none",
-                        filter: "drop-shadow(0 10px 30px rgba(0,0,0,0.3))"
+                        filter: "drop-shadow(0 10px 30px rgba(0,0,0,0.3))",
+                        display: "block"
                     }}
                 >
                     {displayItems.map((item, i) => {
@@ -524,17 +545,27 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
                         stroke="#dc2626"
                         strokeWidth="4"
                     />
-                    {/* Centro decorativo con círculo más grande */}
-                    <circle 
-                        cx="300" 
-                        cy="300" 
-                        r="40" 
-                        fill="white" 
-                        stroke="#dc2626" 
-                        strokeWidth="3"
-                        style={{
-                          filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.2))"
-                        }}
+                    {/* Centro: fondo verde + borde blanco + logo (igual que ruleta de comprar cupos) */}
+                    <circle
+                        cx="300"
+                        cy="300"
+                        r="40"
+                        fill="#66BB5F"
+                        stroke="#ffffff"
+                        strokeWidth="20"
+                        style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.2))" }}
+                    />
+                    <clipPath id="ejecutar-ruleta-center-clip">
+                        <circle cx="300" cy="300" r="40" />
+                    </clipPath>
+                    <image
+                        href="/images/LuckyLy-Logo-BLANCO-SIN-FONDO.png"
+                        x={300 - 40 * 0.49}
+                        y={300 - 40 * 0.49}
+                        width={40 * 0.98}
+                        height={40 * 0.98}
+                        clipPath="url(#ejecutar-ruleta-center-clip)"
+                        preserveAspectRatio="xMidYMid meet"
                     />
                 </svg>
 
@@ -546,6 +577,7 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
                         left: "50%",
                         transform: "translate(-50%, -50%)",
                         zIndex: 15,
+                        pointerEvents: "none",
                         padding: "1.5rem 2rem",
                         textAlign: "center",
                         background: "linear-gradient(135deg, rgba(133, 187, 101, 0.95) 0%, rgba(16, 185, 129, 0.95) 100%)",
@@ -578,6 +610,7 @@ function EjecutarRafflePageContent({ params }: { params: { id: string } }) {
                         )}
                     </div>
                 )}
+                </div>
             </div>
 
             {/* Botón de Ejecutar */}

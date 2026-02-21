@@ -3595,6 +3595,23 @@ video {
   }
 }
 
+/* Ruleta de ejecutar sorteo (admin) - responsive en móvil */
+.ejecutar-ruleta-card {
+  margin-left: auto;
+  margin-right: auto;
+}
+@media (max-width: 640px) {
+  .ejecutar-ruleta-card {
+    max-width: calc(100vw - 1rem) !important;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    width: calc(100% - 1rem);
+  }
+  .ejecutar-ruleta-wrapper {
+    min-height: 0;
+  }
+}
+
 /* SlotRoulette - responsive */
 .slot-roulette-container {
   width: 100%;
