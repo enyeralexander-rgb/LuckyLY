@@ -13,10 +13,13 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const includeNotApproved = searchParams.get("includeNotApproved") === "true";
+    const statusFilter = searchParams.get("status") ?? undefined;
 
-    const whereApproved = includeNotApproved ? undefined : true;
+    const where: { approved?: boolean; status?: string } = {};
+    if (!includeNotApproved) where.approved = true;
+    if (statusFilter) where.status = statusFilter;
     const raffles = await db.raffles.findMany({
-      where: whereApproved !== undefined ? { approved: whereApproved } : {},
+      where: Object.keys(where).length ? where : {},
       orderBy: { createdAt: "desc" },
       take: 100,
     });

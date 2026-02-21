@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { users } from "@/lib/db";
+import { users, tickets } from "@/lib/db";
 import { requireAuth, AuthError } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import type { Role } from "@/lib/db-types";
@@ -18,6 +18,7 @@ export async function GET(request: Request) {
     const searchTelefono = searchParams.get("telefono") ?? "";
     const searchBanco = searchParams.get("banco") ?? "";
     const searchFecha = searchParams.get("fecha") ?? "";
+    const raffleId = searchParams.get("raffleId") ?? "";
 
     const page = parseInt(searchParams.get("page") ?? "1", 10);
     const limit = 10;
@@ -34,6 +35,11 @@ export async function GET(request: Request) {
       createdAtLte = fechaFin;
     }
 
+    let userIdIn: string[] | undefined;
+    if (raffleId.trim()) {
+      userIdIn = await tickets.findDistinctUserIdsByRaffle(raffleId.trim());
+    }
+
     const [userList, total] = await Promise.all([
       users.findManyAdmin({
         search: search || undefined,
@@ -44,6 +50,7 @@ export async function GET(request: Request) {
         bank: searchBanco || undefined,
         createdAtGte,
         createdAtLte,
+        userIdIn,
         skip,
         take: limit,
       }),
@@ -56,6 +63,7 @@ export async function GET(request: Request) {
         bank: searchBanco || undefined,
         createdAtGte,
         createdAtLte,
+        userIdIn,
       }),
     ]);
 
