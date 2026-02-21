@@ -59,6 +59,13 @@ export async function findManyByIds(ids: string[]): Promise<Ticket[]> {
   return rows as Ticket[];
 }
 
+/** IDs de usuarios que tienen al menos un ticket en el sorteo (participan en la ruleta). */
+export async function findDistinctUserIdsByRaffle(raffleId: string): Promise<string[]> {
+  const sql = getSql();
+  const rows = await sql`SELECT DISTINCT "userId" FROM "Ticket" WHERE "raffleId" = ${raffleId}` as { userId: string }[];
+  return rows.map((r) => r.userId);
+}
+
 export async function findFirst(where: { raffleId: string; userId: string; paymentMobileRef?: string; paymentMobileBank?: Bank }): Promise<Ticket | null> {
   const sql = getSql();
   if (where.paymentMobileRef !== undefined && where.paymentMobileBank !== undefined) {
