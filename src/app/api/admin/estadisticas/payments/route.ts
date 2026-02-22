@@ -97,15 +97,12 @@ export async function GET(request: Request) {
         id: ticket.id,
         fecha: ticket.purchasedAt.toISOString(),
         nombreUsuario: user?.name ?? "-",
-        emailUsuario: user?.email ?? "-",
-        metodoPago: ticket.paymentMethod || "N/A",
+        telefono: user?.phoneNumber || user?.bankPhone || "-",
         monto: Number(ticket.totalPaid),
         referenciaPago: ticket.paymentMobileRef || null,
         status: ticket.status,
         cuposComprados: items.join(", "),
         cantidadCupos: items.length,
-        tituloSorteo: raffle?.title ?? "-",
-        tipoSorteo: raffle ? getTypeLabel(raffle.type) : "-",
       };
     });
 
