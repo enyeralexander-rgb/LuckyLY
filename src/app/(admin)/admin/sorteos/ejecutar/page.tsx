@@ -1,11 +1,17 @@
 "use client";
-import { AdminNavBar } from "../../../../../components/AdminNavBar";
-import { AuthGuard } from "../../../../../components/AuthGuard";
+
 import { useEffect, useState } from "react";
-import { getStoredAuth } from "../../../../../lib/clientAuth";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getItemWithEmoji } from "../../../../../lib/raffleEmojis";
+import { AuthGuard } from "@/components/AuthGuard";
+import { getItemWithEmoji } from "@/lib/raffleEmojis";
+import { getStoredAuth } from "@/lib/clientAuth";
+
+const AdminNavBar = dynamic(
+  () => import("@/components/AdminNavBar").then((m) => ({ default: m.AdminNavBar })),
+  { ssr: true }
+);
 
 // Listas de valores para cada tipo de ruleta
 const VENEZUELA_STATES = [
