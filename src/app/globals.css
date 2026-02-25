@@ -2792,7 +2792,7 @@ video {
   gap: 0;
   grid-template-rows: auto 1fr;
   min-width: 0;
-  overflow-x: hidden;
+  overflow: visible;
 }
 
 @media (min-width: 769px) {
@@ -2902,7 +2902,7 @@ video {
   margin-top: 0;
   min-height: 0;
   min-width: 0;
-  overflow-x: hidden;
+  overflow: visible;
 }
 
 .admin-dashboard-grid {
