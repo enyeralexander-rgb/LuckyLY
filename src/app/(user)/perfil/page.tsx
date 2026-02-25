@@ -171,7 +171,7 @@ export default function PerfilPage() {
                   fontSize: "1rem"
                 }}
               >
-                <option value="">Selecciona un banco</option>
+                <option value="">Selecciona un banco.</option>
                 {VENEZUELAN_BANKS.map((bank) => (
                   <option key={bank.code} value={bank.name}>
                     ({bank.code}) {bank.name}
