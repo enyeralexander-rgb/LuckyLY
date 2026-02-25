@@ -2925,7 +2925,7 @@ video {
   right: 2px !important;
 }
 
-/* En móviles: una columna que usa el ancho disponible (no valor fijo) para no desbordar */
+/* En móviles: 2 columnas de iconos; ancho controlado para no desbordar */
 @media (max-width: 560px) {
   .admin-dashboard-section {
     width: 100%;
@@ -2933,12 +2933,26 @@ video {
     box-sizing: border-box;
   }
 
-  .admin-dashboard-grid,
+  .admin-dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
   .admin-dashboard-grid--classic {
     grid-template-columns: minmax(0, 1fr);
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+  }
+}
+
+/* Pantallas muy pequeñas (< 350px): 1 sola columna */
+@media (max-width: 350px) {
+  .admin-dashboard-grid,
+  .admin-dashboard-grid--classic {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
