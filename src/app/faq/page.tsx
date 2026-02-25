@@ -36,7 +36,7 @@ export default function FaqPage() {
         </h1>
         <p style={{ textAlign: "center", color: "var(--text-secondary)", marginBottom: "2rem" }}>
           Encuentra respuestas a las preguntas más comunes sobre nuestros sorteos.
-          De igual forma, te invitamos a unirte a nuestra comunidad en Instagram, Facebook y WhatsApp
+          De igual manera te invitamos a unirte a nuestra comunidad en Instagram, Facebook y WhatsApp
           para mantenerte al tanto de nuestros sorteos y responder a todas tus preguntas.
         </p>
 
