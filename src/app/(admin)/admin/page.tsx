@@ -246,7 +246,7 @@ function DashboardCard({
       onMouseLeave={() => setHover(false)}
     >
       {item.badgeKey && badgeCount !== undefined && badgeCount > 0 && (
-        <NotificationBadge count={badgeCount} />
+        <NotificationBadge count={badgeCount} className="admin-dashboard-card-badge" />
       )}
       <div style={{ color: "var(--accent, #6366f1)" }}>
         <Icon size={28} />
@@ -390,13 +390,8 @@ function AdminHomePageContent() {
         </div>
         <section className="admin-dashboard-section">
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: viewMode === "classic"
-                ? "repeat(auto-fit, minmax(280px, 1fr))"
-                : "repeat(auto-fill, minmax(140px, 1fr))",
-              gap: "1rem",
-            }}
+            className={`admin-dashboard-grid ${viewMode === "classic" ? "admin-dashboard-grid--classic" : ""}`}
+            style={{ gap: "1rem" }}
           >
             {DASHBOARD_ITEMS.map((item) => (
               <DashboardCard
