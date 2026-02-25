@@ -128,7 +128,7 @@ export default function PerfilPage() {
           )}
           <div>
             <p style={{ margin: "0 0 1rem", color: "#3E3E3C", fontSize: ".875rem", opacity: 0.8 }}>
-              Estos datos se utilizarán para pagos de cupos y retiros de premios mediante Pago Móvil.
+              Estos datos se utilizarán para pagos y retiros de premios mediante Pago Móvil.
             </p>
           </div>
 
@@ -171,7 +171,7 @@ export default function PerfilPage() {
                   fontSize: "1rem"
                 }}
               >
-                <option value="">Selecciona un banco</option>
+                <option value="">Selecciona un banco.</option>
                 {VENEZUELAN_BANKS.map((bank) => (
                   <option key={bank.code} value={bank.name}>
                     ({bank.code}) {bank.name}
