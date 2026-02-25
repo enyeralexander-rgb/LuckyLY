@@ -128,7 +128,7 @@ export default function PerfilPage() {
           )}
           <div>
             <p style={{ margin: "0 0 1rem", color: "#3E3E3C", fontSize: ".875rem", opacity: 0.8 }}>
-              Estos datos se utilizarán para pagos de cupos y retiros de premios mediante Pago Móvil.
+              Estos datos se utilizarán para pagos y retiros de premios mediante Pago Móvil.
             </p>
           </div>
 
