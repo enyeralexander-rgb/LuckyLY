@@ -1,6 +1,7 @@
 "use client";
 
 import { Footer } from "../../components/Footer";
+import { LiveChat } from "../../components/LiveChat";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -51,15 +52,7 @@ export default function LivePage() {
               )}
             </div>
             <div className="live-chat-wrap">
-              {config?.chatIframeUrl ? (
-                <iframe
-                  src={config.chatIframeUrl}
-                  className="live-chat-iframe"
-                  title="Chat en vivo"
-                />
-              ) : (
-                <div className="live-placeholder">Sin chat configurado</div>
-              )}
+              <LiveChat />
             </div>
           </div>
         )}

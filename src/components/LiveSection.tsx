@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../lib/clientAuth";
+import { LiveChat } from "./LiveChat";
 
 type LiveConfig = {
   streamUrl: string;
@@ -67,15 +68,7 @@ export function LiveSection() {
               )}
             </div>
             <div className="live-chat-wrap">
-              {config?.chatIframeUrl ? (
-                <iframe
-                  src={config.chatIframeUrl}
-                  className="live-chat-iframe"
-                  title="Chat en vivo"
-                />
-              ) : (
-                <div className="live-placeholder">Sin chat configurado</div>
-              )}
+              <LiveChat />
             </div>
           </div>
         )}
