@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.js",
     "build": "node scripts/db-push-neon.js && next build",
-    "start": "next start",
+    "start": "NODE_ENV=production node server.js",
     "lint": "next lint",
     "clean": "rm -rf .next node_modules/.cache",
     "clean:deep": "rm -rf .next node_modules/.cache .swc",
