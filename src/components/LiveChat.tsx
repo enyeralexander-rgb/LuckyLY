@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { io, Socket } from "socket.io-client";
+import Pusher from "pusher-js";
 import { Send } from "lucide-react";
 import { getStoredAuth } from "../lib/clientAuth";
+
+const CHANNEL_NAME = "live-chat";
+const EVENT_NAME = "message";
 
 export type LiveChatMessage = {
   id: string;
@@ -16,24 +19,43 @@ export function LiveChat() {
   const [messages, setMessages] = useState<LiveChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [connected, setConnected] = useState(false);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
-    const s = io(origin, { path: "/socket.io", autoConnect: true });
+    const key = process.env.NEXT_PUBLIC_PUSHER_KEY;
+    const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "us2";
+    if (!key) {
+      return;
+    }
 
-    s.on("connect", () => setConnected(true));
-    s.on("disconnect", () => setConnected(false));
-    s.on("live-chat:message", (msg: LiveChatMessage) => {
-      setMessages((prev) => [...prev.slice(-199), msg]);
+    const pusher = new Pusher(key, {
+      cluster,
+      enabledTransports: ["ws", "wss"],
     });
 
-    setSocket(s);
+    const channel = pusher.subscribe(CHANNEL_NAME);
+
+    channel.bind(EVENT_NAME, (payload: LiveChatMessage) => {
+      setMessages((prev) => [...prev.slice(-199), payload]);
+    });
+
+    const onConnected = () => setConnected(true);
+    const onDisconnected = () => setConnected(false);
+
+    pusher.connection.bind("connected", onConnected);
+    pusher.connection.bind("disconnected", onDisconnected);
+    pusher.connection.bind("unavailable", onDisconnected);
+    if (pusher.connection.state === "connected") {
+      setConnected(true);
+    }
+
     return () => {
-      s.removeAllListeners();
-      s.disconnect();
+      channel.unbind(EVENT_NAME);
+      pusher.connection.unbind("connected", onConnected);
+      pusher.connection.unbind("disconnected", onDisconnected);
+      pusher.connection.unbind("unavailable", onDisconnected);
+      pusher.unsubscribe(CHANNEL_NAME);
+      pusher.disconnect();
     };
   }, []);
 
@@ -41,26 +63,48 @@ export function LiveChat() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = input.trim();
-    if (!text || !socket?.connected) return;
+    if (!text) return;
+
     const auth = getStoredAuth();
     const user = auth?.user?.email?.split("@")[0] || "Anónimo";
-    socket.emit("live-chat:message", { user, text });
-    setInput("");
+
+    try {
+      const res = await fetch("/api/live-chat/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user, text }),
+      });
+      if (res.ok) {
+        setInput("");
+      }
+    } catch {
+      // Error silencioso o mostrar toast
+    }
   };
+
+  const hasPusher = Boolean(process.env.NEXT_PUBLIC_PUSHER_KEY);
 
   return (
     <div className="live-chat-inner">
       <div className="live-chat-status">
-        {connected ? (
-          <span className="live-chat-status-dot live-chat-status-online" />
+        {hasPusher ? (
+          connected ? (
+            <span className="live-chat-status-dot live-chat-status-online" />
+          ) : (
+            <span className="live-chat-status-dot live-chat-status-offline" />
+          )
         ) : (
           <span className="live-chat-status-dot live-chat-status-offline" />
         )}
         <span className="live-chat-status-text">
-          {connected ? "Chat en vivo" : "Conectando..."}
+          {!hasPusher
+            ? "Chat no configurado"
+            : connected
+              ? "Chat en vivo"
+              : "Conectando..."}
         </span>
       </div>
       <div className="live-chat-messages" ref={listRef}>
@@ -82,13 +126,13 @@ export function LiveChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           maxLength={500}
-          disabled={!connected}
+          disabled={!hasPusher || !connected}
           aria-label="Mensaje del chat"
         />
         <button
           type="submit"
           className="live-chat-send"
-          disabled={!connected || !input.trim()}
+          disabled={!hasPusher || !connected || !input.trim()}
           aria-label="Enviar mensaje"
         >
           <Send size={20} />
