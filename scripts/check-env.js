@@ -80,6 +80,42 @@ const checks = [
     validate: () => true,
     hint: "Requerido en producción para /api/setup/create-master. Opcional en desarrollo.",
   },
+  {
+    key: "PUSHER_APP_ID",
+    required: false,
+    validate: (v) => !v || (v.length > 0 && v.length < 100),
+    hint: "Pusher App ID (chat en vivo). Opcional.",
+  },
+  {
+    key: "PUSHER_KEY",
+    required: false,
+    validate: (v) => !v || (v.length > 0 && v.length < 100),
+    hint: "Pusher Key (debe coincidir con NEXT_PUBLIC_PUSHER_KEY). Opcional.",
+  },
+  {
+    key: "PUSHER_SECRET",
+    required: false,
+    validate: (v) => !v || v.length > 0,
+    hint: "Pusher Secret (solo servidor). Opcional.",
+  },
+  {
+    key: "PUSHER_CLUSTER",
+    required: false,
+    validate: (v) => !v || (v.length >= 2 && v.length <= 10),
+    hint: "Pusher cluster (ej. us2, eu). Opcional.",
+  },
+  {
+    key: "NEXT_PUBLIC_PUSHER_KEY",
+    required: false,
+    validate: (v) => !v || (v.length > 0 && v.length < 100),
+    hint: "Mismo valor que PUSHER_KEY, para el cliente. Opcional.",
+  },
+  {
+    key: "NEXT_PUBLIC_PUSHER_CLUSTER",
+    required: false,
+    validate: (v) => !v || (v.length >= 2 && v.length <= 10),
+    hint: "Mismo valor que PUSHER_CLUSTER (ej. us2). Opcional.",
+  },
 ];
 
 let hasError = false;
