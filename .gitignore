@@ -1,80 +1,50 @@
-# Dependencies
+# Dependencias
 node_modules/
 .pnp
 .pnp.js
 
-# Build & output
+# Build
 .next/
 out/
 build/
 dist/
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-*.log
-
-# Usuario inicial MASTER (generado localmente, no subir)
-initial-master.sql
-
-# Environment (Vercel usa variables en el dashboard)
-.env
-.env.local
-.env.development
-.env.development.local
-.env.test
-.env.test.local
-.env.production
-.env.production.local
-.env.backup
-.env.vercel
-.env*.local
-
-# Mantener solo .env.example como plantilla
-!.env.example
-
-# Vercel
-.vercel
-
-# TypeScript
 *.tsbuildinfo
 next-env.d.ts
 
-# IDE / OS
+# Cliente Prisma generado (se regenera en el build)
+.prisma/
+
+# Logs
+*.log
+
+# Variables de entorno (solo se versiona la plantilla)
+.env
+.env.*
+!.env.example
+
+# Despliegue
+.vercel
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+.cursor/
 .DS_Store
-*.pem
 ._*
 .AppleDouble
-.cursor/
 
-# Uploads y contenido generado en runtime
+# Claves y archivos generados localmente
+*.pem
+initial-master.sql
 public/uploads/
 
-# Archivos grandes (opcional)
+# Archivos pesados
 *.tar.gz
 *.mp4
 *.mov
 
-# Auditoría / planes internos (opcional: descomentar si no quieres subirlos)
-# docs/PLAN_*.md
-# docs/AUDITORIA_*.md
-# docs/INFORME_*.md
-# docs/CHECKLIST_*.md
-docs/CHECKLIST_DESPLIEGUE_VERCEL_NEON.md
-docs/ESTADOS_TRANSICIONES.md
-docs/INFORME_FINAL_AUDITORIA_100_PLANTILLA.md
-docs/LISTADO_APIS.md
-docs/MATRIZ_PERMISOS_API.md
-docs/MATRIZ_RUTAS_Y_ROLES_FRONT.md
-docs/PLAN_AUDITORIA_100_PROYECTO.md
-docs/PLAN_REMEDIACION_PRODUCCION_100.md
-scripts/apply-initial-master.js
-scripts/generate-initial-master-sql.js
-docs/PLAN_RULETA_SELECCION_CUPOS.md
-docs/PLAN_TEXTO_RULETA_COMPRA.md
-docs/PLAN_RULETA_REDISENO_COMPLETO.md
-scripts/check-duplicates.ts
-.gitignore
-scripts/test-email.ts
-docs/PLAN_MAESTRO_RULETA_Y_ELIMINAR_VERIFICACION.md
+# Documentos internos de planificación y auditoría
+docs/PLAN_*.md
+docs/AUDITORIA_*.md
+docs/INFORME_*.md
+docs/CHECKLIST_*.md
